@@ -1,0 +1,51 @@
+{
+  "dashboard": {
+    "title": "Vedic Acoustica - System Monitor",
+    "panels": [
+      {
+        "title": "API Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{handler}}"
+          }
+        ]
+      },
+      {
+        "title": "Response Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 latency"
+          }
+        ]
+      },
+      {
+        "title": "CPU Usage",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "100 - (avg(rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+            "legendFormat": "CPU %"
+          }
+        ]
+      },
+      {
+        "title": "Memory Usage",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+            "legendFormat": "Memory %"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

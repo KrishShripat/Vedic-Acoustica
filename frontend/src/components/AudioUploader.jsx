@@ -1,0 +1,64 @@
+import { useRef, useState } from 'react'
+
+export default function AudioUploader({ onUpload }) {
+  const fileInputRef = useRef(null)
+  const [dragOver, setDragOver] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (file) => {
+    if (!file) return
+    setUploading(true)
+    await onUpload(file)
+    setUploading(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file && file.type.startsWith('audio/')) {
+      handleFile(file)
+    }
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setDragOver(true)
+  }
+
+  return (
+    <div
+      className={`card upload-zone ${dragOver ? 'drag-over' : ''}`}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setDragOver(false)}
+      onClick={() => fileInputRef.current?.click()}
+      style={{
+        border: `2px dashed ${dragOver ? 'var(--accent)' : 'var(--border)'}`,
+        textAlign: 'center',
+        cursor: 'pointer',
+        padding: '3rem',
+        transition: 'all 0.2s',
+      }}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*"
+        onChange={(e) => handleFile(e.target.files[0])}
+        style={{ display: 'none' }}
+      />
+      {uploading ? (
+        <p><span className="loading-spinner"></span> Uploading...</p>
+      ) : (
+        <>
+          <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#x1f3b5;</p>
+          <p>Drop a .wav file here or click to upload</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+            Supports WAV, MP3, FLAC, OGG
+          </p>
+        </>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vedic-backend
+  labels:
+    app: vedic-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vedic-backend
+  template:
+    metadata:
+      labels:
+        app: vedic-backend
+    spec:
+      containers:
+        - name: backend
+          image: vedic-acoustica/backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vedic-secrets
+                  key: django-secret-key
+            - name: DJANGO_DEBUG
+              value: "False"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /api/recordings/
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/recordings/
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vedic-backend-service
+spec:
+  selector:
+    app: vedic-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP
