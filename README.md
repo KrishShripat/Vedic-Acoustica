@@ -681,6 +681,32 @@ curl http://localhost:9090/api/v1/targets
 | Host CPU | ~10% |
 | Host memory | ~56% |
 
+### Monitoring inside Kubernetes
+
+The same stack is deployable inside the cluster via `k8s/monitoring/`:
+
+| Manifest | Resources |
+|----------|-----------|
+| `node-exporter.yml` | DaemonSet (hostNetwork) + Service — scrapes host CPU/memory |
+| `prometheus.yml` | ConfigMap + Deployment + Service — scrapes `vedic-backend-service:8000/metrics`, node-exporter, and itself |
+| `grafana.yml` | Deployment + Service + ConfigMaps for datasource/dashboard provisioning |
+| `grafana-dashboard.yml` | Dashboard JSON (generated from `monitoring/grafana-dashboard.json`) |
+
+```bash
+# Load the images into Minikube first
+minikube image load prom/prometheus:latest
+minikube image load prom/node-exporter:latest
+minikube image load grafana/grafana:latest
+
+kubectl apply -f k8s/monitoring/
+
+# Access (port-forward from your machine)
+kubectl port-forward service/prometheus 9090:9090   # Prometheus UI
+kubectl port-forward service/grafana 3000:3000      # Grafana (admin/admin)
+```
+
+All three Prometheus targets report **UP**, and the dashboard shows live request rate and memory usage scraped from the cluster.
+
 ---
 
 ## Development
