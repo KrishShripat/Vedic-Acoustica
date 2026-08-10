@@ -627,21 +627,59 @@ git push -u origin main
 
 ## Monitoring
 
+A full Prometheus + Grafana stack is included in `docker-compose.yml`. It monitors both the app (Django) and the host (node_exporter).
+
+### Metrics Endpoint
+
+The Django backend exposes Prometheus metrics at `/metrics` (`backend/api/metrics.py`):
+- `http_requests_total{method,path}` — request counter
+- `http_request_duration_seconds{method,path}` — request duration histogram
+- Plus default Python/process metrics
+
+A `MetricsMiddleware` records these on every request automatically.
+
 ### Prometheus (`monitoring/prometheus.yml`)
 
-Scrapes metrics from:
-- `localhost:9090` — Prometheus self-monitoring
-- `vedic-backend-service:8000` — Django application metrics
+Scrapes three targets:
+| Target | What it monitors |
+|--------|------------------|
+| `localhost:9090` | Prometheus self-monitoring |
+| `backend:8000/metrics` | Django application metrics |
+| `node-exporter:9100` | Host CPU / memory / disk metrics |
 
-### Grafana (`monitoring/grafana-dashboard.json`)
+### Grafana (auto-provisioned)
+
+- `monitoring/grafana-datasource.yml` — Prometheus datasource (loaded automatically)
+- `monitoring/grafana-provisioning.yml` — dashboard provider config
+- `monitoring/grafana-dashboard.json` — dashboard, loaded at startup
 
 Dashboard panels:
-- **API Request Rate** — Requests per second by endpoint
-- **Response Latency** — p95 request duration
-- **CPU Usage** — System CPU utilization percentage
-- **Memory Usage** — RAM consumption
+- **API Request Rate** — total requests/sec
+- **API Request Rate by Endpoint** — per-path/method breakdown
+- **Response Latency (p95)** — histogram_quantile of request duration
+- **CPU Usage** — node_exporter idle→busy calculation
+- **Memory Usage** — MemAvailable / MemTotal
+- **Node Uptime** — time since boot
 
-Access Grafana at `http://localhost:3000` (admin/admin)
+Access Grafana at `http://localhost:3000` (admin/admin). Prometheus at `http://localhost:9090`.
+
+### Run the monitoring stack
+
+```bash
+docker compose up -d backend prometheus node-exporter grafana
+# Verify all Prometheus targets are UP:
+curl http://localhost:9090/api/v1/targets
+# Open Grafana → "Vedic Acoustica - System Monitor" dashboard
+```
+
+### Verified metrics (docker-compose)
+
+| Metric | Value |
+|--------|-------|
+| API request rate | ~0.9 req/s (under load test) |
+| p95 latency | ~5 ms |
+| Host CPU | ~10% |
+| Host memory | ~56% |
 
 ---
 
