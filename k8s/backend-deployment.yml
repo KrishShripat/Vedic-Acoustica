@@ -14,9 +14,30 @@ spec:
       labels:
         app: vedic-backend
     spec:
+      initContainers:
+        - name: backend-migrate
+          image: vedic-acoustica/backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput"]
+          env:
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vedic-secrets
+                  key: django-secret-key
+            - name: DJANGO_DEBUG
+              value: "False"
+            - name: DJANGO_DB_PATH
+              value: /app/data/db.sqlite3
+            - name: DJANGO_MEDIA_ROOT
+              value: /app/data/media
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
       containers:
         - name: backend
           image: vedic-acoustica/backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
           env:
@@ -27,6 +48,13 @@ spec:
                   key: django-secret-key
             - name: DJANGO_DEBUG
               value: "False"
+            - name: DJANGO_DB_PATH
+              value: /app/data/db.sqlite3
+            - name: DJANGO_MEDIA_ROOT
+              value: /app/data/media
+          volumeMounts:
+            - name: app-data
+              mountPath: /app/data
           resources:
             requests:
               memory: "512Mi"
@@ -46,6 +74,21 @@ spec:
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: vedic-data-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vedic-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
 ---
 apiVersion: v1
 kind: Service

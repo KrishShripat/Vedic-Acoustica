@@ -526,29 +526,104 @@ Kubernetes manifests are in `k8s/`:
 
 | File | Resources |
 |------|-----------|
-| `backend-deployment.yml` | Deployment (2 replicas) + ClusterIP Service |
+| `backend-deployment.yml` | Deployment (2 replicas) + initContainer (migrate/collectstatic) + PersistentVolumeClaim (shared SQLite + media) + ClusterIP Service |
 | `frontend-deployment.yml` | Deployment (2 replicas) + LoadBalancer Service |
 | `services.yml` | Secret (Django key) + Ingress (routing rules) |
+
+### Architecture Notes
+
+- **Shared state:** Both backend replicas mount a `PersistentVolumeClaim` (`vedic-data-pvc`) at `/app/data`. The SQLite database and uploaded media live there, so uploads/analyses are visible from either replica.
+- **Migrations:** Run via an `initContainer` (once per pod start), not at build time — this initializes the shared volume on first deploy.
+- **Configurable backend host:** The frontend nginx config uses `${BACKEND_HOST}` (env-substituted at container start). In K8s it's set to `vedic-backend-service`; in docker-compose it's `backend`.
 
 ### Local Testing with Minikube
 
 ```bash
-# Start Minikube
-minikube start --driver=docker
+# 1. Start Minikube (Docker driver — runs natively on Ubuntu, no VirtualBox)
+minikube start --driver=docker --cpus=4 --memory=4096 --disk-size=20g
 
-# Build images inside Minikube
-eval $(minikube docker-env)
-docker build -t vedic-backend ./backend
-docker build -t vedic-frontend ./frontend
+# 2. Build images and load into Minikube
+docker build -t vedic-acoustica/backend:latest ./backend
+docker build -t vedic-acoustica/frontend:latest ./frontend
+minikube image load vedic-acoustica/backend:latest
+minikube image load vedic-acoustica/frontend:latest
 
-# Deploy
+# 3. Deploy
 kubectl apply -f k8s/
 
-# Access
-minikube service vedic-frontend-service
+# 4. Wait for rollout (backend migrations run in initContainer first)
+kubectl rollout status deployment/vedic-backend
+kubectl rollout status deployment/vedic-frontend
+
+# 5. Expose the LoadBalancer (enables an External-IP in Minikube)
+minikube addons enable metallb
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: metallb-system
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses:
+      - 192.168.49.100-192.168.49.110
+EOF
+
+# 6. Access the app at the LoadBalancer External-IP
+minikube service vedic-frontend-service --url
+# → http://192.168.49.100  (frontend + /api proxy through nginx)
+```
+
+**End-to-end test through the cluster:**
+
+```bash
+# Upload a recording (round-robins across both backend replicas)
+curl -X POST -F "title=Test" -F "audio_file=@test_audio/test_10s.wav" \
+  http://192.168.49.100/api/upload/
+
+# Run the 22-Shruti K-Means + Ghana Patha analysis
+curl -X POST http://192.168.49.100/api/analyze/1/
+
+# Both uploads are visible regardless of which replica served the request
+curl http://192.168.49.100/api/recordings/
 ```
 
 ---
+
+## Continuous Integration / Continuous Deployment
+
+GitHub Actions workflows are in `.github/workflows/`:
+
+### CI (`ci.yml`)
+
+Runs on every push/PR to `main`:
+
+| Job | What it does |
+|-----|--------------|
+| **Backend** | `python manage.py check`, `python manage.py test`, verifies ML engine imports (librosa + scikit-learn) |
+| **Frontend** | `npm ci`, `npm run lint` (oxlint), `npm run build` (Vite) |
+
+### CD (`cd.yml`)
+
+Runs on every push to `main`:
+
+1. **Build & Push** — builds both Docker images and pushes to GitHub Container Registry (GHCR) with `:latest` + `:<sha>` tags
+2. **Deploy** — (disabled by default, `if: false`) applies `k8s/` manifests to a cluster using a `KUBECONFIG` secret, substituting image refs for the freshly-built GHCR images
+
+### Enabling CI/CD
+
+```bash
+# 1. Create the GitHub repo and push
+git remote add origin https://github.com/<your-username>/Vedic-Acoustica.git
+git push -u origin main
+
+# 2. CI runs automatically on the first push — check Actions tab
+# 3. To enable the CD deploy step, remove `if: false` and add a
+#    KUBECONFIG secret (base64-encoded kubeconfig) to repo settings.
+```
 
 ## Monitoring
 

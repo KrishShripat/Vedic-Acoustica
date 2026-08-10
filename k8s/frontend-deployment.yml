@@ -17,6 +17,10 @@ spec:
       containers:
         - name: frontend
           image: vedic-acoustica/frontend:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BACKEND_HOST
+              value: vedic-backend-service
           ports:
             - containerPort: 80
           resources:
