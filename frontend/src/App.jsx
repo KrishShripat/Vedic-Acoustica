@@ -5,6 +5,7 @@ import ClusterPlot from './components/ClusterPlot'
 import ShrutiMap from './components/ShrutiMap'
 import GhanaPathaViz from './components/GhanaPathaViz'
 import AudioPlayer from './components/AudioPlayer'
+import exportReport from './utils/exportReport'
 import './App.css'
 
 const API_BASE = '/api'
@@ -14,6 +15,7 @@ function App() {
   const [selectedRecording, setSelectedRecording] = useState(null)
   const [analysis, setAnalysis] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   const fetchRecordings = useCallback(async () => {
     const res = await fetch(`${API_BASE}/recordings/`)
@@ -59,6 +61,19 @@ function App() {
     setSelectedRecording(recording)
     setAnalysis(recording.analysis_result || null)
   }, [])
+
+  const handleDownloadReport = useCallback(async () => {
+    if (!analysis || !selectedRecording) return
+    setDownloading(true)
+    try {
+      await exportReport(selectedRecording, analysis)
+    } catch (err) {
+      console.error('Report export failed:', err)
+      alert('Failed to generate PDF report. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }, [analysis, selectedRecording])
 
   return (
     <div>
@@ -107,22 +122,31 @@ function App() {
 
       {analysis && (
         <>
+          <div className="report-bar">
+            <button
+              className="btn btn-secondary report-btn"
+              onClick={handleDownloadReport}
+              disabled={downloading}
+            >
+              {downloading ? <><span className="loading-spinner"></span> Generating...</> : '⬇ Download PDF Report'}
+            </button>
+          </div>
           <div className="grid">
-            <div className="card">
+            <div className="card" id="chart-spectrogram">
               <h2>Spectrogram</h2>
               <SpectrogramView data={analysis.spectrogram_data} duration={analysis.duration} />
             </div>
-            <div className="card">
+            <div className="card" id="chart-clusters">
               <h2>Shruti Clusters (K=22)</h2>
               <ClusterPlot data={analysis} />
             </div>
           </div>
           <div className="grid">
-            <div className="card">
+            <div className="card" id="chart-shruti-map">
               <h2>22 Shruti Frequency Map</h2>
               <ShrutiMap data={analysis} />
             </div>
-            <div className="card">
+            <div className="card" id="chart-ghana-path">
               <h2>Ghana Patha Validation</h2>
               <GhanaPathaViz data={analysis} />
             </div>
