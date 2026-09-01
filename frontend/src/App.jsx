@@ -4,6 +4,7 @@ import SpectrogramView from './components/SpectrogramView'
 import ClusterPlot from './components/ClusterPlot'
 import ShrutiMap from './components/ShrutiMap'
 import GhanaPathaViz from './components/GhanaPathaViz'
+import AudioPlayer from './components/AudioPlayer'
 import './App.css'
 
 const API_BASE = '/api'
@@ -98,6 +99,10 @@ function App() {
             </button>
           )}
         </div>
+      )}
+
+      {selectedRecording && (
+        <AudioPlayer audioUrl={selectedRecording.audio_file} title={selectedRecording.title} />
       )}
 
       {analysis && (
