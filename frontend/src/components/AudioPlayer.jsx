@@ -20,7 +20,6 @@ export default function AudioPlayer({ audioUrl, title }) {
       barRadius: 3,
       barGap: 1,
       height: 80,
-      responsive: true,
       url: audioUrl,
     })
 
