@@ -1,6 +1,6 @@
 import Plot from 'react-plotly.js'
 
-export default function SpectrogramView({ data, duration }) {
+export default function SpectrogramView({ data, duration, onReady }) {
   if (!data || data.length === 0) return <p>No spectrogram data</p>
 
   const z = data
@@ -46,6 +46,8 @@ export default function SpectrogramView({ data, duration }) {
         },
         height: 300,
       }}
+      onInitialized={() => onReady?.()}
+      onUpdate={() => onReady?.()}
       config={{ displayModeBar: false, responsive: true }}
       style={{ width: '100%' }}
     />

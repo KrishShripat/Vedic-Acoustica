@@ -8,10 +8,19 @@ const CHART_DEFS = [
   { id: 'chart-ghana-path', title: 'Ghana Patha Validation' },
 ]
 
+async function findGraphDiv(chartId) {
+  const deadline = Date.now() + 3000
+  while (Date.now() < deadline) {
+    const card = document.getElementById(chartId)
+    const graphDiv = card?.querySelector('.js-plotly-plot')
+    if (graphDiv) return graphDiv
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  throw new Error(`Chart "${chartId}" is not rendered yet. Wait for all charts to finish drawing, then try again.`)
+}
+
 async function captureChart(chartId) {
-  const card = document.getElementById(chartId)
-  const graphDiv = card?.querySelector('.js-plotly-plot')
-  if (!graphDiv) throw new Error(`Chart not found: ${chartId}`)
+  const graphDiv = await findGraphDiv(chartId)
   const dataUrl = await Plotly.toImage(graphDiv, {
     format: 'png',
     width: 900,
@@ -95,10 +104,8 @@ export default async function exportReport(recording, analysis) {
       pdf.setFillColor(255, 255, 255)
       pdf.roundedRect(x, yPos, imgW, imgH, 3, 3, 'F')
       pdf.addImage(dataUrl, 'PNG', x + 3, yPos + 3, imgW - 6, imgH - 6)
-    } catch {
-      pdf.setTextColor(233, 69, 96)
-      pdf.setFontSize(10)
-      pdf.text(CHART_DEFS[i].title, x, yPos + 20)
+    } catch (imgErr) {
+      throw new Error(`Failed to embed "${CHART_DEFS[i].title}" image in the PDF: ${imgErr.message}`)
     }
 
     pdf.setTextColor(200, 200, 210)

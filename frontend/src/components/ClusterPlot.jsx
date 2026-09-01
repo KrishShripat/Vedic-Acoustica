@@ -1,6 +1,6 @@
 import Plot from 'react-plotly.js'
 
-export default function ClusterPlot({ data }) {
+export default function ClusterPlot({ data, onReady }) {
   if (!data?.shruti_clusters) return <p>No cluster data</p>
 
   const clusterNames = Object.keys(data.shruti_clusters)
@@ -45,6 +45,8 @@ export default function ClusterPlot({ data }) {
           },
           height: 280,
         }}
+        onInitialized={() => onReady?.()}
+        onUpdate={() => onReady?.()}
         config={{ displayModeBar: false, responsive: true }}
         style={{ width: '100%' }}
       />

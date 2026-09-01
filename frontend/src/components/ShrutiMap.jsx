@@ -17,7 +17,7 @@ const SHRUTI_RATIOS = [
 
 const SHRUTI_FREQS = SHRUTI_RATIOS.map(r => REFERENCE_FREQ * r)
 
-export default function ShrutiMap({ data }) {
+export default function ShrutiMap({ data, onReady }) {
   if (!data?.dominant_frequencies) return <p>No frequency data</p>
 
   const detectedFreqs = data.dominant_frequencies
@@ -75,6 +75,8 @@ export default function ShrutiMap({ data }) {
           height: 320,
           showlegend: false,
         }}
+        onInitialized={() => onReady?.()}
+        onUpdate={() => onReady?.()}
         config={{ displayModeBar: false, responsive: true }}
         style={{ width: '100%' }}
       />

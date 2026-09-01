@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import AudioUploader from './components/AudioUploader'
 import SpectrogramView from './components/SpectrogramView'
 import ClusterPlot from './components/ClusterPlot'
@@ -9,6 +9,7 @@ import exportReport from './utils/exportReport'
 import './App.css'
 
 const API_BASE = '/api'
+const NUM_CHARTS = 4
 
 function App() {
   const [recordings, setRecordings] = useState([])
@@ -16,6 +17,15 @@ function App() {
   const [analysis, setAnalysis] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [chartsReady, setChartsReady] = useState(0)
+
+  useEffect(() => {
+    setChartsReady(0)
+  }, [analysis])
+
+  const markChartReady = useCallback(() => {
+    setChartsReady(prev => (prev >= NUM_CHARTS ? prev : prev + 1))
+  }, [])
 
   const fetchRecordings = useCallback(async () => {
     const res = await fetch(`${API_BASE}/recordings/`)
@@ -69,7 +79,7 @@ function App() {
       await exportReport(selectedRecording, analysis)
     } catch (err) {
       console.error('Report export failed:', err)
-      alert('Failed to generate PDF report. Please try again.')
+      alert(`Failed to generate PDF report: ${err.message}`)
     } finally {
       setDownloading(false)
     }
@@ -126,29 +136,33 @@ function App() {
             <button
               className="btn btn-secondary report-btn"
               onClick={handleDownloadReport}
-              disabled={downloading}
+              disabled={downloading || chartsReady < NUM_CHARTS}
             >
-              {downloading ? <><span className="loading-spinner"></span> Generating...</> : '⬇ Download PDF Report'}
+              {downloading
+                ? <><span className="loading-spinner"></span> Generating...</>
+                : chartsReady < NUM_CHARTS
+                  ? '⏳ Preparing report...'
+                  : '⬇ Download PDF Report'}
             </button>
           </div>
           <div className="grid">
             <div className="card" id="chart-spectrogram">
               <h2>Spectrogram</h2>
-              <SpectrogramView data={analysis.spectrogram_data} duration={analysis.duration} />
+              <SpectrogramView data={analysis.spectrogram_data} duration={analysis.duration} onReady={markChartReady} />
             </div>
             <div className="card" id="chart-clusters">
               <h2>Shruti Clusters (K=22)</h2>
-              <ClusterPlot data={analysis} />
+              <ClusterPlot data={analysis} onReady={markChartReady} />
             </div>
           </div>
           <div className="grid">
             <div className="card" id="chart-shruti-map">
               <h2>22 Shruti Frequency Map</h2>
-              <ShrutiMap data={analysis} />
+              <ShrutiMap data={analysis} onReady={markChartReady} />
             </div>
             <div className="card" id="chart-ghana-path">
               <h2>Ghana Patha Validation</h2>
-              <GhanaPathaViz data={analysis} />
+              <GhanaPathaViz data={analysis} onReady={markChartReady} />
             </div>
           </div>
         </>
