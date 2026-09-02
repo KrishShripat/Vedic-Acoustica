@@ -4,12 +4,13 @@ import SpectrogramView from './components/SpectrogramView'
 import ClusterPlot from './components/ClusterPlot'
 import ShrutiMap from './components/ShrutiMap'
 import GhanaPathaViz from './components/GhanaPathaViz'
+import RagaViz from './components/RagaViz'
 import AudioPlayer from './components/AudioPlayer'
 import exportReport from './utils/exportReport'
 import './App.css'
 
 const API_BASE = '/api'
-const NUM_CHARTS = 4
+const NUM_CHARTS = 5
 
 function App() {
   const [recordings, setRecordings] = useState([])
@@ -18,10 +19,6 @@ function App() {
   const [analyzing, setAnalyzing] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [chartsReady, setChartsReady] = useState(0)
-
-  useEffect(() => {
-    setChartsReady(0)
-  }, [analysis])
 
   const markChartReady = useCallback(() => {
     setChartsReady(prev => (prev >= NUM_CHARTS ? prev : prev + 1))
@@ -32,6 +29,14 @@ function App() {
     const data = await res.json()
     setRecordings(data)
   }, [])
+
+  useEffect(() => {
+    fetchRecordings()
+  }, [fetchRecordings])
+
+  useEffect(() => {
+    setChartsReady(0)
+  }, [analysis])
 
   const handleUpload = useCallback(async (file) => {
     const formData = new FormData()
@@ -88,7 +93,7 @@ function App() {
   return (
     <div>
       <h1>Vedic Acoustica</h1>
-      <p className="subtitle">Microtonal Voice Analysis &middot; 22 Shrutis &middot; Ghana Patha Validation</p>
+      <p className="subtitle">Microtonal Voice Analysis &middot; 22 Shrutis &middot; Raga Detection &middot; Ghana Patha Validation</p>
 
       <div className="status-bar">
         <span className="dot"></span>
@@ -163,6 +168,12 @@ function App() {
             <div className="card" id="chart-ghana-path">
               <h2>Ghana Patha Validation</h2>
               <GhanaPathaViz data={analysis} onReady={markChartReady} />
+            </div>
+          </div>
+          <div className="grid">
+            <div className="card" id="chart-raga-detection" style={{ gridColumn: '1 / -1' }}>
+              <h2>Raga Detection</h2>
+              <RagaViz data={analysis} onReady={markChartReady} />
             </div>
           </div>
         </>

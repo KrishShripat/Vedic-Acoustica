@@ -6,13 +6,6 @@ export default function ClusterPlot({ data, onReady }) {
   const clusterNames = Object.keys(data.shruti_clusters)
   const frameCounts = clusterNames.map(k => data.shruti_clusters[k].frame_count)
 
-  const dominantFreqs = data.dominant_frequencies || []
-  const freqBuckets = new Array(22).fill(0)
-  dominantFreqs.forEach(f => {
-    const idx = Math.min(Math.floor((f / 1000) * 22), 21)
-    if (idx >= 0) freqBuckets[idx]++
-  })
-
   return (
     <div>
       <Plot
@@ -51,7 +44,7 @@ export default function ClusterPlot({ data, onReady }) {
         style={{ width: '100%' }}
       />
       <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: '0.5rem' }}>
-        {dominantFreqs.length} dominant frequency samples mapped to 22 Shruti bins
+        K-Means clustering with K=22 — frame count per cluster
       </p>
     </div>
   )

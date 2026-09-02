@@ -25,6 +25,8 @@ SHRUTI_RATIOS = [
     15 / 8,
     243 / 128,
     2 / 1,
+    25 / 8,
+    3,
 ]
 
 SHRUTI_NAMES = [
@@ -48,18 +50,12 @@ SHRUTI_NAMES = [
     'Shruti 18 (Ga_)',
     'Shruti 19 (Ma_)',
     'Shruti 20 (Pa_)',
+    'Shruti 21 (Dha_)',
+    'Shruti 22 (Ni_)',
 ]
 
-for i, (name, ratio) in enumerate(zip(SHRUTI_NAMES, SHRUTI_RATIOS)):
-    freq = REFERENCE_FREQ * ratio
-    SHRUTI_FREQUENCIES[name] = round(freq, 2)
-    if len(SHRUTI_FREQUENCIES) >= 22:
-        break
-
-while len(SHRUTI_FREQUENCIES) < 22:
-    idx = len(SHRUTI_FREQUENCIES) + 1
-    extra_ratio = SHRUTI_RATIOS[-1] * (1 + 0.05 * idx)
-    SHRUTI_FREQUENCIES[f'Shruti {idx}'] = round(REFERENCE_FREQ * extra_ratio, 2)
+for name, ratio in zip(SHRUTI_NAMES, SHRUTI_RATIOS):
+    SHRUTI_FREQUENCIES[name] = round(REFERENCE_FREQ * ratio, 2)
 
 
 def assign_shruti(mfcc_centroid, features):

@@ -6,6 +6,7 @@ const CHART_DEFS = [
   { id: 'chart-clusters', title: 'Shruti Clusters (K=22)' },
   { id: 'chart-shruti-map', title: '22 Shruti Frequency Map' },
   { id: 'chart-ghana-path', title: 'Ghana Patha Validation' },
+  { id: 'chart-raga-detection', title: 'Raga Detection' },
 ]
 
 async function findGraphDiv(chartId) {
@@ -36,6 +37,13 @@ function summaryRows(analysis) {
   ]
   if (typeof analysis.ghana_patha_confidence === 'number') {
     rows.push(['Confidence', `${(analysis.ghana_patha_confidence * 100).toFixed(1)}%`])
+  }
+  if (analysis.raga_detection?.best_match) {
+    const rm = analysis.raga_detection.best_match
+    rows.push(['Raga', `${rm.raga_name} (${rm.tradition})`])
+    rows.push(['Raga Match', `${(rm.confidence * 100).toFixed(1)}%`])
+  } else if (analysis.raga_detection) {
+    rows.push(['Raga', 'No confident match'])
   }
   if (typeof analysis.tempo === 'number') {
     rows.push(['Tempo', `${analysis.tempo.toFixed(1)} BPM`])

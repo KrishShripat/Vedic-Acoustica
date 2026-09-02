@@ -8,6 +8,7 @@ from .serializers import AudioRecordingSerializer
 from ml_engine.audio_processing import extract_features
 from ml_engine.ml_engine import run_clustering
 from ml_engine.ghana_patha import validate_ghana_patha
+from ml_engine.raga_mapping import detect_raga
 
 
 @api_view(['POST'])
@@ -57,6 +58,7 @@ def analyze_audio(request, pk):
     features = extract_features(audio_path)
     clustering_results = run_clustering(features)
     ghana_result = validate_ghana_patha(features)
+    raga_result = detect_raga(clustering_results)
 
     analysis = {
         'shruti_clusters': clustering_results['shruti_clusters'],
@@ -64,6 +66,7 @@ def analyze_audio(request, pk):
         'spectral_centroid_timeline': features['spectral_centroid'].tolist(),
         'ghana_patha_valid': ghana_result['is_valid'],
         'ghana_patha_confidence': ghana_result['confidence'],
+        'raga_detection': raga_result,
         'spectrogram_data': features['spectrogram'].tolist(),
         'mfcc_data': features['mfcc'].tolist(),
         'chroma_data': features['chroma'].tolist(),

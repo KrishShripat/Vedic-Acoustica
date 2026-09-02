@@ -36,7 +36,7 @@ jobs:
         run: python manage.py test
 
       - name: Verify ML engine imports (librosa + sklearn)
-        run: python -c "from ml_engine import audio_processing, ml_engine, ghana_patha; print('ML engine OK')"
+        run: python -c "from ml_engine import audio_processing, ml_engine, ghana_patha, raga_mapping; print('ML engine OK')"
 
   frontend:
     name: Frontend (React + Vite)
