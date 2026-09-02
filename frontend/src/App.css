@@ -90,3 +90,282 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* ── Analysis Progress Component ──────────────────────────────────────────── */
+
+.analysis-progress-wrap {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(18, 18, 26, 0.98));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  animation: fadeSlideIn 0.35s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* header row */
+.ap-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.ap-spinner {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.ap-status-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.ap-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.ap-pct {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* master bar */
+.ap-bar-track {
+  height: 6px;
+  background: var(--bg-secondary);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 1.1rem;
+}
+
+.ap-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--accent), #ff6b6b);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ap-bar-done  { background: linear-gradient(90deg, #4caf50, #81c784); box-shadow: 0 0 10px rgba(76,175,80,0.4); }
+.ap-bar-error { background: linear-gradient(90deg, #e94560, #ff1744); }
+
+/* stages */
+.ap-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.ap-stage {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: all 0.25s;
+  position: relative;
+}
+
+.ap-stage-done {
+  color: #4caf50;
+  border-color: rgba(76, 175, 80, 0.2);
+  background: rgba(76, 175, 80, 0.05);
+}
+
+.ap-stage-active {
+  color: var(--text-primary);
+  border-color: rgba(233, 69, 96, 0.35);
+  background: rgba(233, 69, 96, 0.07);
+  font-weight: 600;
+}
+
+.ap-stage-future {
+  opacity: 0.35;
+}
+
+.ap-stage-error {
+  color: #e94560;
+  border-color: rgba(233, 69, 96, 0.35);
+  background: rgba(233, 69, 96, 0.08);
+}
+
+.ap-stage-icon { font-size: 0.95rem; width: 20px; text-align: center; }
+.ap-stage-label { flex: 1; }
+
+.ap-check {
+  color: #4caf50;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* active pulse dot */
+.ap-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulseGlow 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--accent-glow); }
+  50%       { opacity: 0.7; box-shadow: 0 0 0 5px transparent; }
+}
+
+.ap-error-msg {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #e94560;
+  border-left: 2px solid #e94560;
+  padding-left: 0.6rem;
+}
+
+/* ── ShrutiMap: view toggle ────────────────────────────────────────────────── */
+
+.shruti-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.shruti-toggle-btn {
+  padding: 0.3rem 0.9rem;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.shruti-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.shruti-toggle-btn.active {
+  background: rgba(233, 69, 96, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── ShrutiMap: category legend ────────────────────────────────────────────── */
+
+.shruti-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.shruti-legend-pill {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+  border: 1px solid var(--pill-color, #888);
+  color: var(--pill-color, #888);
+  background: color-mix(in srgb, var(--pill-color, #888) 12%, transparent);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* ── ShrutiMap: caption ─────────────────────────────────────────────────────  */
+
+.shruti-caption {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+/* ── Ghana Patha: segment timeline ────────────────────────────────────────── */
+
+.ghana-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  background: rgba(10, 10, 20, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.ghana-seg-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 46px;
+  padding: 0.45rem 0.35rem 0.3rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--seg-color, #888);
+  background: color-mix(in srgb, var(--seg-color, #888) 10%, transparent);
+  color: var(--seg-color, #888);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ghana-seg-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--seg-color, #888);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+
+.ghana-seg-btn:hover::before { opacity: 0.08; }
+
+.ghana-seg-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--seg-color, #888) 35%, transparent);
+}
+
+.ghana-seg-btn.active {
+  background: color-mix(in srgb, var(--seg-color, #888) 22%, transparent);
+  box-shadow: 0 0 0 2px var(--seg-color, #888),
+              0 4px 18px color-mix(in srgb, var(--seg-color, #888) 45%, transparent);
+  transform: translateY(-3px);
+}
+
+.ghana-seg-icon {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ghana-seg-sim {
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.ghana-seg-time {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}

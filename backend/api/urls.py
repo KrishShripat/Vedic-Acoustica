@@ -6,4 +6,5 @@ urlpatterns = [
     path('recordings/', views.list_recordings, name='list_recordings'),
     path('recordings/<int:pk>/', views.recording_detail, name='recording_detail'),
     path('analyze/<int:pk>/', views.analyze_audio, name='analyze_audio'),
+    path('analyze/<int:pk>/status/', views.analysis_status, name='analysis_status'),
 ]

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import AudioUploader from './components/AudioUploader'
 import SpectrogramView from './components/SpectrogramView'
 import ClusterPlot from './components/ClusterPlot'
@@ -6,6 +6,7 @@ import ShrutiMap from './components/ShrutiMap'
 import GhanaPathaViz from './components/GhanaPathaViz'
 import RagaViz from './components/RagaViz'
 import AudioPlayer from './components/AudioPlayer'
+import AnalysisProgress from './components/AnalysisProgress'
 import exportReport from './utils/exportReport'
 import './App.css'
 
@@ -17,9 +18,14 @@ function App() {
   const [selectedRecording, setSelectedRecording] = useState(null)
   const [analysis, setAnalysis] = useState(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [analyzeError, setAnalyzeError] = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [chartsReady, setChartsReady] = useState(0)
   const [fetchError, setFetchError] = useState(null)
+  // Playback cursor shared between AudioPlayer → SpectrogramView
+  const [playbackTime, setPlaybackTime] = useState(null)
+  // Imperative ref to AudioPlayer — lets GhanaPathaViz call seekTo(seconds)
+  const playerRef = useRef(null)
 
   const markChartReady = useCallback(() => {
     setChartsReady(prev => (prev >= NUM_CHARTS ? prev : prev + 1))
@@ -64,17 +70,20 @@ function App() {
   const handleAnalyze = useCallback(async () => {
     if (!selectedRecording) return
     setAnalyzing(true)
+    setAnalyzeError(null)
     try {
       const res = await fetch(`${API_BASE}/analyze/${selectedRecording.id}/`, {
         method: 'POST',
       })
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
       setAnalysis(data)
       setRecordings(prev =>
         prev.map(r => r.id === selectedRecording.id ? { ...r, analysis_result: data, is_analyzed: true } : r)
       )
     } catch (err) {
       console.error('Analysis failed:', err)
+      setAnalyzeError(err.message)
     } finally {
       setAnalyzing(false)
     }
@@ -135,20 +144,44 @@ function App() {
             ))}
           </div>
           {selectedRecording && (
-            <button
-              className="btn"
-              onClick={handleAnalyze}
-              disabled={analyzing}
-              style={{ marginTop: '1rem' }}
-            >
-              {analyzing ? <><span className="loading-spinner"></span> Analyzing...</> : 'Run Analysis'}
-            </button>
+            <>
+              <button
+                className="btn"
+                onClick={handleAnalyze}
+                disabled={analyzing}
+                style={{ marginTop: '1rem' }}
+              >
+                {analyzing ? <><span className="loading-spinner" /> Analysing…</> : 'Run Analysis'}
+              </button>
+
+              {analyzing && (
+                <div style={{ marginTop: '1.25rem' }}>
+                  <AnalysisProgress
+                    recordingId={selectedRecording.id}
+                    apiBase={API_BASE}
+                    onDone={() => { /* POST response already handled above */ }}
+                    onError={(msg) => setAnalyzeError(msg)}
+                  />
+                </div>
+              )}
+
+              {analyzeError && !analyzing && (
+                <p style={{ marginTop: '0.75rem', color: '#e94560', fontSize: '0.85rem' }}>
+                  ⚠️ {analyzeError}
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
 
       {selectedRecording && (
-        <AudioPlayer audioUrl={selectedRecording.audio_file} title={selectedRecording.title} />
+        <AudioPlayer
+          ref={playerRef}
+          audioUrl={selectedRecording.audio_file}
+          title={selectedRecording.title}
+          onTimeUpdate={(t) => setPlaybackTime(t)}
+        />
       )}
 
       {analysis && (
@@ -169,7 +202,12 @@ function App() {
           <div className="grid">
             <div className="card" id="chart-spectrogram">
               <h2>Spectrogram</h2>
-              <SpectrogramView data={analysis.spectrogram_data} duration={analysis.duration} onReady={markChartReady} />
+              <SpectrogramView
+                data={analysis.spectrogram_data}
+                duration={analysis.duration}
+                onReady={markChartReady}
+                playbackTime={playbackTime}
+              />
             </div>
             <div className="card" id="chart-clusters">
               <h2>Shruti Clusters (K=22)</h2>
@@ -183,7 +221,12 @@ function App() {
             </div>
             <div className="card" id="chart-ghana-path">
               <h2>Ghana Patha Validation</h2>
-              <GhanaPathaViz data={analysis} onReady={markChartReady} />
+              <GhanaPathaViz
+                data={analysis}
+                duration={analysis.duration}
+                playerRef={playerRef}
+                onReady={markChartReady}
+              />
             </div>
           </div>
           <div className="grid">
