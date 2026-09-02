@@ -3,7 +3,10 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-zd7_tf)g$+tu+g*f*(3i6*^ug=*l+1n87_k8%+z%if0i2s4)m+'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-dev-key-replace-in-production',
+)
 
 DEBUG = True
 
@@ -80,7 +83,13 @@ MEDIA_ROOT = os.environ.get('DJANGO_MEDIA_ROOT', str(BASE_DIR / 'media'))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost',
+    'http://localhost:5173',
+    'http://127.0.0.1',
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
