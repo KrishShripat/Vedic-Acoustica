@@ -162,7 +162,7 @@ RAGA_DATABASE = [
         'swaras': [0, 2, 6, 8, 9, 11, 13],
         'arohana': [0, 2, 6, 8, 9, 11, 13, 0],
         'avarohana': [0, 13, 11, 9, 8, 6, 2, 0],
-        'vadi': 9, 'samvadi': 4,
+        'vadi': 9, 'samvadi': 6,
         'time': 'Late evening',
         'mood': 'Devotional, yearning',
     },

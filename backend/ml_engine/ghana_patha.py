@@ -282,7 +282,7 @@ def _score_against_ghana_cycle(labels):
             sub_len = len(sub)
             # Align sub against (possibly repeated) cycle using element DTW
             matches = sum(
-                sub[i] == cycle[i % c]
+                sub[i] == cycle[(start + i) % c]
                 for i in range(sub_len)
             )
             score = matches / sub_len

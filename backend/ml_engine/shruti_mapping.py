@@ -56,15 +56,19 @@ for name, ratio in zip(SHRUTI_NAMES, SHRUTI_RATIOS):
     SHRUTI_FREQUENCIES[name] = round(REFERENCE_FREQ * ratio, 2)
 
 
-def assign_shruti(mfcc_centroid, features):
-    centroid_mfcc = mfcc_centroid[0] if len(mfcc_centroid) > 0 else 0
-    estimated_freq = 261.626 * (2 ** (centroid_mfcc / 12))
+def assign_shruti(centroid, features):
+    """
+    Return the Shruti name whose bin has the highest energy in the chroma
+    portion of the K-Means cluster centroid.
 
-    min_diff = float('inf')
-    closest = None
-    for name, freq in SHRUTI_FREQUENCIES.items():
-        diff = abs(estimated_freq - freq)
-        if diff < min_diff:
-            min_diff = diff
-            closest = name
-    return closest
+    The centroid vector is laid out as [13 MFCC coefficients | 22 chroma bins]
+    so ``centroid[13:]`` is the 22-element PCP sub-vector.  The argmax of that
+    sub-vector is the dominant Shruti bin — a direct, musically meaningful
+    assignment that replaces the previous invalid formula which treated MFCC-1
+    as a semitone offset from C4.
+    """
+    import numpy as np
+    chroma_part = centroid[13:] if len(centroid) > 13 else centroid
+    if len(chroma_part) == 0:
+        return SHRUTI_NAMES[0]
+    return SHRUTI_NAMES[int(np.argmax(chroma_part)) % len(SHRUTI_NAMES)]
