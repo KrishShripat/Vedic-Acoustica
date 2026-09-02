@@ -12,13 +12,13 @@ SHRUTI_RATIOS = [
     5 / 4,        # S7  Ma1     — 327.03 Hz
     81 / 64,      # S8  Ma2     — 331.12 Hz
     4 / 3,        # S9  Ma3     — 348.83 Hz
-    729 / 512,    # S10 Pa      — 372.51 Hz
-    3 / 2,        # S11 Dha1    — 392.44 Hz
-    128 / 81,     # S12 Dha2    — 413.43 Hz
-    8 / 5,        # S13 Ni1     — 418.60 Hz
-    5 / 3,        # S14 Ni2     — 436.05 Hz
-    27 / 16,      # S15 Ni3     — 441.49 Hz
-    16 / 9,       # S16 Sa'     — 465.11 Hz
+    729 / 512,    # S10 Tivra Ma — 372.51 Hz
+    3 / 2,        # S11 Pa       — 392.44 Hz
+    128 / 81,     # S12 Dha1     — 413.43 Hz
+    8 / 5,        # S13 Dha2     — 418.60 Hz
+    5 / 3,        # S14 Ni1      — 436.05 Hz
+    27 / 16,      # S15 Ni2      — 441.49 Hz
+    16 / 9,       # S16 Ni3      — 465.11 Hz
     9 / 5,        # S17 Re'     — 470.93 Hz
     15 / 8,       # S18 Ga'     — 490.55 Hz
     243 / 128,    # S19 Ma'     — 496.68 Hz
@@ -37,12 +37,12 @@ SHRUTI_NAMES = [
     'Shruti 7 (Ma1)',
     'Shruti 8 (Ma2)',
     'Shruti 9 (Ma3)',
-    'Shruti 10 (Pa)',
-    'Shruti 11 (Dha1)',
-    'Shruti 12 (Dha2)',
-    'Shruti 13 (Ni1)',
-    'Shruti 14 (Ni2)',
-    'Shruti 15 (Ni3)',
+    'Shruti 10 (Tivra Ma)',
+    'Shruti 11 (Pa)',
+    'Shruti 12 (Dha1)',
+    'Shruti 13 (Dha2)',
+    'Shruti 14 (Ni1)',
+    'Shruti 15 (Ni2)',
     'Shruti 16 (Sa_)',
     'Shruti 17 (Re_)',
     'Shruti 18 (Ga_)',

@@ -292,9 +292,37 @@ def upload_audio(request):
 
 @api_view(['GET'])
 def list_recordings(request):
-    recordings = AudioRecording.objects.all().order_by('-uploaded_at')
-    serializer = AudioRecordingSerializer(recordings, many=True)
-    return Response(serializer.data)
+    """
+    GET /api/recordings/
+
+    Returns a paginated list of all recordings, ordered newest first.
+
+    Query parameters
+    ----------------
+    page      : int  — page number (default: 1)
+    page_size : int  — items per page (default: 20, max: 100)
+
+    Response envelope
+    -----------------
+    {
+        "count":    <total items>,
+        "next":     <url | null>,
+        "previous": <url | null>,
+        "results":  [ ... ]
+    }
+    """
+    from rest_framework.pagination import PageNumberPagination  # noqa: PLC0415
+
+    paginator = PageNumberPagination()
+    paginator.page_size = 20
+    paginator.page_size_query_param = 'page_size'
+    paginator.max_page_size = 100
+
+    qs = AudioRecording.objects.all().order_by('-uploaded_at')
+    page = paginator.paginate_queryset(qs, request)
+    serializer = AudioRecordingSerializer(page, many=True)
+    return paginator.get_paginated_response(serializer.data)
+
 
 
 @api_view(['GET'])
