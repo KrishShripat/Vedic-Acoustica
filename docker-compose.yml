@@ -1,4 +1,17 @@
 services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: ./backend
     ports:
@@ -6,10 +19,33 @@ services:
     environment:
       - DJANGO_SECRET_KEY=change-me-in-production
       - DJANGO_DEBUG=True
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - media_data:/app/media
     mem_limit: 2g
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  celery:
+    build: ./backend
+    command: celery -A vedic_acoustica worker --loglevel=info --concurrency=2
+    environment:
+      - DJANGO_SECRET_KEY=change-me-in-production
+      - DJANGO_DEBUG=True
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      # Share the same media volume so .npz files written by the worker
+      # are visible to the Django backend when serving GET responses.
+      - media_data:/app/media
+    mem_limit: 4g
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -57,3 +93,4 @@ services:
 volumes:
   media_data:
   grafana_data:
+  redis_data:

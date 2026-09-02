@@ -15,10 +15,6 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import AudioRecording
 from .serializers import AudioRecordingSerializer
-from ml_engine.audio_processing import extract_features
-from ml_engine.ml_engine import run_clustering
-from ml_engine.ghana_patha import validate_ghana_patha
-from ml_engine.raga_mapping import detect_raga
 
 
 # ---------------------------------------------------------------------------
@@ -319,7 +315,23 @@ def recording_detail(request, pk):
 
 @api_view(['POST'])
 def analyze_audio(request, pk):
-    """Run the ML pipeline, offloading heavy matrices to disk."""
+    """
+    POST /api/analyze/<pk>/
+
+    Enqueues the ML analysis pipeline as a Celery background task and
+    returns HTTP 202 Accepted immediately so the request thread is never
+    blocked.  The React frontend should then subscribe to:
+
+        GET /api/analyze/<pk>/status/   (SSE stream)
+
+    and fetch the full analysis result via:
+
+        GET /api/recordings/<pk>/       (once status == 'done')
+    """
+    # Import here (not at module top) to avoid loading Celery when Django
+    # starts in contexts where Celery is not configured (e.g. manage.py check).
+    from .tasks import process_audio_task  # noqa: PLC0415
+
     try:
         recording = AudioRecording.objects.get(pk=pk)
     except AudioRecording.DoesNotExist:
@@ -333,97 +345,22 @@ def analyze_audio(request, pk):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    try:
-        # ── Stage 1: Feature Extraction ────────────────────────────────────
-        _set_progress(pk, 'Feature Extraction', 5)
-        features = extract_features(audio_path)
-        _set_progress(pk, 'Feature Extraction', 30)
+    # Write an initial progress record so the SSE stream has something to
+    # read immediately, even before the Celery worker picks up the task.
+    _set_progress(pk, 'Queued', 0, status_val='running')
 
-        # ── Stage 2: Clustering (K=22 Shrutis) ────────────────────────────
-        _set_progress(pk, 'Shruti Clustering', 35)
-        clustering_results = run_clustering(features)
-        _set_progress(pk, 'Shruti Clustering', 60)
+    # Dispatch to the background worker — this call returns almost instantly.
+    process_audio_task.delay(recording.id)
 
-        # ── Stage 3: Ghana Patha Validation ───────────────────────────────
-        _set_progress(pk, 'Ghana Patha Validation', 65)
-        ghana_result = validate_ghana_patha(features)
-        _set_progress(pk, 'Ghana Patha Validation', 80)
+    return Response(
+        {
+            'status':       'queued',
+            'recording_id': recording.id,
+            'message':      'Analysis queued. Subscribe to the /status/ SSE stream for progress.',
+        },
+        status=status.HTTP_202_ACCEPTED,
+    )
 
-        # ── Stage 4: Raga Detection ────────────────────────────────────────
-        _set_progress(pk, 'Raga Detection', 85)
-        raga_result = detect_raga(clustering_results, features=features)
-        _set_progress(pk, 'Raga Detection', 98)
-
-    except Exception as exc:
-        _set_progress(pk, 'Error', 0, status_val='error', error=str(exc))
-        return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # ── Save heavy arrays to compressed .npz on disk ──────────────────────────
-    rel_path = _save_matrices(pk, features)
-
-    # ── Build slim metadata dict (scalars only — no matrices) ─────────────────
-    metadata = {
-        # Shruti clustering scalars
-        'shruti_clusters':                  clustering_results['shruti_clusters'],
-        'freq_assignments':                 clustering_results['freq_assignments'],
-        'mean_pcp':                         clustering_results['mean_pcp'],
-        # pYIN scalars
-        'voiced_ratio':                     features['voiced_ratio'],
-        'spectral_centroid_timeline':       features['spectral_centroid'].tolist(),
-        # Ghana Patha scalars
-        'ghana_patha_valid':                ghana_result['is_valid'],
-        'ghana_patha_confidence':           ghana_result['confidence'],
-        'ghana_patha_repetition_score':     ghana_result.get('repetition_score', 0.0),
-        'ghana_patha_n_segments':           ghana_result.get('n_segments', 0),
-        'ghana_patha_segments':             ghana_result.get('segments', []),
-        'ghana_patha_detected_pattern':     ghana_result.get('detected_pattern', []),
-        'ghana_patha_dtw_details':          ghana_result.get('dtw_details'),
-        # Raga detection (structured dict — already compact)
-        'raga_detection':                   raga_result,
-        # Audio-level scalars
-        'tempo':                            features['tempo'],
-        'duration':                         features['duration'],
-    }
-
-    # ── Persist to DB (no matrices — just path + scalars) ─────────────────────
-    recording.analysis_metadata = metadata
-    recording.matrices_file = rel_path
-    recording.analysis_result = None   # clear any legacy blob to free DB space
-    recording.is_analyzed = True
-    recording.save()
-
-    _set_progress(pk, 'Complete', 100, status_val='done')
-
-    # ── Return the full response (matrices loaded back for this request) ───────
-    # On subsequent GET requests _build_analysis_response() does the same.
-    pcp_raw: np.ndarray = features['pcp']
-    n_frames = pcp_raw.shape[1]
-    if n_frames > _MAX_PCP_COLS:
-        step = n_frames // _MAX_PCP_COLS
-        pcp_ds = pcp_raw[:, ::step][:, :_MAX_PCP_COLS]
-    else:
-        pcp_ds = pcp_raw
-
-    hop_sec = 512 / 22050
-    orig_step = max(n_frames // _MAX_PCP_COLS, 1)
-    time_axis = [round(i * hop_sec * orig_step, 3) for i in range(pcp_ds.shape[1])]
-
-    f0_track = [
-        None if np.isnan(v) else round(float(v), 3)
-        for v in features['f0']
-    ]
-
-    analysis = {
-        **metadata,
-        'pcp_data':          pcp_ds.tolist(),
-        'pcp_time_axis':     time_axis,
-        'f0_track':          f0_track,
-        'spectrogram_data':  features['spectrogram'].tolist(),
-        'mfcc_data':         features['mfcc'].tolist(),
-        'chroma_data':       features['chroma'].tolist(),
-    }
-
-    return Response(analysis)
 
 
 def analysis_status(request, pk):
