@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react'
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024
+
 export default function AudioUploader({ onUpload }) {
   const fileInputRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
@@ -7,6 +9,14 @@ export default function AudioUploader({ onUpload }) {
 
   const handleFile = async (file) => {
     if (!file) return
+    if (!file.type.startsWith('audio/')) {
+      alert('Please select an audio file.')
+      return
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 50 MB.`)
+      return
+    }
     setUploading(true)
     await onUpload(file)
     setUploading(false)
@@ -15,10 +25,7 @@ export default function AudioUploader({ onUpload }) {
   const handleDrop = (e) => {
     e.preventDefault()
     setDragOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file && file.type.startsWith('audio/')) {
-      handleFile(file)
-    }
+    handleFile(e.dataTransfer.files[0])
   }
 
   const handleDragOver = (e) => {

@@ -1,5 +1,13 @@
+import logging
+import numpy as np
 from collections import Counter
 from .shruti_mapping import SHRUTI_NAMES
+
+logger = logging.getLogger(__name__)
+
+# Minimum best-match confidence required to declare a conclusive raga match.
+# Anything below this is reported as "Inconclusive" to the client.
+CONFIDENCE_THRESHOLD = 0.40
 
 SWARA_MAP = {
     'Sa': 0, 'Re1': 1, 'Re2': 2, 'Ga1': 3, 'Ga2': 4, 'Ga3': 5,
@@ -348,10 +356,122 @@ RAGA_DATABASE = [
         'time': 'Night',
         'mood': 'Ethereal, deeply moving',
     },
+    # ── 10 new ragas (ML-6) ───────────────────────────────────────────────────
+    {
+        'name': 'Durga',
+        'tradition': 'Hindustani',
+        # Sa Re2 Ma1 Pa Dha2  (pentatonic, no Ga or Ni)
+        'swaras': [0, 2, 6, 9, 11],
+        'arohana': [0, 2, 6, 9, 11, 0],
+        'avarohana': [0, 11, 9, 6, 2, 0],
+        'vadi': 9, 'samvadi': 2,
+        'time': 'Late evening',
+        'mood': 'Bright, devotional, joyous',
+    },
+    {
+        'name': 'Shankara',
+        'tradition': 'Hindustani',
+        # Sa Ga2 Pa Ni2 (audav — omits Re and Ma)
+        'swaras': [0, 4, 9, 13, 14],
+        'arohana': [0, 4, 9, 13, 14, 0],
+        'avarohana': [0, 14, 13, 9, 4, 0],
+        'vadi': 9, 'samvadi': 4,
+        'time': 'Night',
+        'mood': 'Heroic, devotional, majestic',
+    },
+    {
+        'name': 'Charukeshi',
+        'tradition': 'Hindustani',
+        # Sa Re2 Ga2 Ma1 Pa Dha1 Ni1  (Bilawal + komal Dha & komal Ni)
+        'swaras': [0, 2, 4, 6, 9, 10, 12],
+        'arohana': [0, 2, 4, 6, 9, 10, 12, 0],
+        'avarohana': [0, 12, 10, 9, 6, 4, 2, 0],
+        'vadi': 9, 'samvadi': 4,
+        'time': 'Afternoon',
+        'mood': 'Serious, dignified, melancholic',
+    },
+    {
+        'name': 'Nata Bhairavi',
+        'tradition': 'Hindustani',
+        # Sa Re2 Ga1 Ma1 Pa Dha1 Ni1 — uses both komal Re (aroh) and shuddha Re (avaroh)
+        'swaras': [0, 2, 3, 6, 9, 10, 12],
+        'arohana': [0, 2, 3, 6, 9, 10, 12, 0],
+        'avarohana': [0, 12, 10, 9, 6, 3, 2, 0],
+        'vadi': 9, 'samvadi': 3,
+        'time': 'Evening to midnight',
+        'mood': 'Plaintive, romantic, yearning',
+    },
+    {
+        'name': 'Mand',
+        'tradition': 'Hindustani',
+        # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 — folk-flavoured Rajasthani raga
+        'swaras': [0, 2, 4, 6, 9, 11, 13],
+        'arohana': [0, 2, 4, 6, 9, 11, 13, 0],
+        'avarohana': [0, 13, 11, 9, 6, 4, 2, 0],
+        'vadi': 9, 'samvadi': 4,
+        'time': 'Night',
+        'mood': 'Folk, festive, lyrical',
+    },
+    {
+        'name': 'Madhyamavati',
+        'tradition': 'Carnatic',
+        # Sa Re2 Ma1 Pa Ni2 — pentatonic, very popular Carnatic raga
+        'swaras': [0, 2, 6, 9, 13],
+        'arohana': [0, 2, 6, 9, 13, 0],
+        'avarohana': [0, 13, 9, 6, 2, 0],
+        'vadi': 9, 'samvadi': 2,
+        'time': 'Any time',
+        'mood': 'Devotional, melodious, meditative',
+    },
+    {
+        'name': 'Vasanta',
+        'tradition': 'Carnatic',
+        # Sa Re1 Ga3 Ma2 Pa Dha1 Ni3 — vakra prayogas in both directions
+        'swaras': [0, 1, 5, 7, 9, 10, 14],
+        'arohana': [0, 5, 1, 9, 7, 14, 10, 0],
+        'avarohana': [0, 14, 10, 9, 7, 5, 1, 0],
+        'vadi': 9, 'samvadi': 5,
+        'time': 'Spring season, any time',
+        'mood': 'Joyful, festive, celebratory',
+    },
+    {
+        'name': 'Panthuvarali',
+        'tradition': 'Carnatic',
+        # Sa Re1 Ga3 Ma2 Pa Dha1 Ni3 — 51st melakarta (Kamavardhini)
+        'swaras': [0, 1, 5, 7, 9, 10, 14],
+        'arohana': [0, 1, 5, 7, 9, 10, 14, 0],
+        'avarohana': [0, 14, 10, 9, 7, 5, 1, 0],
+        'vadi': 7, 'samvadi': 1,
+        'time': 'Any time',
+        'mood': 'Serious, profound, intense',
+    },
+    {
+        'name': 'Saveri',
+        'tradition': 'Carnatic',
+        # Sa Re1 Ma1 Pa Dha1 — pentatonic (Suddha Saveri without Ni)
+        'swaras': [0, 1, 6, 9, 10],
+        'arohana': [0, 1, 6, 9, 10, 0],
+        'avarohana': [0, 10, 9, 6, 1, 0],
+        'vadi': 9, 'samvadi': 1,
+        'time': 'Morning',
+        'mood': 'Serene, devotional, gentle',
+    },
+    {
+        'name': 'Ritigowla',
+        'tradition': 'Carnatic',
+        # Sa Re1 Ga3 Ma1 Pa Dha1 Ni2 — vakra arohana, deeply emotive
+        'swaras': [0, 1, 5, 6, 9, 10, 13],
+        'arohana': [0, 1, 5, 6, 9, 10, 13, 0],
+        'avarohana': [0, 13, 10, 9, 6, 5, 1, 0],
+        'vadi': 9, 'samvadi': 5,
+        'time': 'Any time',
+        'mood': 'Devotional, tender, deeply moving',
+    },
 ]
 
 
 def _extract_detected_swaras(freq_assignments):
+    """Legacy path: build swara hits from per-frame string assignments."""
     swara_hits = Counter()
     for assignment in freq_assignments:
         if assignment is None:
@@ -363,16 +483,141 @@ def _extract_detected_swaras(freq_assignments):
     return swara_hits
 
 
-def _score_raga(detected_swaras, raga, total_frames):
+def _extract_detected_swaras_from_pcp(mean_pcp, energy_threshold=0.02):
+    """
+    Build a swara energy map from the 22-element mean PCP vector.
+
+    mean_pcp : list or array of 22 floats in [0, 1]
+        Recording-level Shruti energy fingerprint from compute_pcp().
+    energy_threshold : float
+        Shrutis with mean energy below this fraction of the max are ignored.
+
+    Returns a dict {swara_index: energy_float} for the first 15 Shrutis
+    (indices 0-14) that map to the classical SWARA_MAP.
+    """
+    import numpy as np
+    pcp = np.asarray(mean_pcp, dtype=np.float64)
+    max_energy = pcp.max()
+    if max_energy == 0:
+        return {}
+
+    # Build a fast lookup: short swara name -> PCP index
+    # SHRUTI_NAMES entries look like 'Shruti 1 (Sa)', 'Shruti 2 (Re1)', etc.
+    shruti_idx_map = {}
+    for idx, full_name in enumerate(SHRUTI_NAMES):
+        for short in SWARA_MAP:
+            if short in full_name and short not in shruti_idx_map:
+                shruti_idx_map[short] = idx
+
+    swara_energy = {}
+    for shruti_name, swara_idx in SWARA_MAP.items():
+        if shruti_name not in shruti_idx_map:
+            continue
+        energy = float(pcp[shruti_idx_map[shruti_name]])
+        if energy >= energy_threshold * max_energy:
+            swara_energy[swara_idx] = swara_energy.get(swara_idx, 0.0) + energy
+
+    return swara_energy
+
+
+def _extract_directional_swaras(pcp, f0, voiced_flag,
+                                energy_threshold=0.02,
+                                smoothing_frames=3):
+    """
+    Split PCP energy into arohana (rising F0) and avarohana (falling F0) dicts.
+
+    Uses the frame-by-frame F0 gradient to classify each voiced frame as
+    rising or falling, then accumulates PCP energy into two separate
+    {swara_idx: energy} maps.
+
+    Parameters
+    ----------
+    pcp : ndarray (22, n_frames)
+    f0  : ndarray (n_frames,) — NaN for unvoiced
+    voiced_flag : ndarray bool (n_frames,)
+    energy_threshold : float — min fraction of per-direction max to count
+    smoothing_frames : int — frames to smooth gradient over (reduces jitter)
+
+    Returns
+    -------
+    arohana_swaras   : dict {swara_idx: energy}
+    avarohana_swaras : dict {swara_idx: energy}
+    """
+    n_frames = pcp.shape[1]
+    align = min(len(f0), n_frames)
+    f0_a = np.array(f0[:align], dtype=np.float64)
+    vf_a = np.array(voiced_flag[:align], dtype=bool)
+
+    # Smooth F0 (replace NaN with 0 for gradient, then mask)
+    f0_filled = np.where(np.isnan(f0_a), 0.0, f0_a)
+    # Gradient via centered diff, smoothed over a short window
+    if align > 2 * smoothing_frames:
+        kernel = np.ones(smoothing_frames) / smoothing_frames
+        f0_smooth = np.convolve(f0_filled, kernel, mode='same')
+    else:
+        f0_smooth = f0_filled
+    gradient = np.gradient(f0_smooth)
+
+    # Build a lookup: shruti_name (short) → shruti PCP index (0-21)
+    shruti_idx_map = {}
+    for idx, full_name in enumerate(SHRUTI_NAMES):
+        for short in SWARA_MAP:
+            if short in full_name and short not in shruti_idx_map:
+                shruti_idx_map[short] = idx
+
+    aro_energy = {}    # rising (arohana) frames
+    ava_energy = {}    # falling (avarohana) frames
+
+    for frame_idx in range(align):
+        if not vf_a[frame_idx]:
+            continue
+        frame_pcp = pcp[:, frame_idx]  # (22,)
+        bucket = aro_energy if gradient[frame_idx] >= 0 else ava_energy
+        for short, swara_idx in SWARA_MAP.items():
+            if short not in shruti_idx_map:
+                continue
+            e = float(frame_pcp[shruti_idx_map[short]])
+            if e > 0:
+                bucket[swara_idx] = bucket.get(swara_idx, 0.0) + e
+
+    # Apply energy threshold per direction
+    def _threshold(d):
+        if not d:
+            return {}
+        mx = max(d.values())
+        return {k: v for k, v in d.items() if v >= energy_threshold * mx}
+
+    return _threshold(aro_energy), _threshold(ava_energy)
+
+
+def _score_raga(detected_swaras, raga,
+               arohana_swaras=None, avarohana_swaras=None,
+               total_frames=None):
+    """
+    Score a raga against detected swara energies with directional weighting.
+
+    When ``arohana_swaras`` / ``avarohana_swaras`` are supplied (split by F0
+    gradient direction), the scorer checks ascending and descending swara
+    usage separately — allowing ragas with asymmetric or vakra scales to
+    score higher than ragas whose flat swara-set looks identical.
+
+    Score components
+    ----------------
+    jaccard_total (0.25)      — overall swara-set overlap (backward compat)
+    arohana_coverage (0.25)   — fraction of raga arohana swaras detected
+                                in rising phrases
+    avarohana_coverage (0.25) — fraction of raga avarohana swaras detected
+                                in falling phrases
+    direction_penalty (0.10)  — penalise swaras used in the wrong direction
+    vadi/samvadi bonus (0.15) — dominant note prominence
+    """
     if not detected_swaras:
         return 0.0, {}
 
     raga_swaras = set(raga['swaras'])
     detected_set = set(detected_swaras.keys())
-
     intersection = raga_swaras & detected_set
     union = raga_swaras | detected_set
-
     if not union:
         return 0.0, {}
 
@@ -380,43 +625,133 @@ def _score_raga(detected_swaras, raga, total_frames):
 
     vadi = raga['vadi']
     samvadi = raga['samvadi']
+    total_weight = sum(detected_swaras.values()) or 1.0
 
-    vadi_weight = 0.0
+    vadi_bonus = 0.0
     if vadi in detected_swaras:
-        vadi_hits = detected_swaras[vadi]
-        total_hits = sum(detected_swaras.values())
-        vadi_weight = 0.3 * min(vadi_hits / max(total_hits * 0.1, 1), 1.0)
+        vadi_bonus = 0.10 * min(detected_swaras[vadi] / (total_weight * 0.1), 1.0)
 
-    samvadi_weight = 0.0
+    samvadi_bonus = 0.0
     if samvadi in detected_swaras:
-        samvadi_hits = detected_swaras[samvadi]
-        total_hits = sum(detected_swaras.values())
-        samvadi_weight = 0.15 * min(samvadi_hits / max(total_hits * 0.05, 1), 1.0)
+        samvadi_bonus = 0.05 * min(detected_swaras[samvadi] / (total_weight * 0.05), 1.0)
 
-    coverage = len(intersection) / len(raga_swaras) if raga_swaras else 0.0
+    # ── Directional coverage ──────────────────────────────────────────────────
+    # arohana: ordered list of unique swara indices (Sa=0 direction, ascending)
+    raga_aro_set = set(raga['arohana'])
+    raga_ava_set = set(raga['avarohana'])
 
-    score = min(0.45 * jaccard + 0.25 * coverage + vadi_weight + samvadi_weight, 1.0)
+    if arohana_swaras and avarohana_swaras:
+        aro_detected = set(arohana_swaras.keys())
+        ava_detected = set(avarohana_swaras.keys())
+
+        aro_coverage = (len(raga_aro_set & aro_detected) / len(raga_aro_set)
+                        if raga_aro_set else 0.0)
+        ava_coverage = (len(raga_ava_set & ava_detected) / len(raga_ava_set)
+                        if raga_ava_set else 0.0)
+
+        # Direction penalty: swaras found going UP that the raga only allows
+        # going DOWN (and vice versa).  Only penalise when the sets differ
+        # (symmetric ragas have identical arohana/avarohana so penalty = 0).
+        aro_only = raga_aro_set - raga_ava_set   # swaras exclusive to arohana
+        ava_only = raga_ava_set - raga_aro_set   # swaras exclusive to avarohana
+        wrong_aro = len(aro_only & ava_detected)  # exclusive-aro found in ava
+        wrong_ava = len(ava_only & aro_detected)  # exclusive-ava found in aro
+        max_wrong = max(len(aro_only) + len(ava_only), 1)
+        direction_penalty = 0.10 * (1.0 - (wrong_aro + wrong_ava) / max_wrong)
+
+        score = min(
+            0.25 * jaccard
+            + 0.25 * aro_coverage
+            + 0.25 * ava_coverage
+            + direction_penalty
+            + vadi_bonus + samvadi_bonus,
+            1.0
+        )
+        directional = True
+    else:
+        # Flat (non-directional) fallback — original formula
+        coverage = len(intersection) / len(raga_swaras) if raga_swaras else 0.0
+        aro_coverage = ava_coverage = coverage
+        direction_penalty = 0.0
+        score = min(
+            0.45 * jaccard + 0.25 * coverage + vadi_bonus * 3 + samvadi_bonus * 3,
+            1.0
+        )
+        directional = False
 
     return round(score, 4), {
         'matched_swaras': sorted(intersection),
         'jaccard_similarity': round(jaccard, 4),
-        'coverage': round(coverage, 4),
+        'arohana_coverage': round(aro_coverage, 4),
+        'avarohana_coverage': round(ava_coverage, 4),
+        'direction_penalty': round(direction_penalty, 4) if directional else None,
         'vadi_detected': vadi in detected_swaras,
         'samvadi_detected': samvadi in detected_swaras,
+        'directional_scoring': directional,
     }
 
 
-def detect_raga(clustering_results, min_confidence=0.25):
+def detect_raga(clustering_results, features=None, min_confidence=0.25):
+    """
+    Detect the most likely raga with arohana/avarohana directional scoring.
+
+    When ``features`` (output of extract_features) is provided and contains
+    pYIN F0 data, frames are split into rising/falling by F0 gradient and
+    scored against each raga's arohana and avarohana separately.  Falls back
+    to flat Jaccard scoring when F0 is unavailable.
+    """
+    mean_pcp = clustering_results.get('mean_pcp')
     freq_assignments = clustering_results.get('freq_assignments', [])
-    detected_swaras = _extract_detected_swaras(freq_assignments)
+
+    if mean_pcp is not None:
+        detected_swaras = _extract_detected_swaras_from_pcp(mean_pcp)
+        source = 'pcp'
+    else:
+        detected_swaras = _extract_detected_swaras(freq_assignments)
+        source = 'heuristic'
 
     if not detected_swaras:
+        reason = (
+            'No frequency data received'
+            if (not freq_assignments and mean_pcp is None)
+            else 'No valid swaras detected from frequency data'
+        )
+        logger.warning(
+            'Raga detection (%s): %s (%d frames)', source, reason, len(freq_assignments)
+        )
         return {
             'detected_swaras': [],
             'matches': [],
             'best_match': None,
+            'is_inconclusive': True,
+            'inconclusive_reason': reason,
+            'confidence_threshold': CONFIDENCE_THRESHOLD,
             'total_frames_analyzed': len(freq_assignments),
+            'reason': reason,
         }
+
+    # ── Directional swara extraction (ML-3) ───────────────────────────────────
+    arohana_swaras = None
+    avarohana_swaras = None
+    directional_available = False
+
+    if (features is not None
+            and features.get('pcp') is not None
+            and features.get('f0') is not None
+            and features.get('voiced_flag') is not None):
+        pcp = features['pcp']             # (22, n_frames)
+        f0 = features['f0']               # ndarray
+        voiced_flag = features['voiced_flag']  # ndarray bool
+        n_voiced = int(voiced_flag.sum())
+        if n_voiced >= 10:                # need enough voiced frames to be meaningful
+            arohana_swaras, avarohana_swaras = _extract_directional_swaras(
+                pcp, f0, voiced_flag
+            )
+            directional_available = bool(arohana_swaras or avarohana_swaras)
+            logger.info(
+                'Directional scoring: %d aro swaras, %d ava swaras, %d voiced frames',
+                len(arohana_swaras or {}), len(avarohana_swaras or {}), n_voiced,
+            )
 
     total_frames = len(freq_assignments)
     swara_names = {
@@ -427,7 +762,11 @@ def detect_raga(clustering_results, min_confidence=0.25):
 
     matches = []
     for raga in RAGA_DATABASE:
-        score, details = _score_raga(detected_swaras, raga, total_frames)
+        score, details = _score_raga(
+            detected_swaras, raga,
+            arohana_swaras=arohana_swaras,
+            avarohana_swaras=avarohana_swaras,
+        )
         if score >= min_confidence:
             matches.append({
                 'raga_name': raga['name'],
@@ -444,12 +783,48 @@ def detect_raga(clustering_results, min_confidence=0.25):
 
     matches.sort(key=lambda m: m['confidence'], reverse=True)
 
+    # Build directional swara summary for the API response
+    def _fmt(d):
+        return [
+            {'swara': swara_names.get(s, str(s)), 'index': s, 'energy': round(e, 4)}
+            for s, e in sorted(d.items())
+        ] if d else []
+
+    best_match = matches[0] if matches else None
+    is_inconclusive = (
+        best_match is None
+        or best_match['confidence'] < CONFIDENCE_THRESHOLD
+    )
+    inconclusive_reason: str | None = None
+    if best_match is None:
+        inconclusive_reason = 'No raga met the minimum swara-overlap threshold.'
+    elif best_match['confidence'] < CONFIDENCE_THRESHOLD:
+        inconclusive_reason = (
+            f"Best match '{best_match['raga_name']}' scored "
+            f"{best_match['confidence'] * 100:.1f}% "
+            f"(minimum required: {CONFIDENCE_THRESHOLD * 100:.0f}%). "
+            "The recording may be ambiguous, too short, or use microtonal "
+            "inflections that span multiple raga scales."
+        )
+        logger.info(
+            'Raga detection inconclusive: best=%s confidence=%.4f threshold=%.2f',
+            best_match['raga_name'], best_match['confidence'], CONFIDENCE_THRESHOLD,
+        )
+
     return {
         'detected_swaras': [
-            {'swara': swara_names.get(s, str(s)), 'index': s, 'hits': h}
-            for s, h in sorted(detected_swaras.items())
+            {'swara': swara_names.get(s, str(s)), 'index': s,
+             'weight': round(float(w), 4)}
+            for s, w in sorted(detected_swaras.items())
         ],
+        'arohana_swaras': _fmt(arohana_swaras),
+        'avarohana_swaras': _fmt(avarohana_swaras),
+        'directional_scoring': directional_available,
         'matches': matches[:5],
-        'best_match': matches[0] if matches else None,
+        'best_match': best_match,
+        'is_inconclusive': is_inconclusive,
+        'inconclusive_reason': inconclusive_reason,
+        'confidence_threshold': CONFIDENCE_THRESHOLD,
         'total_frames_analyzed': total_frames,
+        'detection_source': source,
     }

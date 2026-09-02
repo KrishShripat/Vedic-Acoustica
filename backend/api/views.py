@@ -58,14 +58,28 @@ def analyze_audio(request, pk):
     features = extract_features(audio_path)
     clustering_results = run_clustering(features)
     ghana_result = validate_ghana_patha(features)
-    raga_result = detect_raga(clustering_results)
+    raga_result = detect_raga(clustering_results, features=features)
 
     analysis = {
         'shruti_clusters': clustering_results['shruti_clusters'],
-        'dominant_frequencies': clustering_results['dominant_frequencies'],
+        # PCP + pYIN derived per-frame Shruti assignments
+        'freq_assignments': clustering_results['freq_assignments'],
+        # 22-element mean PCP vector [0, 1] — overall tonal fingerprint
+        'mean_pcp': clustering_results['mean_pcp'],
+        # pYIN F0 pitch track — null for unvoiced / silent frames
+        'f0_track': features['f0_track'],
+        # Fraction of frames detected as voiced [0, 1]
+        'voiced_ratio': features['voiced_ratio'],
         'spectral_centroid_timeline': features['spectral_centroid'].tolist(),
+        # Ghana Patha — DTW-based validation results
         'ghana_patha_valid': ghana_result['is_valid'],
         'ghana_patha_confidence': ghana_result['confidence'],
+        'ghana_patha_repetition_score': ghana_result.get('repetition_score', 0.0),
+        'ghana_patha_n_segments': ghana_result.get('n_segments', 0),
+        'ghana_patha_segments': ghana_result.get('segments', []),
+        'ghana_patha_detected_pattern': ghana_result.get('detected_pattern', []),
+        # DTW-specific diagnostics (None when legacy path used)
+        'ghana_patha_dtw_details': ghana_result.get('dtw_details'),
         'raga_detection': raga_result,
         'spectrogram_data': features['spectrogram'].tolist(),
         'mfcc_data': features['mfcc'].tolist(),

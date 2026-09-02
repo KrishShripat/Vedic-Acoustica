@@ -7,9 +7,11 @@ export default function AudioPlayer({ audioUrl, title }) {
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     if (!containerRef.current || !audioUrl) return
+    setLoadError(null)
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
@@ -25,6 +27,11 @@ export default function AudioPlayer({ audioUrl, title }) {
 
     ws.on('ready', () => {
       setDuration(ws.getDuration())
+    })
+
+    ws.on('error', (err) => {
+      console.error('WaveSurfer error:', err)
+      setLoadError(err?.message || 'Failed to load audio')
     })
 
     ws.on('audioprocess', () => {
@@ -60,14 +67,20 @@ export default function AudioPlayer({ audioUrl, title }) {
         <h2>Now Playing</h2>
         <span className="audio-player-title">{title}</span>
       </div>
-      <div className="audio-player-controls">
-        <button className="btn audio-play-btn" onClick={togglePlay}>
-          {playing ? '⏸' : '▶'}
-        </button>
-        <span className="audio-time">{formatTime(currentTime)}</span>
-        <div className="audio-waveform" ref={containerRef}></div>
-        <span className="audio-time">{formatTime(duration)}</span>
-      </div>
+      {loadError ? (
+        <p style={{ color: '#e94560', fontSize: '0.85rem', margin: '0.5rem 0' }}>
+          {loadError}
+        </p>
+      ) : (
+        <div className="audio-player-controls">
+          <button className="btn audio-play-btn" onClick={togglePlay}>
+            {playing ? '⏸' : '▶'}
+          </button>
+          <span className="audio-time">{formatTime(currentTime)}</span>
+          <div className="audio-waveform" ref={containerRef}></div>
+          <span className="audio-time">{formatTime(duration)}</span>
+        </div>
+      )}
     </div>
   )
 }

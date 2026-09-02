@@ -19,15 +19,23 @@ function App() {
   const [analyzing, setAnalyzing] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [chartsReady, setChartsReady] = useState(0)
+  const [fetchError, setFetchError] = useState(null)
 
   const markChartReady = useCallback(() => {
     setChartsReady(prev => (prev >= NUM_CHARTS ? prev : prev + 1))
   }, [])
 
   const fetchRecordings = useCallback(async () => {
-    const res = await fetch(`${API_BASE}/recordings/`)
-    const data = await res.json()
-    setRecordings(data)
+    try {
+      const res = await fetch(`${API_BASE}/recordings/`)
+      if (!res.ok) throw new Error(`Backend returned ${res.status}`)
+      const data = await res.json()
+      setRecordings(data)
+      setFetchError(null)
+    } catch (err) {
+      console.error('Failed to fetch recordings:', err)
+      setFetchError(err.message)
+    }
   }, [])
 
   useEffect(() => {
@@ -102,6 +110,14 @@ function App() {
       </div>
 
       <AudioUploader onUpload={handleUpload} />
+
+      {fetchError && (
+        <div className="card" style={{ borderColor: '#e94560', background: 'rgba(233, 69, 96, 0.08)' }}>
+          <p style={{ color: '#e94560', fontSize: '0.85rem', margin: 0 }}>
+            Could not reach backend: {fetchError}
+          </p>
+        </div>
+      )}
 
       {recordings.length > 0 && (
         <div className="card">

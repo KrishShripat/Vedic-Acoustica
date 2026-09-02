@@ -1,13 +1,14 @@
 # Vedic Acoustica
 
-**Microtonal Voice Analysis & Ghana Patha Validation using Unsupervised Machine Learning**
+**Microtonal Voice Analysis, Ghana Patha Validation & Raga Detection using Machine Learning**
 
 Vedic Acoustica is a full-stack web application that analyzes audio recordings of Vedic chants, Indian classical singing, and traditional folk music. Unlike standard speech-to-text systems, it does not recognize *what* is being spoken. Instead, it analyzes the **mathematical structure, precise frequencies, and temporal patterns** of the audio using AI/ML.
 
-The system combines modern machine learning with Indian Knowledge Systems (IKS) to automate two tasks:
+The system combines modern machine learning with Indian Knowledge Systems (IKS) to automate three core tasks:
 
-1. **22 Shruti Detection** — Maps audio frequencies onto the 22 ancient Indian microtonal scale (Shrutis) rather than the standard Western 12-semitone scale, using K-Means clustering.
-2. **Ghana Patha Validation** — Detects whether a chant follows the rigid recursive recitation pattern (1-2, 2-1, 1-2-3, 3-2-1, 1-2-3) used by ancient Vedic scholars as an oral error-correction mechanism.
+1. **22 Shruti Detection** — Maps audio frequencies onto the 22 ancient Indian microtonal scale (Shrutis) rather than the standard Western 12-semitone scale, using pYIN F0 tracking + PCP analysis + K-Means clustering.
+2. **Ghana Patha Validation** — Detects whether a chant follows the rigid recursive recitation pattern (1-2, 2-1, 1-2-3, 3-2-1, 1-2-3) used by ancient Vedic scholars as an oral error-correction mechanism, using Dynamic Time Warping (DTW).
+3. **Raga Detection** — Identifies the raga of a musical performance by analyzing swara sets, Arohana (ascending) and Avarohana (descending) directional patterns, and Vadi/Samvadi weighting across a database of 33 ragas (20 Hindustani + 13 Carnatic).
 
 ---
 
@@ -24,7 +25,7 @@ The system combines modern machine learning with Indian Knowledge Systems (IKS) 
 - [API Reference](#api-reference)
 - [Dashboard Output Guide](#dashboard-output-guide)
 - [Test Results](#test-results)
-- [Docker Containerization](#docker-containerization)
+- [Docker & DevOps](#docker--devops)
 - [Kubernetes Deployment](#kubernetes-deployment)
 - [Monitoring](#monitoring)
 - [Development](#development)
@@ -43,7 +44,9 @@ Before written texts existed, ancient scholars preserved massive volumes of Vedi
 
 This acts as a built-in data redundancy and error-correction mechanism — similar to a modern checksum or hash. If a single syllable is missed or distorted, the mathematical rhythm collapses.
 
-**Vedic Acoustica automates the detection of both of these acoustic properties** using unsupervised machine learning, eliminating the need for human experts to manually verify each recording.
+In Indian classical music, **Raga identification** goes beyond just the notes used — it considers the ascending (Arohana) and descending (Avarohana) scale patterns, which can be asymmetric. A raga like Bhairav uses different swaras going up versus going down.
+
+**Vedic Acoustica automates the detection of all three of these acoustic properties** using machine learning, eliminating the need for human experts to manually verify each recording.
 
 ---
 
@@ -90,32 +93,107 @@ Ghana Patha sequence: A-B, B-A, A-B-C, C-B-A, A-B-C
                    1-2   2-1  1-2-3    3-2-1    1-2-3
 ```
 
-The algorithm validates this by:
+The algorithm validates this using Dynamic Time Warping (DTW):
 1. Dividing audio into 1-second segments
-2. Computing a self-similarity matrix (cosine similarity between all segment pairs)
-3. Measuring the repetition score (fraction of pairs with >0.7 similarity)
-4. Clustering segments into phrase types and checking for the Ghana recursion pattern
+2. Computing PCP (Pitch-Class Profile) features for each segment
+3. Matching segments against forward/reverse phrase templates via DTW
+4. Scoring the expected [fwd, rev, fwd, rev, fwd] Ghana cycle
+5. Measuring repetition score via pairwise DTW similarity between non-adjacent segments
+
+### Raga Detection (Directional Scoring)
+
+The system contains a database of **33 ragas**:
+
+**Hindustani (20):** Yaman, Bilawal, Bhupali, Bhairav, Malkauns, Darbari Kanada, Khamaj, Kafi, Asavari, Poorvi, Todi, Puriya, Marwa, Bhairavi, Kedar, Megh, Jhinjhoti, Rageshree, Bihag, Sindhi Bhairavi
+
+**Carnatic (13):** Shankarabharanam, Kharaharapriya, Mayamalavagowla, Sri Raga, Kalyani, Todi, Bhairavi, Kambhoji, Abhogi, Hamsadhwani, Chakravakam, Kapi, Latangi, Mechakalyani
+
+Each raga is defined by:
+- **Swaras** — The set of notes (Sa, Re, Ga, Ma, Pa, Dha, Ni) with specific variants
+- **Arohana** — The ascending scale pattern
+- **Avarohana** — The descending scale pattern
+- **Vadi** — The most prominent note (king note)
+- **Samvadi** — The second most prominent note (minister note)
+
+The detection uses **5-component scoring**:
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Total swara overlap (Jaccard) | 0.25 | How many of the detected swaras match this raga's set |
+| Arohana coverage | 0.25 | How many ascending-direction swaras match this raga's ascending scale |
+| Avarohana coverage | 0.25 | How many descending-direction swaras match this raga's descending scale |
+| Direction penalty | 0.10 | Penalty for swaras appearing in wrong direction |
+| Vadi/Samvadi bonus | 0.15 | Bonus if the most prominent notes match |
 
 ---
 
 ## Machine Learning Pipeline
 
-### Step 1: Audio Feature Extraction (`ml_engine/audio_processing.py`)
+The ML pipeline flows through five stages:
 
-Raw audio cannot be fed directly into ML models. The system uses **librosa** to extract three types of features:
+```
+Audio Input
+    │
+    ▼
+┌─────────────────────────────────┐
+│  Stage 1: Feature Extraction     │
+│  (audio_processing.py)           │
+│                                  │
+│  • pYIN F0 tracking              │──→ F0 pitch contour + voiced/unvoiced
+│  • PCP computation               │──→ 22-bin Pitch-Class Profile
+│  • MFCC extraction               │──→ Timbre features
+│  • Spectral centroid             │──→ Spectral shape
+│  • STFT spectrogram             │──→ Time-frequency matrix
+└──────────────┬──────────────────┘
+               │
+    ┌──────────┼──────────┐
+    │          │          │
+    ▼          ▼          ▼
+┌────────┐ ┌────────┐ ┌────────┐
+│ Stage 2│ │ Stage 3│ │ Stage 4│
+│ Shruti │ │ Ghana  │ │ Raga   │
+│ Assign │ │ Patha  │ │ Detect │
+│        │ │ (DTW)  │ │ (Dir.) │
+└───┬────┘ └───┬────┘ └───┬────┘
+    │          │          │
+    └──────────┼──────────┘
+               │
+               ▼
+    ┌─────────────────┐
+    │   API Response   │
+    │  (JSON export)   │
+    └─────────────────┘
+```
+
+### Stage 1: Audio Feature Extraction (`ml_engine/audio_processing.py`)
+
+Raw audio is loaded via **librosa** and processed through multiple feature extractors:
 
 | Feature | Function | Purpose |
 |---------|----------|---------|
+| **F0 Pitch Contour** | `extract_f0()` — `librosa.pyin()` | Monophonic pitch tracking with voiced/unvoiced decision per frame. Uses `librosa.pyin()` with fmin=65Hz, fmax=2093Hz for 22 Shruti range |
+| **PCP (Pitch-Class Profile)** | `compute_pcp()` | 22-bin energy profile computed from STFT with harmonic accumulation. pYIN F0 is fused into PCP for voiced frames (F0 bin gets direct energy), providing accurate microtonal pitch information |
 | **MFCCs** | `librosa.feature.mfcc()` | 13 Mel-Frequency Cepstral Coefficients capturing timbre, vocal tract shape, and resonance |
-| **Chroma (22-bin)** | `librosa.feature.chroma_stft(n_chroma=22)` | Projects audio energy onto 22 pitch classes (not the standard 12), enabling Shruti-level resolution |
-| **Spectral Centroid** | `librosa.feature.spectral_centroid()` | Measures the "center of mass" of the sound spectrum, crucial for echo and resonance analysis |
+| **Chroma (22-bin)** | `librosa.feature.chroma_stft(n_chroma=22)` | Projects audio energy onto 22 pitch classes for clustering input |
+| **Spectral Centroid** | `librosa.feature.spectral_centroid()` | Measures the "center of mass" of the sound spectrum |
 
 Additional outputs:
 - **STFT Spectrogram** — Time-frequency matrix for visualization
-- **Dominant Frequencies** — Per-frame peak frequency via scipy.signal.stft
 - **Tempo** — Beat detection via `librosa.beat.beat_track()`
 
-### Step 2: K-Means Clustering (`ml_engine/ml_engine.py`)
+**F0 + PCP Fusion Logic:**
+```
+For each frame:
+  if frame is voiced (from pYIN):
+      PCP[F0_bin] += F0_confidence    # Direct pitch energy injection
+  else:
+      PCP from STFT harmonics only     # Fallback for unvoiced/silent frames
+```
+
+This hybrid approach ensures accurate pitch detection for voiced speech while maintaining graceful degradation for unvoiced frames.
+
+### Stage 2: Shruti Clustering & Assignment (`ml_engine/ml_engine.py`)
+
+**K-Means Clustering:**
 
 The combined MFCC + Chroma feature vectors are passed to **scikit-learn's KMeans** with `n_clusters=22`:
 
@@ -123,21 +201,51 @@ The combined MFCC + Chroma feature vectors are passed to **scikit-learn's KMeans
 KMeans(n_clusters=22, random_state=42, n_init=10)
 ```
 
-This groups similar frequency frames into 22 piles, each corresponding to one Shruti. The output includes:
+**Per-Frame Shruti Assignment:**
+
+For each audio frame, the system assigns a Shruti using a priority-based approach:
+1. **Voiced frames (F0 available):** Map F0 frequency to the nearest Shruti bin
+2. **Unvoiced/silent frames (no F0):** Use PCP argmax (highest energy bin) as fallback
+
+Output:
 - Cluster labels for every audio frame
 - Cluster centroids (the "average" frequency profile of each Shruti)
-- Per-frame dominant frequency mapped to the closest Shruti
+- Per-frame Shruti assignments
+- Mean PCP vector (22-element energy profile)
 
-### Step 3: Ghana Patha Validation (`ml_engine/ghana_patha.py`)
+### Stage 3: Ghana Patha Validation (`ml_engine/ghana_patha.py`)
 
-Uses a multi-signal approach:
+Uses **Dynamic Time Warping (DTW)** for tempo-invariant pattern matching:
 
-1. **Self-Similarity Matrix** — Computes cosine similarity between all pairs of 1-second audio segments
-2. **Repetition Score** — Fraction of off-diagonal pairs with similarity > 0.7
-3. **Phrase Clustering** — K-Means (K=3) groups segments into 3 phrase types
-4. **Pattern Matching** — Checks if the phrase sequence matches the Ghana recursion
+1. **PCP Segmentation** — Audio is divided into 1-second segments, each with a 22-element PCP vector
+2. **Phrase Templates** — Idealized PCP unit vectors represent forward (ascending) and reverse (descending) Ghana phrases
+3. **DTW Matching** — Each segment is compared against forward/reverse templates using normalized DTW with cosine similarity cost
+4. **Cycle Scoring** — The expected Ghana cycle `[fwd, rev, fwd, rev, fwd]` is slid over detected segment labels
+5. **Repetition Score** — Pairwise DTW similarity between non-adjacent segments measures repetition strength
 
-**Combined Confidence** = 0.5 * Repetition Score + 0.5 * Pattern Match Score
+**Combined Confidence** = 0.45 * Repetition Score + 0.55 * Pattern Match Score
+
+**Key advantage over cosine similarity:** DTW handles tempo variations, so a Ghana Patha chant that is faster or slower than the template will still match correctly.
+
+### Stage 4: Raga Detection (`ml_engine/raga_mapping.py`)
+
+**Directional Swara Extraction:**
+
+1. Compute F0 gradient (pitch slope) from pYIN F0 track
+2. Split audio frames into ascending (F0 rising) and descending (F0 falling) segments
+3. Extract swara energy maps separately for ascending and descending directions
+
+**5-Component Raga Scoring:**
+
+| Component | Weight | How it works |
+|-----------|--------|--------------|
+| Total swara overlap | 0.25 | Jaccard similarity between detected swara set and raga's swara set |
+| Arohana coverage | 0.25 | Fraction of raga's ascending scale present in ascending frames |
+| Avarohana coverage | 0.25 | Fraction of raga's descending scale present in descending frames |
+| Direction penalty | 0.10 | Penalizes swaras that appear in the wrong direction |
+| Vadi/Samvadi bonus | 0.15 | Bonus when the most prominent detected notes match the raga's key notes |
+
+Returns **top 5 raga matches** with confidence scores, along with arohana/avarohana scale strips showing which swaras were detected.
 
 ---
 
@@ -147,14 +255,20 @@ Uses a multi-signal approach:
 ┌─────────────────────────────────────────────────────────┐
 │                     USER BROWSER                        │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │         React Frontend (Port 80 via Nginx)        │  │
+│  │        React Frontend (Port 80 via Nginx)         │  │
+│  │                                                   │  │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐          │  │
 │  │  │ Audio    │ │ Spectro- │ │ Cluster  │          │  │
 │  │  │ Uploader │ │ gram     │ │ Plot     │          │  │
 │  │  └──────────┘ └──────────┘ └──────────┘          │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐          │  │
+│  │  │ Shruti   │ │ Ghana    │ │ Raga     │          │  │
+│  │  │ Map      │ │ Patha    │ │ Detection│          │  │
+│  │  └──────────┘ └──────────┘ └──────────┘          │  │
+│  │                                                   │  │
 │  │  ┌──────────┐ ┌──────────────────────┐            │  │
-│  │  │ Shruti   │ │ Ghana Patha          │            │  │
-│  │  │ Map      │ │ Validation           │            │  │
+│  │  │ Audio    │ │ PDF Export           │            │  │
+│  │  │ Player   │ │                      │            │  │
 │  │  └──────────┘ └──────────────────────┘            │  │
 │  └──────────────────────┬────────────────────────────┘  │
 └─────────────────────────┼───────────────────────────────┘
@@ -169,20 +283,23 @@ Uses a multi-signal approach:
 ┌─────────────────────────────────────────────────────────┐
 │     Django Backend (Port 8000, Gunicorn + 2 workers)    │
 │  ┌─────────────┐  ┌──────────────────────────────────┐ │
-│  │ DRF API     │  │         ML Engine                 │ │
-│  │ /api/upload │  │  ┌─────────────┐                 │ │
-│  │ /api/list   │→│  │ librosa     │ Feature Extract  │ │
-│  │ /api/analyze│  │  └──────┬──────┘                 │ │
-│  │             │  │         ▼                         │ │
-│  │ SQLite DB   │  │  ┌─────────────┐                 │ │
-│  │             │  │  │ scikit-learn│ K-Means K=22     │ │
-│  └─────────────┘  │  └──────┬──────┘                 │ │
-│                   │         ▼                         │ │
-│                   │  ┌─────────────┐                 │ │
-│                   │  │ Ghana Patha │ Pattern Valid.   │ │
-│                   │  │ Validator   │                  │ │
-│                   │  └─────────────┘                 │ │
-│                   └──────────────────────────────────┘ │
+│  │ DRF API     │  │         ML Engine                  │ │
+│  │ /api/upload │  │  ┌──────────────┐                 │ │
+│  │ /api/list   │→│  │ Feature Ext. │ pYIN + PCP      │ │
+│  │ /api/analyze│  │  └──────┬───────┘                 │ │
+│  │             │  │         ▼                          │ │
+│  │ SQLite DB   │  │  ┌──────────────┐                 │ │
+│  │             │  │  │ K-Means      │ K=22 Clusters   │ │
+│  │             │  │  └──────┬───────┘                 │ │
+│  │             │  │         ▼                          │ │
+│  │             │  │  ┌──────────────┐                 │ │
+│  │             │  │  │ Ghana Patha  │ DTW Matching    │ │
+│  │             │  │  └──────┬───────┘                 │ │
+│  │             │  │         ▼                          │ │
+│  │             │  │  ┌──────────────┐                 │ │
+│  │             │  │  │ Raga Detect  │ Directional     │ │
+│  │             │  │  └──────────────┘                 │ │
+│  └─────────────┘  └──────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -192,18 +309,21 @@ Uses a multi-signal approach:
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Frontend UI** | React 19 + Vite | User interface, drag-drop upload, interactive charts |
-| **Charts** | Plotly.js (react-plotly.js) | Spectrogram heatmap, cluster bar chart, frequency map, pattern timeline |
-| **API Client** | Axios | HTTP communication between React and Django |
-| **Reverse Proxy** | Nginx | Serves React build, proxies /api/ requests to backend |
-| **Backend API** | Django 6 + Django REST Framework | REST endpoints for upload, list, analyze |
-| **ML Engine** | librosa 0.11, scikit-learn 1.9 | Audio feature extraction, K-Means clustering |
-| **Scientific Computing** | numpy, scipy | Numerical operations, STFT computation |
+| **Frontend UI** | React 19 + Vite 8 | User interface, drag-drop upload, interactive charts |
+| **Charts** | Plotly.js (react-plotly.js) | Spectrogram heatmap, cluster bar chart, PCP energy map, raga confidence bars |
+| **Audio Player** | WaveSurfer.js 7 | Waveform visualization with play/pause controls |
+| **PDF Export** | jsPDF | Landscape A4 reports with embedded chart screenshots |
+| **HTTP Client** | Axios / Fetch | API communication between React and Django |
+| **Reverse Proxy** | Nginx | Serves React build, proxies /api/ and /media/ to backend |
+| **Backend API** | Django 6 + Django REST Framework 3.17 | REST endpoints for upload, list, analyze |
+| **ML Engine** | librosa 0.11, scikit-learn 1.9 | Audio feature extraction, pYIN F0, PCP, K-Means clustering, DTW |
+| **Scientific Computing** | numpy 2.4, scipy 1.18 | Numerical operations, STFT computation, DTW cost matrices |
 | **Database** | SQLite (development) | Stores recordings and analysis results |
-| **Containerization** | Docker + Docker Compose | Isolated environments for frontend and backend |
-| **Orchestration** | Kubernetes (Minikube) | Container orchestration manifests |
-| **CI/CD** | GitHub Actions | Automated build, test, and deploy pipeline |
-| **Monitoring** | Prometheus + Grafana | Server metrics, CPU usage, request latency |
+| **Linting** | Oxlint | Frontend linting with React rules |
+| **Containerization** | Docker + Docker Compose | Isolated environments for all services |
+| **Orchestration** | Kubernetes (Minikube) | Container orchestration with monitoring |
+| **CI/CD** | GitHub Actions | Automated build, test, and Docker image push |
+| **Monitoring** | Prometheus + Grafana | Server metrics, CPU usage, request latency, API rate |
 
 ---
 
@@ -211,64 +331,81 @@ Uses a multi-signal approach:
 
 ```
 Vedic-Acoustica/
-├── backend/                        # Django + ML Engine
-│   ├── vedic_acoustica/            # Django project settings
-│   │   ├── settings.py             # Configuration (apps, DB, CORS, media)
-│   │   ├── urls.py                 # Root URL routing
-│   │   ├── wsgi.py                 # WSGI entry point
-│   │   └── asgi.py                 # ASGI entry point
-│   ├── api/                        # Django app — REST API
-│   │   ├── models.py               # AudioRecording model
-│   │   ├── serializers.py          # DRF serializers
-│   │   ├── views.py                # Upload, list, analyze endpoints
-│   │   └── urls.py                 # API URL routes
-│   ├── ml_engine/                  # Django app — ML Pipeline
-│   │   ├── audio_processing.py     # librosa feature extraction
-│   │   ├── ml_engine.py            # K-Means clustering
-│   │   ├── shruti_mapping.py       # 22 Shruti frequency table
-│   │   └── ghana_patha.py          # Ghana Patha pattern validator
-│   ├── migrations/                 # Database migrations
-│   ├── manage.py                   # Django CLI
-│   ├── requirements.txt            # Python dependencies
-│   ├── Dockerfile                  # Backend container image
-│   └── .dockerignore               # Excludes venv, __pycache__, etc.
+├── backend/                            # Django + ML Engine
+│   ├── vedic_acoustica/                # Django project settings
+│   │   ├── settings.py                 # Configuration (apps, DB, CORS, media)
+│   │   ├── urls.py                     # Root URL routing
+│   │   ├── wsgi.py                     # WSGI entry point
+│   │   └── asgi.py                     # ASGI entry point
+│   ├── api/                            # Django app — REST API
+│   │   ├── models.py                   # AudioRecording model
+│   │   ├── serializers.py              # DRF serializers
+│   │   ├── views.py                    # Upload, list, analyze endpoints
+│   │   ├── urls.py                     # API URL routes
+│   │   ├── tests.py                    # API tests (3 tests)
+│   │   └── metrics.py                  # Prometheus metrics middleware
+│   ├── ml_engine/                      # Django app — ML Pipeline
+│   │   ├── audio_processing.py         # pYIN F0 + PCP + MFCC extraction
+│   │   ├── ml_engine.py                # K-Means clustering + Shruti assignment
+│   │   ├── shruti_mapping.py           # 22 Shruti frequency table
+│   │   ├── ghana_patha.py              # DTW-based Ghana Patha validation
+│   │   └── raga_mapping.py             # Directional Raga detection (33 ragas)
+│   ├── datasets/                       # Processed audio samples
+│   ├── requirements.txt                # Python dependencies
+│   ├── Dockerfile                      # Backend container (python:3.13-slim)
+│   └── .dockerignore
 │
-├── frontend/                       # React + Vite
+├── frontend/                           # React + Vite
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── AudioUploader.jsx   # Drag-drop file upload
-│   │   │   ├── SpectrogramView.jsx # Time-frequency heatmap (Plotly)
-│   │   │   ├── ClusterPlot.jsx     # K-Means cluster bar chart
-│   │   │   ├── ShrutiMap.jsx       # 22 Shruti frequency bars
-│   │   │   └── GhanaPathaViz.jsx   # Pattern validation result + timeline
-│   │   ├── App.jsx                 # Main app — state management, API calls
-│   │   ├── App.css                 # Component styles
-│   │   ├── index.css               # Global dark theme
-│   │   └── main.jsx                # React entry point
-│   ├── index.html                  # HTML template
-│   ├── vite.config.js              # Vite config with API proxy
-│   ├── package.json                # Node.js dependencies
-│   ├── nginx.conf                  # Nginx config for production
-│   ├── Dockerfile                  # Multi-stage: build + Nginx
-│   └── .dockerignore               # Excludes node_modules, dist
+│   │   │   ├── AudioUploader.jsx       # Drag-drop file upload (50MB max)
+│   │   │   ├── AudioPlayer.jsx         # WaveSurfer.js waveform player
+│   │   │   ├── SpectrogramView.jsx     # Plotly time-frequency heatmap
+│   │   │   ├── ClusterPlot.jsx         # K-Means cluster bar chart
+│   │   │   ├── ShrutiMap.jsx           # 22 Shruti PCP energy bars
+│   │   │   ├── GhanaPathaViz.jsx       # Ghana Patha validation + DTW scores
+│   │   │   └── RagaViz.jsx             # Raga detection + scale strips
+│   │   ├── utils/
+│   │   │   └── exportReport.js         # PDF report generator (jsPDF)
+│   │   ├── App.jsx                     # Main app — state management, API calls
+│   │   ├── App.css                     # Component styles
+│   │   ├── index.css                   # Global dark theme
+│   │   └── main.jsx                    # React entry point
+│   ├── index.html                      # HTML template
+│   ├── vite.config.js                  # Vite config with API proxy
+│   ├── package.json                    # Node.js dependencies
+│   ├── nginx.conf                      # Nginx config for production
+│   ├── Dockerfile                      # Multi-stage: node build + nginx serve
+│   └── .dockerignore
 │
-├── k8s/                            # Kubernetes manifests
-│   ├── backend-deployment.yml      # Backend Deployment + Service
-│   ├── frontend-deployment.yml     # Frontend Deployment + Service
-│   └── services.yml                # Secret + Ingress
+├── k8s/                                # Kubernetes manifests
+│   ├── backend-deployment.yml          # Backend Deployment + Service + PVC
+│   ├── frontend-deployment.yml         # Frontend Deployment + Service
+│   ├── services.yml                    # Secret + Ingress
+│   └── monitoring/
+│       ├── node-exporter.yml           # DaemonSet + Service
+│       ├── prometheus.yml              # ConfigMap + Deployment + Service
+│       ├── grafana.yml                 # Deployment + Service + ConfigMaps
+│       └── grafana-dashboard.yml       # Dashboard JSON as ConfigMap
 │
-├── monitoring/                     # DevOps monitoring
-│   ├── prometheus.yml              # Prometheus scrape config
-│   └── grafana-dashboard.json      # Grafana dashboard JSON
+├── monitoring/                         # Docker Compose monitoring configs
+│   ├── prometheus.yml                  # Scrape config
+│   ├── grafana-datasource.yml          # Prometheus datasource
+│   ├── grafana-provisioning.yml        # Dashboard provider
+│   └── grafana-dashboard.json          # Grafana dashboard (6 panels)
 │
-├── test_audio/                     # Sample recordings for testing
-│   ├── isavasya_ghanam_60s.wav     # Ghana Patha recording (60s)
-│   ├── rudram_60s.wav              # Samhita Patha recording (60s)
-│   └── test_10s.wav                # Quick test clip (10s)
+├── test_audio/                         # Sample recordings
+│   ├── isavasya_ghanam_60s.wav         # Ghana Patha recording (60s)
+│   ├── isavasya_ghanam.ogg             # Same chant, OGG format
+│   ├── rudram_60s.wav                  # Samhita Patha recording (60s)
+│   ├── rudram.mp3                      # Same chant, MP3 format
+│   └── test_10s.wav                    # Quick test clip (10s)
 │
-├── docker-compose.yml              # Full stack: backend + frontend + monitoring
-├── .gitignore                      # Git ignore rules
-└── README.md                       # This file
+├── docker-compose.yml                  # Full stack orchestration (5 services)
+├── .github/workflows/
+│   ├── ci.yml                          # CI: backend test + frontend lint/build
+│   └── cd.yml                          # CD: Docker build + push to GHCR
+└── README.md                           # This file
 ```
 
 ---
@@ -332,14 +469,17 @@ Dashboard runs at http://localhost:5173
 ## Usage
 
 1. Open the dashboard in your browser
-2. **Upload** — Drag-drop a `.wav` file or click the upload zone
+2. **Upload** — Drag-drop an audio file or click the upload zone
 3. **Select** — Click on the recording in the list
 4. **Analyze** — Click the "Run Analysis" button
-5. **View Results** — Four interactive charts appear:
+5. **View Results** — Six interactive visualizations appear:
    - Spectrogram (time-frequency heatmap)
    - Shruti Clusters (K=22 bar chart)
-   - 22 Shruti Frequency Map
-   - Ghana Patha Validation
+   - 22 Shruti PCP Energy Map
+   - Ghana Patha Validation (DTW-based)
+   - Raga Detection (directional scoring)
+   - Audio Player with waveform
+6. **Export** — Generate a PDF report with all chart screenshots
 
 ### Supported Audio Formats
 
@@ -361,6 +501,7 @@ WAV, MP3, FLAC, OGG (anything librosa can load)
 | `GET` | `/api/recordings/` | — | Array of all recordings |
 | `GET` | `/api/recordings/<id>/` | — | Single recording with analysis |
 | `POST` | `/api/analyze/<id>/` | — | Full ML analysis JSON |
+| `GET` | `/metrics` | — | Prometheus metrics (text format) |
 
 **Example: Upload**
 ```bash
@@ -381,12 +522,29 @@ curl -X POST http://localhost:8000/api/analyze/1/
     "shruti_1": { "frame_count": 25, "centroid": [...], "assigned_shruti": "Sa" },
     "...": "..."
   },
-  "dominant_frequencies": [261.5, 329.8, "..."],
+  "freq_assignments": [
+    { "frame": 0, "frequency": 261.5, "shruti": "Sa", "method": "f0" },
+    { "frame": 1, "frequency": 294.3, "shruti": "Ga1", "method": "pcp" }
+  ],
+  "mean_pcp": [0.12, 0.08, "..."],
+  "f0_track": [261.5, 263.1, "null", "..."],
+  "voiced_ratio": 0.72,
   "spectral_centroid_timeline": [1523.4, 1601.2, "..."],
   "ghana_patha_valid": true,
-  "ghana_patha_confidence": 0.68,
-  "repetition_score": 1.0,
-  "self_similarity": 0.96,
+  "ghana_patha_confidence": 0.73,
+  "ghana_patha_repetition_score": 0.81,
+  "ghana_patha_n_segments": 15,
+  "ghana_patha_segments": [
+    { "segment": 0, "dtw_forward": 0.85, "dtw_reverse": 0.32, "label": "forward" }
+  ],
+  "ghana_patha_detected_pattern": ["forward", "reverse", "forward", "reverse", "forward"],
+  "ghana_patha_dtw_details": { "...": "..." },
+  "raga_detection": {
+    "best_match": { "name": "Yaman", "tradition": "Hindustani", "confidence": 0.72 },
+    "all_scores": [ { "name": "...", "confidence": 0.65 } ],
+    "arohana_detected": ["Sa", "Re", "Ga", "Ma"],
+    "avarohana_detected": ["Pa", "Dha", "Ni", "Sa"]
+  },
   "spectrogram_data": [[...], "..."],
   "mfcc_data": [[...], "..."],
   "chroma_data": [[...], "..."],
@@ -424,25 +582,45 @@ Shows how many audio frames were assigned to each of the 22 Shruti clusters by K
   - Many tall bars = wide microtonal range (melodic singing)
   - The `assigned_shruti` field maps each cluster to its classical name (Sa, Re1, Ga2, etc.)
 
-### 3. 22 Shruti Frequency Map (Bottom Left)
+### 3. 22 Shruti PCP Energy Map (Middle Left)
 
-The theoretical reference scale showing all 22 Shruti frequencies, with detected hits highlighted.
+The Pitch-Class Profile energy distribution across all 22 Shruti bins. This is computed from harmonic STFT analysis fused with pYIN F0 tracking.
 
 - **X-axis:** Shruti names (Sa, Re1, Re2, Ga1, ..., Ni')
-- **Y-axis:** Frequency in Hz (reference: Sa = 261.63 Hz)
-- **Color:** Red/pink = detected hits, Gray = undetected
+- **Y-axis:** Relative energy (0-100%)
+- **Color:** Teal = low energy, Amber/Orange = high energy
 - **What to look for:**
-  - Red bars indicate which Shruti frequencies were actually present in the audio
-  - This serves as the IKS theoretical reference benchmark
+  - Hot (amber) bars = Shruti microtones with the most energy in the recording
+  - Even distribution = melodic content across many notes
+  - Concentrated peaks = specific Shruti frequencies dominating
 
-### 4. Ghana Patha Validation (Bottom Right)
+### 4. Ghana Patha Validation (Middle Right)
 
-Displays whether the audio follows the Ghana Patha recursive pattern.
+Displays whether the audio follows the Ghana Patha recursive pattern using DTW-based matching.
 
-- **Green checkmark** = Pattern Valid (audio has recursive repetition structure)
-- **Red X** = Pattern Invalid (audio is linear/folk/melodic)
-- **Confidence %** = Combined score from repetition analysis + pattern matching
-- **Detected vs Expected pattern** = If valid, shows the actual vs expected sequence
+- **Green badge** = Pattern Valid (audio has recursive repetition structure)
+- **Red badge** = Pattern Invalid (audio is linear/folk/melodic)
+- **Confidence %** = Combined score from repetition analysis + DTW pattern matching
+- **Segment Timeline** = Scatter plot showing forward vs reverse labels per segment
+- **DTW Details** = Per-segment DTW distances for forward and reverse templates
+
+### 5. Raga Detection (Bottom Left)
+
+Identifies the raga using directional arohana/avarohana scoring.
+
+- **Best Match** = Top raga with name, tradition (Hindustani/Carnatic), and confidence
+- **Scale Strips** = Visual representation of Arohana (ascending) and Avarohana (descending) scales with detected swaras highlighted
+- **Vadi/Samvadi** = The king and minister notes of the detected raga
+- **Candidate List** = Other potential ragas ranked by confidence score
+- **Bar Chart** = Plotly visualization of top 5 raga confidence scores
+
+### 6. Audio Player (Bottom Right)
+
+WaveSurfer.js-based waveform player for listening to the uploaded audio.
+
+- **Waveform** = Visual representation of the audio amplitude over time
+- **Play/Pause** = Toggle playback
+- **Time Display** = Current position / total duration
 
 ---
 
@@ -450,73 +628,81 @@ Displays whether the audio follows the Ghana Patha recursive pattern.
 
 ### Three-Tier Validation Matrix
 
-| Audio File | Category | Result | Confidence | What It Proves |
-|-----------|----------|--------|------------|----------------|
-| Kumaoni Folk Song | Non-Vedic folk | Pattern Invalid | 30% | Correctly rejects non-structured melody |
-| `rudram_60s.wav` | Vedic (Samhita Patha) | Pattern Invalid | 65% | Distinguishes linear chanting from Ghana Patha |
-| `isavasya_ghanam_60s.wav` | Vedic (Ghana Patha) | Pattern Valid | 68% | Correctly detects recursive 1-2, 2-1 loops |
+| Audio File | Category | Ghana Patha | Raga Detection | Confidence |
+|-----------|----------|-------------|----------------|------------|
+| Kumaoni Folk Song | Non-Vedic folk | Pattern Invalid | — | 30% |
+| `rudram_60s.wav` | Vedic (Samhita Patha) | Pattern Invalid | Detected Bhairav | 65% |
+| `isavasya_ghanam_60s.wav` | Vedic (Ghana Patha) | Pattern Valid | — | 68% |
 
-### Why These Results Matter
+### DTW Tempo Invariance Test
 
-The algorithm is **not returning random guesses**. It correctly:
-- Rejects folk music (no recursive structure)
-- Rejects linear Vedic chanting (Samhita Patha — sequential, not recursive)
-- Accepts Ghana Patha (the specific back-and-forth mathematical pattern)
+A 3× time-stretched version of a Ghana Patha recording was tested against the original. The DTW algorithm correctly matched the pattern despite the tempo difference, confirming tempo-invariance.
 
-This three-tier comparison demonstrates genuine audio structural analysis, not hardcoded responses.
+### Raga Directional Scoring Test
+
+Four ragas with similar swara sets but different arohana/avarohana patterns were tested. The directional scoring correctly differentiated them by analyzing pitch gradient direction.
 
 ---
 
-## Docker Containerization
+## Docker & DevOps
 
 ### Dockerfiles
 
 **Backend (`backend/Dockerfile`):**
 - Base image: `python:3.13-slim`
-- Installs `libsndfile1` (audio library dependency)
+- Installs `libsndfile1` (audio library dependency for `soundfile`/`librosa`)
 - Installs all Python packages from `requirements.txt`
 - Runs `collectstatic` and `migrate` at build time
 - Serves via Gunicorn with 2 workers, 120s timeout, preload mode
 
 **Frontend (`frontend/Dockerfile`):**
 - Multi-stage build:
-  - Stage 1 (`node:20-alpine`): Builds React app with Vite
+  - Stage 1 (`node:20-alpine`): Builds React app with Vite via `npm ci` + `npm run build`
   - Stage 2 (`nginx:alpine`): Copies built files, serves via Nginx
-- Nginx proxies `/api/` requests to the backend container
+- Nginx proxies `/api/` and `/media/` requests to the backend container
 
 ### Docker Compose Services
 
 ```yaml
 services:
-  backend:    # Django + ML engine on port 8000
-  frontend:   # React + Nginx on port 80
-  prometheus: # Metrics collection on port 9090
-  grafana:    # Monitoring dashboard on port 3000
+  backend:      # Django + ML engine on port 8000 (2GB mem limit)
+  frontend:     # React + Nginx on port 80
+  prometheus:   # Metrics collection on port 9090
+  node-exporter:# Host metrics on port 9100
+  grafana:      # Monitoring dashboard on port 3000 (admin/admin)
 ```
 
-### Key Commands
+### Will I Need to Rebuild Docker After Code Changes?
 
-```bash
-docker compose up -d backend frontend   # Start app (no monitoring)
-docker compose up -d                    # Start everything including monitoring
-docker compose down                     # Stop all containers
-docker compose ps                       # List running containers
-docker compose logs backend             # View backend logs
-docker compose logs -f backend          # Follow logs in real-time
-docker compose build backend            # Rebuild backend image
-docker image ls                         # List all Docker images
-docker volume ls                        # List Docker volumes
-```
+**Short answer: Yes, but only the affected service.**
 
-### How Containers Communicate
+| Change Type | What to Rebuild | Command |
+|-------------|----------------|---------|
+| Python code only (`audio_processing.py`, `ml_engine.py`, etc.) | Backend only | `docker compose build backend` |
+| New Python package added to `requirements.txt` | Backend only | `docker compose build backend` |
+| React component changes (`.jsx`, `.css`) | Frontend only | `docker compose build frontend` |
+| New npm package added to `package.json` | Frontend only | `docker compose build frontend` |
+| `Dockerfile` changes in either service | That service | `docker compose build backend` or `frontend` |
+| `docker-compose.yml` changes | Depends on section | `docker compose up -d` (auto-rebuilds if needed) |
+| `k8s/` manifest changes | No rebuild needed | `kubectl apply -f k8s/` |
+| Monitoring config changes | No rebuild needed | Restart the monitoring service |
 
-1. User visits `http://localhost` → Nginx serves the React app
-2. React sends API request to `/api/upload/` → same browser URL
-3. Nginx sees `/api/` prefix → proxies request to `http://backend:8000`
-4. Django processes the request → runs ML pipeline → returns JSON
-5. Nginx forwards the response back to the browser
+**Docker layer caching:** The Dockerfiles are structured so that:
+- `requirements.txt` / `package.json` is copied and installed first (cached if deps don't change)
+- Source code is copied last (`COPY . .`), so only the final layer rebuilds on code changes
+- This means code-only changes rebuild quickly (seconds, not minutes)
 
-The containers communicate over a private Docker network using container names as hostnames (`backend`, `frontend`).
+**What you do NOT need to rebuild for:**
+- Changes to `views.py`, `ml_engine.py`, `ghana_patha.py`, `raga_mapping.py`, `audio_processing.py` — these are pure code, no new dependencies
+- Changes to `.jsx` components, `App.jsx`, `App.css`, `index.css` — frontend code only
+- Changes to `k8s/`, `monitoring/`, `nginx.conf` — runtime config, not baked into images
+- Database migrations — the `migrate` command runs at build time AND via initContainer in K8s
+
+**What WILL require a rebuild:**
+- Adding a new package to `requirements.txt` (e.g., `pip install new_package`)
+- Adding a new npm dependency to `package.json`
+- Changing the `Dockerfile` itself
+- Changing system dependencies (e.g., adding a new `apt-get install` in backend Dockerfile)
 
 ---
 
@@ -528,7 +714,11 @@ Kubernetes manifests are in `k8s/`:
 |------|-----------|
 | `backend-deployment.yml` | Deployment (2 replicas) + initContainer (migrate/collectstatic) + PersistentVolumeClaim (shared SQLite + media) + ClusterIP Service |
 | `frontend-deployment.yml` | Deployment (2 replicas) + LoadBalancer Service |
-| `services.yml` | Secret (Django key) + Ingress (routing rules) |
+| `services.yml` | Secret (Django key) + Ingress (path-based routing) |
+| `monitoring/node-exporter.yml` | DaemonSet + Service |
+| `monitoring/prometheus.yml` | ConfigMap + Deployment + Service |
+| `monitoring/grafana.yml` | Deployment + Service + ConfigMaps |
+| `monitoring/grafana-dashboard.yml` | Dashboard JSON as ConfigMap |
 
 ### Architecture Notes
 
@@ -539,7 +729,7 @@ Kubernetes manifests are in `k8s/`:
 ### Local Testing with Minikube
 
 ```bash
-# 1. Start Minikube (Docker driver — runs natively on Ubuntu, no VirtualBox)
+# 1. Start Minikube (Docker driver)
 minikube start --driver=docker --cpus=4 --memory=4096 --disk-size=20g
 
 # 2. Build images and load into Minikube
@@ -551,49 +741,33 @@ minikube image load vedic-acoustica/frontend:latest
 # 3. Deploy
 kubectl apply -f k8s/
 
-# 4. Wait for rollout (backend migrations run in initContainer first)
+# 4. Wait for rollout
 kubectl rollout status deployment/vedic-backend
 kubectl rollout status deployment/vedic-frontend
 
-# 5. Expose the LoadBalancer (enables an External-IP in Minikube)
-minikube addons enable metallb
-kubectl apply -f - <<'EOF'
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: config
-  namespace: metallb-system
-data:
-  config: |
-    address-pools:
-    - name: default
-      protocol: layer2
-      addresses:
-      - 192.168.49.100-192.168.49.110
-EOF
-
-# 6. Access the app at the LoadBalancer External-IP
+# 5. Access the app
 minikube service vedic-frontend-service --url
-# → http://192.168.49.100  (frontend + /api proxy through nginx)
 ```
 
-**End-to-end test through the cluster:**
+### Kubernetes Deployment Impact of Code Changes
+
+| Change Type | K8s Action Required |
+|-------------|-------------------|
+| Python/JS code changes | Rebuild Docker image, load into Minikube, restart deployment |
+| `k8s/*.yml` changes | `kubectl apply -f k8s/` (no rebuild needed) |
+| Monitoring config changes | `kubectl apply -f k8s/monitoring/` (no rebuild needed) |
+| New secrets/environment variables | Update `k8s/services.yml` or add to Secret resource |
 
 ```bash
-# Upload a recording (round-robins across both backend replicas)
-curl -X POST -F "title=Test" -F "audio_file=@test_audio/test_10s.wav" \
-  http://192.168.49.100/api/upload/
-
-# Run the 22-Shruti K-Means + Ghana Patha analysis
-curl -X POST http://192.168.49.100/api/analyze/1/
-
-# Both uploads are visible regardless of which replica served the request
-curl http://192.168.49.100/api/recordings/
+# After code changes, deploy to K8s:
+docker build -t vedic-acoustica/backend:latest ./backend
+minikube image load vedic-acoustica/backend:latest
+kubectl rollout restart deployment/vedic-backend
 ```
 
 ---
 
-## Continuous Integration / Continuous Deployment
+## CI/CD
 
 GitHub Actions workflows are in `.github/workflows/`:
 
@@ -603,15 +777,15 @@ Runs on every push/PR to `main`:
 
 | Job | What it does |
 |-----|--------------|
-| **Backend** | `python manage.py check`, `python manage.py test`, verifies ML engine imports (librosa + scikit-learn) |
+| **Backend** | `python manage.py check`, `python manage.py test`, verifies ML engine imports (audio_processing, ml_engine, ghana_patha, raga_mapping) |
 | **Frontend** | `npm ci`, `npm run lint` (oxlint), `npm run build` (Vite) |
 
 ### CD (`cd.yml`)
 
 Runs on every push to `main`:
 
-1. **Build & Push** — builds both Docker images and pushes to GitHub Container Registry (GHCR) with `:latest` + `:<sha>` tags
-2. **Deploy** — (disabled by default, `if: false`) applies `k8s/` manifests to a cluster using a `KUBECONFIG` secret, substituting image refs for the freshly-built GHCR images
+1. **Build & Push** — Builds both Docker images and pushes to GitHub Container Registry (GHCR) with `:latest` + `:<sha>` tags
+2. **Deploy** — (disabled by default, `if: false`) Applies `k8s/` manifests to a cluster using a `KUBECONFIG` secret
 
 ### Enabling CI/CD
 
@@ -625,9 +799,11 @@ git push -u origin main
 #    KUBECONFIG secret (base64-encoded kubeconfig) to repo settings.
 ```
 
+---
+
 ## Monitoring
 
-A full Prometheus + Grafana stack is included in `docker-compose.yml`. It monitors both the app (Django) and the host (node_exporter).
+A full Prometheus + Grafana stack is included. It monitors both the app (Django) and the host (node_exporter).
 
 ### Metrics Endpoint
 
@@ -667,45 +843,17 @@ Access Grafana at `http://localhost:3000` (admin/admin). Prometheus at `http://l
 
 ```bash
 docker compose up -d backend prometheus node-exporter grafana
-# Verify all Prometheus targets are UP:
-curl http://localhost:9090/api/v1/targets
+curl http://localhost:9090/api/v1/targets   # Verify all targets are UP
 # Open Grafana → "Vedic Acoustica - System Monitor" dashboard
 ```
 
-### Verified metrics (docker-compose)
-
-| Metric | Value |
-|--------|-------|
-| API request rate | ~0.9 req/s (under load test) |
-| p95 latency | ~5 ms |
-| Host CPU | ~10% |
-| Host memory | ~56% |
-
 ### Monitoring inside Kubernetes
 
-The same stack is deployable inside the cluster via `k8s/monitoring/`:
-
-| Manifest | Resources |
-|----------|-----------|
-| `node-exporter.yml` | DaemonSet (hostNetwork) + Service — scrapes host CPU/memory |
-| `prometheus.yml` | ConfigMap + Deployment + Service — scrapes `vedic-backend-service:8000/metrics`, node-exporter, and itself |
-| `grafana.yml` | Deployment + Service + ConfigMaps for datasource/dashboard provisioning |
-| `grafana-dashboard.yml` | Dashboard JSON (generated from `monitoring/grafana-dashboard.json`) |
-
 ```bash
-# Load the images into Minikube first
-minikube image load prom/prometheus:latest
-minikube image load prom/node-exporter:latest
-minikube image load grafana/grafana:latest
-
 kubectl apply -f k8s/monitoring/
-
-# Access (port-forward from your machine)
 kubectl port-forward service/prometheus 9090:9090   # Prometheus UI
 kubectl port-forward service/grafana 3000:3000      # Grafana (admin/admin)
 ```
-
-All three Prometheus targets report **UP**, and the dashboard shows live request rate and memory usage scraped from the cluster.
 
 ---
 
@@ -722,6 +870,10 @@ All three Prometheus targets report **UP**, and the dashboard shows live request
 1. Add extraction function in `backend/ml_engine/audio_processing.py`
 2. Add processing logic in `backend/ml_engine/ml_engine.py`
 3. Return new fields in `backend/api/views.py` analyze endpoint
+
+**New raga:**
+1. Add raga entry to `RAGA_DATABASE` in `backend/ml_engine/raga_mapping.py`
+2. Include swaras, arohana, avarohana, vadi, samvadi, tradition, time, mood
 
 **New frontend chart:**
 1. Create component in `frontend/src/components/`
@@ -752,9 +904,13 @@ This project was developed as a Semester 5 capstone project integrating AI/ML, W
 ## Acknowledgments
 
 - Indian Knowledge Systems (IKS) — 22 Shruti theory and Ghana Patha recitation patterns
-- [librosa](https://librosa.org/) — Audio feature extraction
+- [librosa](https://librosa.org/) — Audio feature extraction, pYIN pitch tracking
 - [scikit-learn](https://scikit-learn.org/) — K-Means clustering
+- [scipy](https://scipy.org/) — DTW cost matrix computation
 - [Plotly.js](https://plotly.com/javascript/) — Interactive data visualization
+- [WaveSurfer.js](https://wavesurfer.xyz/) — Audio waveform player
+- [jsPDF](https://github.com/parallax/jsPDF) — PDF report generation
 - [Django](https://www.djangoproject.com/) — Backend web framework
 - [React](https://react.dev/) — Frontend UI library
 - [Docker](https://www.docker.com/) — Containerization platform
+- [Prometheus](https://prometheus.io/) + [Grafana](https://grafana.com/) — Monitoring

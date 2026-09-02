@@ -103,10 +103,13 @@ export default async function exportReport(recording, analysis) {
     const col = i % 2
     const row = Math.floor(i / 2)
 
-    if (row > 1) pdf.addPage('landscape', 'a4')
-
     const x = margin + col * (imgW + 8)
-    const yPos = 57 + row * (imgH + 12)
+    let yPos = 57 + row * (imgH + 12)
+
+    if (yPos + imgH + 12 > pageH) {
+      pdf.addPage('landscape', 'a4')
+      yPos = 31
+    }
 
     try {
       pdf.setFillColor(255, 255, 255)
