@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://krish-shripat-vedic-backend.hf.space/api/:path*"
+    },
+    {
+      "source": "/media/:path*",
+      "destination": "https://krish-shripat-vedic-backend.hf.space/media/:path*"
+    }
+  ]
+}
