@@ -32,7 +32,9 @@ else
     echo "[entrypoint] Starting Gunicorn..."
     exec gunicorn vedic_acoustica.wsgi:application \
         --bind 0.0.0.0:8000 \
+        --worker-class gthread \
         --workers 2 \
-        --timeout 120 \
+        --threads 4 \
+        --timeout 360 \
         --preload
 fi

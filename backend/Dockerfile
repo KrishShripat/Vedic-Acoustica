@@ -23,4 +23,4 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["gunicorn", "vedic_acoustica.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120", "--preload"]
+CMD ["gunicorn", "vedic_acoustica.wsgi:application", "--bind", "0.0.0.0:8000", "--worker-class", "gthread", "--workers", "2", "--threads", "4", "--timeout", "360", "--preload"]
