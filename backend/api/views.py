@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 from django.conf import settings
 from django.http import StreamingHttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -396,9 +397,12 @@ def analyze_audio(request, pk):
 
 
 
+@csrf_exempt
 @require_GET
 def analysis_status(request, pk):
     """
+    Intentionally bypasses DRF: SSE streaming needs raw StreamingHttpResponse.
+
     GET /api/analyze/<pk>/status/
 
     Returns a Server-Sent Events stream that emits progress JSON objects until

@@ -740,6 +740,87 @@ def _extract_detected_swaras_from_pcp(mean_pcp, energy_threshold=0.02):
     return swara_energy
 
 
+# A swara is only counted as "present" when it is the dominant pitch class for
+# at least this fraction of the total voiced frames.  This duration/salience
+# gate filters out tanpura drone bleed and transient vocal glides that briefly
+# touch many bins but are never actually sustained (the root cause of the
+# "15 swaras detected" false-dominance problem on real recordings).
+#
+# Tuned to 1.2%: at 3.0% continuous vocal ornamentation (meends/gamakas) was
+# discarded as transient noise, leaving too few swaras; at 1.2% we filter
+# continuous drone noise while keeping legitimate ornamented notes.
+SWARA_PRESENCE_THRESHOLD = 0.012
+
+
+def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
+                                         presence_threshold=SWARA_PRESENCE_THRESHOLD):
+    """
+    Duration/salience-gated swara detection from the melodic pitch track.
+
+    A swara counts as "present" only when it is the nearest Shruti to the pYIN
+    F0 for at least ``presence_threshold`` of the total voiced frames.  Using
+    the F0 track (rather than raw PCP argmax) avoids the tanpura-drone/harmonic
+    bleed that falsely lights up 15 swaras, and the duration gate removes
+    transient vocal glides that never settle on a sustained note.
+
+    Parameters
+    ----------
+    pcp : ndarray (22, n_frames) — per-frame Shruti energies
+    voiced_flag : ndarray (n_frames,) bool — True for voiced frames
+    f0 : ndarray (n_frames,) optional — pYIN fundamental frequency (NaN unvoiced)
+    presence_threshold : float — min fraction of voiced frames a swara must be
+                                 the dominant pitch class for to count as present
+
+    Returns
+    -------
+    dict {swara_index: salience} for the classical 15 swaras (PCP bins 0-14)
+    whose occupancy is >= presence_threshold.  The value is the occupancy
+    fraction, used as the swara's salience weight in scoring.
+    """
+    import numpy as np
+    from .ml_engine import _nearest_shruti_from_f0
+
+    pcp = np.asarray(pcp, dtype=np.float64)
+    if pcp.ndim != 2 or pcp.shape[0] < 1 or pcp.shape[1] == 0:
+        return {}
+
+    voiced = np.asarray(voiced_flag, dtype=bool)
+    n_frames = pcp.shape[1]
+    if voiced.ndim == 0 or len(voiced) == 0:
+        voiced = np.ones(n_frames, dtype=bool)
+
+    f0_arr = np.asarray(f0, dtype=np.float64) if f0 is not None else None
+
+    total_voiced = int(np.count_nonzero(voiced[:n_frames]))
+    if total_voiced == 0:
+        return {}
+
+    # Dominant shruti bin per voiced frame, preferring pYIN F0 (clean melodic
+    # pitch) and falling back to PCP argmax for voiced frames where F0 is
+    # unavailable or out of range.  Counting only voiced frames (never the
+    # drone-heavy unvoiced frames) keeps the tanpura bleed out while retaining
+    # the ornamented notes that never settle on a single F0.
+    shruti_idx = _nearest_shruti_from_f0
+    counts = np.zeros(pcp.shape[0], dtype=np.int64)
+    for i in range(n_frames):
+        if not voiced[i]:
+            continue
+        assigned = None
+        if f0_arr is not None and i < len(f0_arr) and not np.isnan(f0_arr[i]):
+            assigned = shruti_idx(f0_arr[i])
+        if assigned is None:
+            assigned = int(pcp[:, i].argmax())
+        if 0 <= assigned < pcp.shape[0]:
+            counts[assigned] += 1
+
+    occupancy = counts / total_voiced
+    return {
+        int(i): float(occupancy[i])
+        for i in range(min(15, pcp.shape[0]))
+        if occupancy[i] >= presence_threshold
+    }
+
+
 def _extract_directional_swaras(pcp, f0, voiced_flag,
                                 energy_threshold=0.02,
                                 smoothing_frames=3):
@@ -843,6 +924,18 @@ def _score_raga(detected_swaras, raga,
 
     jaccard = len(intersection) / len(union)
 
+    # ── Extraneous swara penalty ──────────────────────────────────────────────
+    # Notes present in the audio but *completely forbidden* in the raga (i.e.
+    # not part of its scale at all) undermine the match: a real Bhimpalasi
+    # alap never sits on an out-of-scale pitch for long.  The more of the
+    # detected set lies outside the raga's scale, the more we subtract.
+    extraneous = detected_set - raga_swaras
+    extraneous_penalty = 0.0
+    if detected_set:
+        extraneous_penalty = round(
+            0.20 * (len(extraneous) / len(detected_set)), 4
+        )
+
     vadi = raga['vadi']
     samvadi = raga['samvadi']
     total_weight = sum(detected_swaras.values()) or 1.0
@@ -884,7 +977,8 @@ def _score_raga(detected_swaras, raga,
             + 0.25 * aro_coverage
             + 0.25 * ava_coverage
             + direction_penalty
-            + vadi_bonus + samvadi_bonus,
+            + vadi_bonus + samvadi_bonus
+            - extraneous_penalty,
             1.0
         )
         directional = True
@@ -894,7 +988,8 @@ def _score_raga(detected_swaras, raga,
         aro_coverage = ava_coverage = coverage
         direction_penalty = 0.0
         score = min(
-            0.45 * jaccard + 0.25 * coverage + vadi_bonus * 3 + samvadi_bonus * 3,
+            0.45 * jaccard + 0.25 * coverage + vadi_bonus * 3 + samvadi_bonus * 3
+            - extraneous_penalty,
             1.0
         )
         directional = False
@@ -905,6 +1000,8 @@ def _score_raga(detected_swaras, raga,
         'arohana_coverage': round(aro_coverage, 4),
         'avarohana_coverage': round(ava_coverage, 4),
         'direction_penalty': round(direction_penalty, 4) if directional else None,
+        'extraneous_penalty': extraneous_penalty,
+        'extraneous_swaras': sorted(extraneous),
         'vadi_detected': vadi in detected_swaras,
         'samvadi_detected': samvadi in detected_swaras,
         'directional_scoring': directional,
@@ -923,7 +1020,17 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
     mean_pcp = clustering_results.get('mean_pcp')
     freq_assignments = clustering_results.get('freq_assignments', [])
 
-    if mean_pcp is not None:
+    # Prefer duration/salience-gated detection from frame-level PCP (it rejects
+    # tanpura drone bleed / slides that falsely light up 15 swaras).  Fall back
+    # to the recording-level mean PCP when frame data is unavailable.
+    if (features is not None
+            and features.get('pcp') is not None
+            and features.get('voiced_flag') is not None):
+        detected_swaras = _extract_detected_swaras_by_salience(
+            features['pcp'], features['voiced_flag'],
+            f0=features.get('f0'))
+        source = 'salience'
+    elif mean_pcp is not None:
         detected_swaras = _extract_detected_swaras_from_pcp(mean_pcp)
         source = 'pcp'
     else:

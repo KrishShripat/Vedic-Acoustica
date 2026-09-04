@@ -2,8 +2,8 @@ import Plot from 'react-plotly.js'
 
 const SWARA_NAMES = [
   'Sa', 'Re1', 'Re2', 'Ga1', 'Ga2', 'Ga3',
-  'Ma1', 'Ma2', 'Ma3', 'Pa', 'Dha1', 'Dha2',
-  'Ni1', 'Ni2', 'Ni3',
+  'Ma1', 'Ma2', 'Ma3', 'Tivra Ma', 'Pa', 'Dha1',
+  'Dha2', 'Ni1', 'Ni2', 'Ni3',
 ]
 
 const THRESHOLD_PCT = 40   // kept in sync with backend CONFIDENCE_THRESHOLD * 100
@@ -188,7 +188,7 @@ function ConfidenceChart({ matches, inconclusive, onReady }) {
         shapes: [{
           type: 'line',
           xref: 'paper', x0: 0, x1: 1,
-          yref: 'y',     y0: THRESHOLD_PCT, y1: THRESHOLD_PCT,
+          yref: 'y', y0: THRESHOLD_PCT, y1: THRESHOLD_PCT,
           line: { color: 'rgba(245, 158, 11, 0.6)', width: 1.5, dash: 'dash' },
         }],
         annotations: [{
@@ -259,9 +259,9 @@ export default function RagaViz({ data, onReady }) {
   // Colour ramps from amber (40–60%) to red (≥60%) so the user sees gradation
   const isLowConfidence = confidencePct < 60
   const accentColor = isLowConfidence ? '#f59e0b' : '#e94560'
-  const accentBg   = isLowConfidence ? 'rgba(245,158,11,0.08)' : 'rgba(233,69,96,0.08)'
+  const accentBg = isLowConfidence ? 'rgba(245,158,11,0.08)' : 'rgba(233,69,96,0.08)'
   const accentBorder = isLowConfidence ? 'rgba(245,158,11,0.55)' : '#e94560'
-  const badgeBg    = isLowConfidence ? 'rgba(245,158,11,0.2)' : 'rgba(233,69,96,0.2)'
+  const badgeBg = isLowConfidence ? 'rgba(245,158,11,0.2)' : 'rgba(233,69,96,0.2)'
 
   return (
     <div>

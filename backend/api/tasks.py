@@ -131,6 +131,14 @@ def process_audio_task(self, recording_id: int) -> dict:
             'ghana_patha_n_segments':       ghana_result.get('n_segments', 0),
             'ghana_patha_segments':         ghana_result.get('segments', []),
             'ghana_patha_detected_pattern': ghana_result.get('detected_pattern', []),
+            # Word-level expected sequence (flattened GHANA_PATTERNS['simple'])
+            'ghana_patha_expected_sequence': [
+                w for turn in ghana_result.get('expected_pattern_legacy',
+                                                [[1,2],[2,1],[1,2,3],[3,2,1],[1,2,3]])
+                for w in turn
+            ],
+            # Phrase-level direction cycle (forward/reverse per phase)
+            'ghana_patha_expected_cycle':    ghana_result.get('expected_pattern', []),
             'ghana_patha_dtw_details':      ghana_result.get('dtw_details'),
             # Raga detection (structured dict — already compact)
             'raga_detection':               raga_result,

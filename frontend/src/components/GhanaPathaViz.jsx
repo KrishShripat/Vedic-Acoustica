@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import Plot from 'react-plotly.js'
 
-const EXPECTED_PATTERN = [1, 2, 2, 1, 1, 2, 3, 3, 2, 1, 1, 2, 3]
+// Phrase-level direction cycle: forward=2, reverse=1
+// Matches backend GHANA_CYCLE — repeated to cover all detected segments.
+const PHRASE_DIR = { forward: 2, reverse: 1 }
+const FALLBACK_CYCLE = [2, 1, 2, 1, 2]
 
 // ── Phrase-type styling ───────────────────────────────────────────────────────
 const PHRASE_STYLE = {
@@ -44,13 +47,29 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
   const detectedPattern = Array.isArray(segments)
     ? segments
         .map(s => {
-          if (s?.phrase_type === 'forward') return 2
-          if (s?.phrase_type === 'reverse') return 1
+          if (s?.phrase_type === 'forward') return PHRASE_DIR.forward
+          if (s?.phrase_type === 'reverse') return PHRASE_DIR.reverse
           if (typeof s?.cluster_label === 'number') return s.cluster_label
           return null
         })
         .filter(v => typeof v === 'number')
     : []
+
+  // Derive expected phrase-level line from backend data.
+  // ghana_patha_expected_cycle is ['forward','reverse',...] from GHANA_CYCLE.
+  // Repeat it to match detected segment count so both traces share the same
+  // x-axis length.
+  const expectedPattern = (() => {
+    const raw = data.ghana_patha_expected_cycle
+    if (Array.isArray(raw) && raw.length > 0) {
+      const cycle = raw.map(v => (v === 'forward') ? PHRASE_DIR.forward : PHRASE_DIR.reverse)
+      const n = detectedPattern.length || cycle.length
+      return Array.from({ length: n }, (_, i) => cycle[i % cycle.length])
+    }
+    // Fallback: repeat the canonical 5-phase cycle
+    const n = detectedPattern.length || FALLBACK_CYCLE.length
+    return Array.from({ length: n }, (_, i) => FALLBACK_CYCLE[i % FALLBACK_CYCLE.length])
+  })()
 
   // ── Compute per-segment timestamps ─────────────────────────────────────────
   // The backend divides the audio into n_segments equal slices, so each
@@ -176,8 +195,8 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
       <Plot
         data={[
           {
-            x: EXPECTED_PATTERN.map((_, i) => i + 1),
-            y: EXPECTED_PATTERN,
+            x: expectedPattern.map((_, i) => i + 1),
+            y: expectedPattern,
             type: 'scatter',
             mode: 'lines+markers',
             name: 'Expected',
@@ -196,7 +215,7 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
           // Highlight active segment with a vertical band
           ...(activeSegIdx !== null && detectedPattern.length > 0 ? [{
             x: [activeSegIdx + 1, activeSegIdx + 1],
-            y: [0, Math.max(...EXPECTED_PATTERN) + 1],
+            y: [0, Math.max(...expectedPattern) + 1],
             type: 'scatter',
             mode: 'lines',
             name: 'Selected',
