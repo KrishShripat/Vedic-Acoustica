@@ -123,11 +123,25 @@ def _save_matrices(recording_id: int, features: dict) -> str:
 def _load_matrices(rel_path: str) -> dict | None:
     """
     Load the .npz file and return a dict of arrays.
-    Returns None if the file is missing (graceful degradation).
+    Returns None if the path is invalid, escapes analysis_matrices,
+    or if the file is missing (graceful degradation).
     """
-    full_path = Path(settings.MEDIA_ROOT) / rel_path
-    if not full_path.exists():
+    if not rel_path:
         return None
+
+    matrices_root = _matrices_root().resolve()
+    try:
+        full_path = (Path(settings.MEDIA_ROOT) / rel_path).resolve()
+    except (ValueError, RuntimeError):
+        return None
+
+    # Enforce strict path confinement within analysis_matrices directory
+    if not full_path.is_relative_to(matrices_root) or full_path == matrices_root:
+        return None
+
+    if not full_path.is_file():
+        return None
+
     data = np.load(str(full_path), allow_pickle=False)
     return {k: data[k] for k in data.files}
 
