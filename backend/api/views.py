@@ -11,12 +11,50 @@ from django.http import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import AudioRecording
 from .serializers import AudioRecordingSerializer
+
+
+# ---------------------------------------------------------------------------
+# Per-endpoint throttle classes
+#
+# Two custom subclasses override `scope` so DRF looks up their individual
+# rate limits from REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] in settings.py:
+#
+#   UploadAnonThrottle  → 'upload_anon'  → 10 req/hour
+#   AnalyzeAnonThrottle → 'analyze_anon' → 10 req/hour
+#
+# The default AnonRateThrottle (scope='anon', 60/min) is applied globally
+# via DEFAULT_THROTTLE_CLASSES and covers all other endpoints.
+# ---------------------------------------------------------------------------
+
+class UploadAnonThrottle(AnonRateThrottle):
+    """Strict per-IP rate limit on audio file uploads (disk + bandwidth cost)."""
+    scope = 'upload_anon'
+
+
+class AnalyzeAnonThrottle(AnonRateThrottle):
+    """Strict per-IP rate limit on ML analysis triggers (CPU + memory cost)."""
+    scope = 'analyze_anon'
+
+
+class StatusAnonThrottle(AnonRateThrottle):
+    """Anon throttle for the SSE status view (safe with raw HttpRequest)."""
+    scope = 'anon'
+
+    def get_cache_key(self, request, view):
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            return None
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': self.get_ident(request),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +318,7 @@ def _build_analysis_response(recording: 'AudioRecording') -> dict | None:
 # ---------------------------------------------------------------------------
 
 @api_view(['POST'])
+@throttle_classes([UploadAnonThrottle])
 def upload_audio(request):
     serializer = AudioRecordingSerializer(data=request.data)
     if serializer.is_valid():
@@ -343,6 +382,7 @@ def recording_detail(request, pk):
 
 
 @api_view(['POST'])
+@throttle_classes([AnalyzeAnonThrottle])
 def analyze_audio(request, pk):
     """
     POST /api/analyze/<pk>/
@@ -396,13 +436,24 @@ def analyze_audio(request, pk):
 @require_GET
 def analysis_status(request, pk):
     """
-    Intentionally bypasses DRF: SSE streaming needs raw StreamingHttpResponse.
-
-    GET /api/analyze/<pk>/status/
-
-    Returns a Server-Sent Events stream that emits progress JSON objects until
-    the analysis completes or errors out.
+    SSE view — intentionally bypasses DRF for StreamingHttpResponse.
+    Throttle is enforced manually: we instantiate the global AnonRateThrottle
+    and call allow_request() before entering the streaming generator.
+    A 429 response is returned immediately if the per-IP limit is exceeded.
     """
+    throttle = StatusAnonThrottle()
+    if not throttle.allow_request(request, None):
+        from django.http import HttpResponse  # noqa: PLC0415
+        retry_after = throttle.wait()
+        resp = HttpResponse(
+            'Too Many Requests',
+            status=429,
+            content_type='text/plain',
+        )
+        if retry_after is not None:
+            resp['Retry-After'] = str(int(retry_after))
+        return resp
+
     def _event_stream():
         max_wait_seconds = 300
         elapsed = 0

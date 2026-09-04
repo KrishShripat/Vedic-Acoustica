@@ -121,6 +121,27 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.JSONParser',
     ],
+    # ---------------------------------------------------------------------------
+    # Throttling — protects all endpoints from anonymous abuse without
+    # introducing an authentication requirement or breaking the frontend.
+    #
+    # Scope breakdown:
+    #   anon          → 60 req/min  — list recordings, recording detail, SSE status
+    #   upload_anon   → 10 req/hr   — file upload (disk + bandwidth cost)
+    #   analyze_anon  → 10 req/hr   — ML analysis trigger (CPU + memory cost)
+    #
+    # Views opt in to a specific scope via a custom throttle subclass (see
+    # api/views.py).  The default 'anon' scope is the global fallback applied
+    # to any view that does not declare its own throttle_classes.
+    # ---------------------------------------------------------------------------
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon':         '60/minute',   # default for low-cost read endpoints
+        'upload_anon':  '10/hour',     # per-IP limit on audio file uploads
+        'analyze_anon': '10/hour',     # per-IP limit on ML analysis triggers
+    },
 }
 
 # ---------------------------------------------------------------------------

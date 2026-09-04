@@ -16,4 +16,11 @@ RUN DJANGO_SECRET_KEY=build-placeholder DJANGO_DEBUG=True \
 
 EXPOSE 8000
 
+# Copy the startup script and make it executable.
+# The script runs `migrate --noinput` at container start-up (runtime),
+# then exec's Gunicorn so it is PID 1 and receives signals cleanly.
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "vedic_acoustica.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120", "--preload"]
