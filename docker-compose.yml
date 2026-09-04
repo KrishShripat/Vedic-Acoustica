@@ -44,6 +44,8 @@ services:
 
   celery:
     build: ./backend
+    # concurrency=2: each librosa analysis peaks ~1.5 GB RAM → 2 workers ≈ 3 GB peak.
+    # mem_limit must stay above 2 × peak. Raise concurrency only if mem_limit is also raised.
     command: celery -A vedic_acoustica worker --loglevel=info --concurrency=2
     environment:
       - DJANGO_SECRET_KEY=change-me-in-production
@@ -54,7 +56,7 @@ services:
       # Share the same media volume so .npz files written by the worker
       # are visible to the Django backend when serving GET responses.
       - media_data:/app/media
-    mem_limit: 4g
+    mem_limit: 6g   # 2 workers × ~1.5 GB peak each + 1 GB headroom
     restart: unless-stopped
     <<: *default-logging
     depends_on:

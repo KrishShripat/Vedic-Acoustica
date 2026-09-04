@@ -10,7 +10,8 @@ class RecordingAPITestCase(TestCase):
     def test_list_recordings_empty(self):
         response = self.client.get(reverse('list_recordings'))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data['count'], 0)
+        self.assertEqual(response.data['results'], [])
 
     def test_upload_requires_file(self):
         response = self.client.post(reverse('upload_audio'), {}, format='multipart')

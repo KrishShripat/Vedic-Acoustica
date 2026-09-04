@@ -38,8 +38,18 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
   const segments   = data.segments ?? data.ghana_patha_segments ?? []
 
   // Detected pattern for the scatter plot
+  // New PCP/DTW path emits per-segment `phrase_type` ('forward'|'reverse');
+  // the legacy path emitted a numeric `cluster_label`. Normalise both to a
+  // numeric phrase level so the Detected trace renders regardless of backend.
   const detectedPattern = Array.isArray(segments)
-    ? segments.map(s => s.cluster_label).filter(v => typeof v === 'number')
+    ? segments
+        .map(s => {
+          if (s?.phrase_type === 'forward') return 2
+          if (s?.phrase_type === 'reverse') return 1
+          if (typeof s?.cluster_label === 'number') return s.cluster_label
+          return null
+        })
+        .filter(v => typeof v === 'number')
     : []
 
   // ── Compute per-segment timestamps ─────────────────────────────────────────
@@ -145,7 +155,7 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
             })}
           </div>
 
-          {activeSegIdx !== null && (
+          {activeSegIdx !== null && segments[activeSegIdx] && (
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
               ▶ Jumped to segment {activeSegIdx + 1} at {formatTime(segmentTimestamp(activeSegIdx))}
               {' '}— {getPhraseStyle(segments[activeSegIdx]).label}
@@ -218,9 +228,9 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
         onUpdate={() => onReady?.()}
       />
 
-      {data.detected_pattern && (
+      {data.ghana_patha_detected_pattern && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-          Detected sequence: [{data.detected_pattern.join(', ')}]
+          Detected sequence: [{data.ghana_patha_detected_pattern.join(', ')}]
         </p>
       )}
     </div>

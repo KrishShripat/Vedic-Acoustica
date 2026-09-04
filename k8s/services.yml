@@ -1,21 +1,62 @@
+# ---------------------------------------------------------------------------
+# Secret — placeholder only.
+# NEVER commit a real key here. In production, manage this with:
+#   kubectl create secret generic vedic-secrets \
+#     --from-literal=django-secret-key="$(openssl rand -base64 50)" \
+#     --dry-run=client -o yaml | kubectl apply -f -
+# Or use Sealed Secrets / External Secrets Operator.
+# ---------------------------------------------------------------------------
 apiVersion: v1
 kind: Secret
 metadata:
   name: vedic-secrets
 type: Opaque
 stringData:
-  django-secret-key: "change-this-to-a-real-secret-key"
+  django-secret-key: "REPLACE_WITH_REAL_SECRET_KEY_DO_NOT_COMMIT"
 ---
+# ---------------------------------------------------------------------------
+# Ingress
+# ---------------------------------------------------------------------------
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: vedic-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Strip the /api prefix before forwarding to the backend — Django URL
+    # patterns begin at /api/ so we must preserve it, not rewrite to /.
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Proxy timeouts — ML analysis can take up to 120 s (gunicorn --timeout)
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+    # TLS — managed by cert-manager (install separately, or use your cloud LB)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - vedic.local   # ← replace with your real domain
+      secretName: vedic-tls
   rules:
-    - http:
+    - host: vedic.local   # ← replace with your real domain
+      http:
         paths:
+          # API requests — forwarded to Django backend, prefix preserved
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: vedic-backend-service
+                port:
+                  number: 8000
+          # Media files — served directly from backend (Django MEDIA_URL)
+          - path: /media(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: vedic-backend-service
+                port:
+                  number: 8000
+          # Everything else — React SPA (handles its own client-side routing)
           - path: /
             pathType: Prefix
             backend:
@@ -23,10 +64,3 @@ spec:
                 name: vedic-frontend-service
                 port:
                   number: 80
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: vedic-backend-service
-                port:
-                  number: 8000

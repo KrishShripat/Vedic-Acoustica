@@ -99,13 +99,16 @@ export default async function exportReport(recording, analysis) {
   const imgW = (pageW - margin * 2 - 8) / 2
   const imgH = imgW / 2.25
 
-  Object.entries(images).forEach(([, dataUrl], i) => {
+  // Running vertical position — advances per row and resets on page break
+  let yPos = 57
+  images.forEach((dataUrl, i) => {
     const col = i % 2
-    const row = Math.floor(i / 2)
+    const x   = margin + col * (imgW + 8)
 
-    const x = margin + col * (imgW + 8)
-    let yPos = 57 + row * (imgH + 12)
+    // Starting a new row (left column, not the first chart): advance yPos
+    if (col === 0 && i > 0) yPos += imgH + 12
 
+    // Page overflow: start a fresh page and reset to top margin
     if (yPos + imgH + 12 > pageH) {
       pdf.addPage('landscape', 'a4')
       yPos = 31

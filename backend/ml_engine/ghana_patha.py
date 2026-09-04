@@ -52,10 +52,10 @@ logger = logging.getLogger(__name__)
 # Each template is a (T, 22) array of idealised PCP frames.
 # T=3 frames is a symbolic minimum; the DTW path scales to any real segment.
 #
-# Shruti indices (0-based):
+# Shruti indices (0-based, matching SHRUTI_NAMES / PCP bin order):
 #   0=Sa  1=Re1  2=Re2  3=Ga1  4=Ga2  5=Ga3
-#   6=Ma1 7=Ma2  8=Ma3  9=Pa  10=Dha1 11=Dha2
-#   12=Ni1 13=Ni2 14=Ni3 15=Sa' ...
+#   6=Ma1 7=Ma2  8=Ma3  9=TivraMa 10=Pa 11=Dha1
+#   12=Dha2 13=Ni1 14=Ni2 15=Ni3 16=Re_ ...
 #
 # 'forward'  = ascending contour: Sa → Ga → Pa
 # 'reverse'  = descending contour: Pa → Ga → Sa
@@ -77,14 +77,14 @@ _TPL_FORWARD = _make_template([
     [0],           # Sa
     [2, 4],        # Re / Ga region
     [4, 6],        # Ga / Ma region
-    [6, 9],        # Ma / Pa region
-    [9],           # Pa
+    [6, 10],       # Ma / Pa region
+    [10],          # Pa
 ])
 
 # Reverse phrase: Pa – Ma – Ga – Re – Sa  (descending, 5 keyframes)
 _TPL_REVERSE = _make_template([
-    [9],           # Pa
-    [6, 9],        # Ma / Pa region
+    [10],          # Pa
+    [6, 10],       # Ma / Pa region
     [4, 6],        # Ga / Ma region
     [2, 4],        # Re / Ga region
     [0],           # Sa

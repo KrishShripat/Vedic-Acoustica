@@ -127,3 +127,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
 # Acknowledge tasks only after they complete so a worker crash re-queues the job
 CELERY_TASK_ACKS_LATE = True
+# Restart each worker process after ~1.5 GB RSS to prevent OOM kills.
+# librosa analyses can peak at ~1.5 GB and CPython's arena allocator retains
+# freed memory; without this setting RSS grows monotonically.
+CELERY_WORKER_MAX_MEMORY_PER_CHILD = 1_500_000  # KB ≈ 1.5 GB

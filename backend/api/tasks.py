@@ -16,18 +16,13 @@ progress flow is identical to the old synchronous path.
 
 import os
 
-import numpy as np
 from celery import shared_task
-from django.conf import settings
-from pathlib import Path
 
 # Re-use the progress helpers and matrix helpers from views.py so there
 # is a single source of truth for file paths and progress semantics.
 from api.views import (
     _set_progress,
     _save_matrices,
-    MATRICES_SUBDIR,
-    _MAX_PCP_COLS,
 )
 from api.models import AudioRecording
 from ml_engine.audio_processing import extract_features
@@ -114,41 +109,47 @@ def process_audio_task(self, recording_id: int) -> dict:
         _set_progress(pk, 'Error', 0, status_val='error', error=str(exc))
         raise
 
-    # ── Save heavy arrays to compressed .npz on disk ──────────────────────────
-    rel_path = _save_matrices(pk, features)
+    # ── Save heavy arrays to compressed .npz on disk + persist to DB ──────────
+    # Any failure here (disk full, DB error) must still surface as a terminal
+    # 'error' progress state so the SSE stream doesn't hang at 'running'.
+    try:
+        rel_path = _save_matrices(pk, features)
 
-    # ── Build slim metadata dict (scalars only — no matrices) ─────────────────
-    metadata = {
-        # Shruti clustering scalars
-        'shruti_clusters':              clustering_results['shruti_clusters'],
-        'freq_assignments':             clustering_results['freq_assignments'],
-        'mean_pcp':                     clustering_results['mean_pcp'],
-        # pYIN scalars
-        'voiced_ratio':                 features['voiced_ratio'],
-        'spectral_centroid_timeline':   features['spectral_centroid'].tolist(),
-        # Ghana Patha scalars
-        'ghana_patha_valid':            ghana_result['is_valid'],
-        'ghana_patha_confidence':       ghana_result['confidence'],
-        'ghana_patha_repetition_score': ghana_result.get('repetition_score', 0.0),
-        'ghana_patha_n_segments':       ghana_result.get('n_segments', 0),
-        'ghana_patha_segments':         ghana_result.get('segments', []),
-        'ghana_patha_detected_pattern': ghana_result.get('detected_pattern', []),
-        'ghana_patha_dtw_details':      ghana_result.get('dtw_details'),
-        # Raga detection (structured dict — already compact)
-        'raga_detection':               raga_result,
-        # Audio-level scalars
-        'tempo':                        features['tempo'],
-        'duration':                     features['duration'],
-    }
+        # ── Build slim metadata dict (scalars only — no matrices) ─────────────
+        metadata = {
+            # Shruti clustering scalars
+            'shruti_clusters':              clustering_results['shruti_clusters'],
+            'freq_assignments':             clustering_results['freq_assignments'],
+            'mean_pcp':                     clustering_results['mean_pcp'],
+            # pYIN scalars
+            'voiced_ratio':                 features['voiced_ratio'],
+            'spectral_centroid_timeline':   features['spectral_centroid'].tolist(),
+            # Ghana Patha scalars
+            'ghana_patha_valid':            ghana_result['is_valid'],
+            'ghana_patha_confidence':       ghana_result['confidence'],
+            'ghana_patha_repetition_score': ghana_result.get('repetition_score', 0.0),
+            'ghana_patha_n_segments':       ghana_result.get('n_segments', 0),
+            'ghana_patha_segments':         ghana_result.get('segments', []),
+            'ghana_patha_detected_pattern': ghana_result.get('detected_pattern', []),
+            'ghana_patha_dtw_details':      ghana_result.get('dtw_details'),
+            # Raga detection (structured dict — already compact)
+            'raga_detection':               raga_result,
+            # Audio-level scalars
+            'tempo':                        features['tempo'],
+            'duration':                     features['duration'],
+        }
 
-    # ── Persist to DB (no matrices — just path + scalars) ─────────────────────
-    recording.analysis_metadata = metadata
-    recording.matrices_file = rel_path
-    recording.analysis_result = None   # clear any legacy blob to free DB space
-    recording.is_analyzed = True
-    recording.save(update_fields=[
-        'analysis_metadata', 'matrices_file', 'analysis_result', 'is_analyzed',
-    ])
+        # ── Persist to DB (no matrices — just path + scalars) ─────────────────
+        recording.analysis_metadata = metadata
+        recording.matrices_file = rel_path
+        recording.analysis_result = None   # clear any legacy blob to free DB space
+        recording.is_analyzed = True
+        recording.save(update_fields=[
+            'analysis_metadata', 'matrices_file', 'analysis_result', 'is_analyzed',
+        ])
+    except Exception as exc:
+        _set_progress(pk, 'Error', 0, status_val='error', error=str(exc))
+        raise
 
     # ── Signal the SSE stream that processing is complete ─────────────────────
     _set_progress(pk, 'Complete', 100, status_val='done')

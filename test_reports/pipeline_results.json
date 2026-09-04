@@ -1,0 +1,1416 @@
+[
+  {
+    "name": "sa_261",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/sa_261.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 2.196,
+        "ok": true,
+        "duration": 5.0,
+        "sr": 22050,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "tempo": 0.0,
+        "f0_voiced": 216,
+        "mean_pcp_top5": [
+          [
+            "Shruti 1 (Sa)",
+            0.520666
+          ],
+          [
+            "Shruti 20 (Pa_)",
+            0.26363
+          ],
+          [
+            "Shruti 22 (Ni_)",
+            0.124294
+          ],
+          [
+            "Shruti 11 (Pa)",
+            0.062228
+          ],
+          [
+            "Shruti 9 (Ma3)",
+            0.014454
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.044,
+        "ok": true,
+        "frames": 216,
+        "unique_shrutis": 1,
+        "top5": {
+          "Shruti 1 (Sa)": 216
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.014,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.9249,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 1.0,
+          "mean_segment_similarity": 0.7724
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 216,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 3,
+        "swaras": [
+          "Sa",
+          "Ma3",
+          "Pa"
+        ],
+        "best": {
+          "name": "Abhogi",
+          "conf": 0.6333,
+          "tradition": "Carnatic"
+        },
+        "top3": [
+          {
+            "name": "Abhogi",
+            "conf": 0.6333,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Madhyamavati",
+            "conf": 0.6333,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Saveri",
+            "conf": 0.6333,
+            "trad": "Carnatic"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 2.255,
+    "desc": "Sa pure tone 261.63 Hz",
+    "synth": true
+  },
+  {
+    "name": "pa_392",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/pa_392.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 0.738,
+        "ok": true,
+        "duration": 5.0,
+        "sr": 22050,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "tempo": 0.0,
+        "f0_voiced": 216,
+        "mean_pcp_top5": [
+          [
+            "Shruti 11 (Pa)",
+            0.545786
+          ],
+          [
+            "Shruti 22 (Ni_)",
+            0.294292
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.090508
+          ],
+          [
+            "Shruti 5 (Ga2)",
+            0.033206
+          ],
+          [
+            "Shruti 20 (Pa_)",
+            0.015844
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.025,
+        "ok": true,
+        "frames": 216,
+        "unique_shrutis": 1,
+        "top5": {
+          "Shruti 11 (Pa)": 216
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.016,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.6586,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 0.75,
+          "mean_segment_similarity": 0.1319
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 216,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 3,
+        "swaras": [
+          "Sa",
+          "Ga2",
+          "Pa"
+        ],
+        "best": {
+          "name": "Bhupali",
+          "conf": 0.7496,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Bhupali",
+            "conf": 0.7496,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Bihag",
+            "conf": 0.7496,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Shankara",
+            "conf": 0.7496,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 0.78,
+    "desc": "Pa pure tone 392.44 Hz",
+    "synth": true
+  },
+  {
+    "name": "ni2_436",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ni2_436.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 0.743,
+        "ok": true,
+        "duration": 5.0,
+        "sr": 22050,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "tempo": 0.0,
+        "f0_voiced": 216,
+        "mean_pcp_top5": [
+          [
+            "Shruti 14 (Ni1)",
+            0.654488
+          ],
+          [
+            "Shruti 15 (Ni2)",
+            0.140355
+          ],
+          [
+            "Shruti 4 (Ga1)",
+            0.110958
+          ],
+          [
+            "Shruti 7 (Ma1)",
+            0.041856
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.033686
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.023,
+        "ok": true,
+        "frames": 216,
+        "unique_shrutis": 1,
+        "top5": {
+          "Shruti 14 (Ni1)": 216
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.016,
+        "ok": true,
+        "valid": false,
+        "confidence": 0.5755,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 0.5,
+          "mean_segment_similarity": 0.0468
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 216,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 5,
+        "swaras": [
+          "Sa",
+          "Ga1",
+          "Ma1",
+          "Ni1",
+          "Ni2"
+        ],
+        "best": {
+          "name": "Kapi",
+          "conf": 0.6034,
+          "tradition": "Carnatic"
+        },
+        "top3": [
+          {
+            "name": "Kapi",
+            "conf": 0.6034,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Malkauns",
+            "conf": 0.5841,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Darbari Kanada",
+            "conf": 0.5607,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 0.782,
+    "desc": "Ni2 pure tone 436.05 Hz",
+    "synth": true
+  },
+  {
+    "name": "dha__697",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/dha__697.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 0.747,
+        "ok": true,
+        "duration": 5.0,
+        "sr": 22050,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "tempo": 0.0,
+        "f0_voiced": 216,
+        "mean_pcp_top5": [
+          [
+            "Shruti 21 (Dha_)",
+            0.560188
+          ],
+          [
+            "Shruti 9 (Ma3)",
+            0.253601
+          ],
+          [
+            "Shruti 16 (Sa_)",
+            0.076759
+          ],
+          [
+            "Shruti 3 (Re2)",
+            0.046754
+          ],
+          [
+            "Shruti 20 (Pa_)",
+            0.030081
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.024,
+        "ok": true,
+        "frames": 216,
+        "unique_shrutis": 1,
+        "top5": {
+          "Shruti 21 (Dha_)": 216
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.014,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.6125,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 0.6667,
+          "mean_segment_similarity": 0.0479
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 216,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 3,
+        "swaras": [
+          "Re2",
+          "Ma3",
+          "Dha2"
+        ],
+        "best": {
+          "name": "Durga",
+          "conf": 0.5833,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Durga",
+            "conf": 0.5833,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Kedar",
+            "conf": 0.5643,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Jhinjhoti",
+            "conf": 0.5339,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 0.786,
+    "desc": "Dha_ high shruti 697.66 Hz",
+    "synth": true
+  },
+  {
+    "name": "ascending",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ascending.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 0.6,
+        "ok": true,
+        "duration": 4.0,
+        "sr": 22050,
+        "frames": 173,
+        "voiced_ratio": 1.0,
+        "tempo": 117.45,
+        "f0_voiced": 173,
+        "mean_pcp_top5": [
+          [
+            "Shruti 10 (Tivra Ma)",
+            0.107321
+          ],
+          [
+            "Shruti 7 (Ma1)",
+            0.092395
+          ],
+          [
+            "Shruti 14 (Ni1)",
+            0.085076
+          ],
+          [
+            "Shruti 12 (Dha1)",
+            0.08101
+          ],
+          [
+            "Shruti 3 (Re2)",
+            0.076559
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.025,
+        "ok": true,
+        "frames": 173,
+        "unique_shrutis": 14,
+        "top5": {
+          "Shruti 1 (Sa)": 22,
+          "Shruti 14 (Ni1)": 22,
+          "Shruti 10 (Tivra Ma)": 21,
+          "Shruti 16 (Sa_)": 21,
+          "Shruti 3 (Re2)": 20
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.012,
+        "ok": true,
+        "valid": false,
+        "confidence": 0.302,
+        "repetition": 0.0,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 0.6667,
+          "mean_segment_similarity": 0.4707
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 173,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Khamaj",
+          "conf": 0.831,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Khamaj",
+            "conf": 0.831,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Kapi",
+            "conf": 0.831,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.8199,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 0.638,
+    "desc": "Ascending Sa->Sa' 8 notes",
+    "synth": true
+  },
+  {
+    "name": "descending",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/descending.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 0.591,
+        "ok": true,
+        "duration": 4.0,
+        "sr": 22050,
+        "frames": 173,
+        "voiced_ratio": 1.0,
+        "tempo": 117.45,
+        "f0_voiced": 173,
+        "mean_pcp_top5": [
+          [
+            "Shruti 10 (Tivra Ma)",
+            0.106328
+          ],
+          [
+            "Shruti 7 (Ma1)",
+            0.09331
+          ],
+          [
+            "Shruti 14 (Ni1)",
+            0.085326
+          ],
+          [
+            "Shruti 12 (Dha1)",
+            0.084025
+          ],
+          [
+            "Shruti 3 (Re2)",
+            0.076989
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.023,
+        "ok": true,
+        "frames": 173,
+        "unique_shrutis": 14,
+        "top5": {
+          "Shruti 16 (Sa_)": 22,
+          "Shruti 1 (Sa)": 22,
+          "Shruti 10 (Tivra Ma)": 21,
+          "Shruti 7 (Ma1)": 21,
+          "Shruti 14 (Ni1)": 20
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.013,
+        "ok": true,
+        "valid": false,
+        "confidence": 0.2982,
+        "repetition": 0.0,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 0.6667,
+          "mean_segment_similarity": 0.4592
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 173,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Khamaj",
+          "conf": 0.8667,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Khamaj",
+            "conf": 0.8667,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Sri Raga",
+            "conf": 0.8667,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Kapi",
+            "conf": 0.8667,
+            "trad": "Carnatic"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 0.629,
+    "desc": "Descending Sa'->Sa 8 notes",
+    "synth": true
+  },
+  {
+    "name": "bilawal_3x",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/bilawal_3x.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 1.346,
+        "ok": true,
+        "duration": 9.6,
+        "sr": 22050,
+        "frames": 414,
+        "voiced_ratio": 0.9903,
+        "tempo": 152.0,
+        "f0_voiced": 410,
+        "mean_pcp_top5": [
+          [
+            "Shruti 10 (Tivra Ma)",
+            0.107587
+          ],
+          [
+            "Shruti 7 (Ma1)",
+            0.091865
+          ],
+          [
+            "Shruti 12 (Dha1)",
+            0.082809
+          ],
+          [
+            "Shruti 14 (Ni1)",
+            0.081833
+          ],
+          [
+            "Shruti 3 (Re2)",
+            0.074813
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.029,
+        "ok": true,
+        "frames": 414,
+        "unique_shrutis": 16,
+        "top5": {
+          "Shruti 1 (Sa)": 53,
+          "Shruti 10 (Tivra Ma)": 51,
+          "Shruti 14 (Ni1)": 49,
+          "Shruti 16 (Sa_)": 49,
+          "Shruti 7 (Ma1)": 48
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.043,
+        "ok": true,
+        "valid": false,
+        "confidence": 0.4524,
+        "repetition": 0.3214,
+        "n_segments": 9,
+        "dtw": {
+          "cycle_score": 0.6667,
+          "mean_segment_similarity": 0.4882
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.002,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 414,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Khamaj",
+          "conf": 0.831,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Khamaj",
+            "conf": 0.831,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Kapi",
+            "conf": 0.831,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.8199,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 1.419,
+    "desc": "Bilawal major scale x3",
+    "synth": true
+  },
+  {
+    "name": "kalyani_3x",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/kalyani_3x.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 1.381,
+        "ok": true,
+        "duration": 9.6,
+        "sr": 22050,
+        "frames": 414,
+        "voiced_ratio": 0.9903,
+        "tempo": 152.0,
+        "f0_voiced": 410,
+        "mean_pcp_top5": [
+          [
+            "Shruti 10 (Tivra Ma)",
+            0.106271
+          ],
+          [
+            "Shruti 12 (Dha1)",
+            0.083016
+          ],
+          [
+            "Shruti 14 (Ni1)",
+            0.079791
+          ],
+          [
+            "Shruti 3 (Re2)",
+            0.07481
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.073085
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.03,
+        "ok": true,
+        "frames": 414,
+        "unique_shrutis": 16,
+        "top5": {
+          "Shruti 1 (Sa)": 53,
+          "Shruti 10 (Tivra Ma)": 51,
+          "Shruti 14 (Ni1)": 49,
+          "Shruti 16 (Sa_)": 49,
+          "Shruti 12 (Dha1)": 47
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.043,
+        "ok": true,
+        "valid": false,
+        "confidence": 0.442,
+        "repetition": 0.3214,
+        "n_segments": 9,
+        "dtw": {
+          "cycle_score": 0.6667,
+          "mean_segment_similarity": 0.4566
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.002,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 414,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Bilawal",
+          "conf": 0.8198,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Bilawal",
+            "conf": 0.8198,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Rageshree",
+            "conf": 0.8109,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Jhinjhoti",
+            "conf": 0.7973,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 1.456,
+    "desc": "Kalyani Lydian scale x3",
+    "synth": true
+  },
+  {
+    "name": "bhairav_3x",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/bhairav_3x.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 1.396,
+        "ok": true,
+        "duration": 9.6,
+        "sr": 22050,
+        "frames": 414,
+        "voiced_ratio": 0.9903,
+        "tempo": 152.0,
+        "f0_voiced": 410,
+        "mean_pcp_top5": [
+          [
+            "Shruti 10 (Tivra Ma)",
+            0.108149
+          ],
+          [
+            "Shruti 7 (Ma1)",
+            0.086508
+          ],
+          [
+            "Shruti 11 (Pa)",
+            0.08256
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.080535
+          ],
+          [
+            "Shruti 2 (Re1)",
+            0.074924
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.03,
+        "ok": true,
+        "frames": 414,
+        "unique_shrutis": 16,
+        "top5": {
+          "Shruti 1 (Sa)": 54,
+          "Shruti 11 (Pa)": 53,
+          "Shruti 10 (Tivra Ma)": 52,
+          "Shruti 16 (Sa_)": 51,
+          "Shruti 2 (Re1)": 49
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.044,
+        "ok": true,
+        "valid": false,
+        "confidence": 0.4633,
+        "repetition": 0.3214,
+        "n_segments": 9,
+        "dtw": {
+          "cycle_score": 0.75,
+          "mean_segment_similarity": 0.4657
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.002,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 414,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Bihag",
+          "conf": 0.8083,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Bihag",
+            "conf": 0.8083,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Yaman",
+            "conf": 0.7952,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.7952,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 1.471,
+    "desc": "Bhairav scale x3",
+    "synth": true
+  },
+  {
+    "name": "malkauns_3x",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/malkauns_3x.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 0.901,
+        "ok": true,
+        "duration": 6.0,
+        "sr": 22050,
+        "frames": 259,
+        "voiced_ratio": 0.9846,
+        "tempo": 152.0,
+        "f0_voiced": 255,
+        "mean_pcp_top5": [
+          [
+            "Shruti 7 (Ma1)",
+            0.133218
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.12822
+          ],
+          [
+            "Shruti 11 (Pa)",
+            0.11845
+          ],
+          [
+            "Shruti 9 (Ma3)",
+            0.113549
+          ],
+          [
+            "Shruti 4 (Ga1)",
+            0.111242
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.027,
+        "ok": true,
+        "frames": 259,
+        "unique_shrutis": 10,
+        "top5": {
+          "Shruti 9 (Ma3)": 51,
+          "Shruti 11 (Pa)": 51,
+          "Shruti 4 (Ga1)": 50,
+          "Shruti 1 (Sa)": 49,
+          "Shruti 7 (Ma1)": 46
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.018,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.6235,
+        "repetition": 0.6,
+        "n_segments": 6,
+        "dtw": {
+          "cycle_score": 1.0,
+          "mean_segment_similarity": 0.4047
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.001,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 259,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Bhairav",
+          "conf": 0.8667,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Bhairav",
+            "conf": 0.8667,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Darbari Kanada",
+            "conf": 0.8667,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Asavari",
+            "conf": 0.8667,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 0.946,
+    "desc": "Malkauns pentatonic x3",
+    "synth": true
+  },
+  {
+    "name": "isavasya_ghanam_60s",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/isavasya_ghanam_60s.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 8.25,
+        "ok": true,
+        "duration": 60.0,
+        "sr": 22050,
+        "frames": 2584,
+        "voiced_ratio": 0.882,
+        "tempo": 184.57,
+        "f0_voiced": 2279,
+        "mean_pcp_top5": [
+          [
+            "Shruti 6 (Ga3)",
+            0.114664
+          ],
+          [
+            "Shruti 22 (Ni_)",
+            0.079796
+          ],
+          [
+            "Shruti 21 (Dha_)",
+            0.076927
+          ],
+          [
+            "Shruti 16 (Sa_)",
+            0.05051
+          ],
+          [
+            "Shruti 7 (Ma1)",
+            0.045337
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.112,
+        "ok": true,
+        "frames": 2584,
+        "unique_shrutis": 22,
+        "top5": {
+          "Shruti 6 (Ga3)": 1070,
+          "Shruti 21 (Dha_)": 432,
+          "Shruti 22 (Ni_)": 352,
+          "Shruti 7 (Ma1)": 221,
+          "Shruti 3 (Re2)": 78
+        }
+      },
+      "ghana_patha": {
+        "time_s": 2.073,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.749,
+        "repetition": 0.9813,
+        "n_segments": 60,
+        "dtw": {
+          "cycle_score": 1.0,
+          "mean_segment_similarity": 0.2648
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.007,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 2584,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Khamaj",
+          "conf": 0.8379,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Khamaj",
+            "conf": 0.8379,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Sri Raga",
+            "conf": 0.8379,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Kapi",
+            "conf": 0.8379,
+            "trad": "Carnatic"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 10.442,
+    "desc": "Real: isavasya_ghanam_60s.wav",
+    "synth": false
+  },
+  {
+    "name": "rudram_60s",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/rudram_60s.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 8.317,
+        "ok": true,
+        "duration": 60.0,
+        "sr": 22050,
+        "frames": 2584,
+        "voiced_ratio": 0.8545,
+        "tempo": 107.67,
+        "f0_voiced": 2208,
+        "mean_pcp_top5": [
+          [
+            "Shruti 20 (Pa_)",
+            0.116452
+          ],
+          [
+            "Shruti 9 (Ma3)",
+            0.10613
+          ],
+          [
+            "Shruti 21 (Dha_)",
+            0.10534
+          ],
+          [
+            "Shruti 22 (Ni_)",
+            0.067089
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.056597
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.105,
+        "ok": true,
+        "frames": 2584,
+        "unique_shrutis": 19,
+        "top5": {
+          "Shruti 20 (Pa_)": 743,
+          "Shruti 21 (Dha_)": 682,
+          "Shruti 9 (Ma3)": 334,
+          "Shruti 22 (Ni_)": 234,
+          "Shruti 10 (Tivra Ma)": 218
+        }
+      },
+      "ghana_patha": {
+        "time_s": 2.124,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.7559,
+        "repetition": 0.9959,
+        "n_segments": 60,
+        "dtw": {
+          "cycle_score": 1.0,
+          "mean_segment_similarity": 0.266
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.007,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 2584,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Todi",
+          "conf": 0.8667,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Todi",
+            "conf": 0.8667,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Todi (Carnatic)",
+            "conf": 0.8667,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.8666,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 10.552,
+    "desc": "Real: rudram_60s.wav",
+    "synth": false
+  },
+  {
+    "name": "test_10s",
+    "path": "/home/Arc/Vedic-Acoustica/test_audio/test_10s.wav",
+    "stages": {
+      "feature_extraction": {
+        "time_s": 1.473,
+        "ok": true,
+        "duration": 10.0,
+        "sr": 22050,
+        "frames": 431,
+        "voiced_ratio": 0.9142,
+        "tempo": 143.55,
+        "f0_voiced": 394,
+        "mean_pcp_top5": [
+          [
+            "Shruti 6 (Ga3)",
+            0.12472
+          ],
+          [
+            "Shruti 21 (Dha_)",
+            0.080103
+          ],
+          [
+            "Shruti 22 (Ni_)",
+            0.069291
+          ],
+          [
+            "Shruti 15 (Ni2)",
+            0.056017
+          ],
+          [
+            "Shruti 9 (Ma3)",
+            0.048749
+          ]
+        ]
+      },
+      "clustering": {
+        "time_s": 0.032,
+        "ok": true,
+        "frames": 431,
+        "unique_shrutis": 21,
+        "top5": {
+          "Shruti 6 (Ga3)": 168,
+          "Shruti 21 (Dha_)": 76,
+          "Shruti 22 (Ni_)": 53,
+          "Shruti 15 (Ni2)": 34,
+          "Shruti 3 (Re2)": 18
+        }
+      },
+      "ghana_patha": {
+        "time_s": 0.054,
+        "ok": true,
+        "valid": true,
+        "confidence": 0.7029,
+        "repetition": 0.8889,
+        "n_segments": 10,
+        "dtw": {
+          "cycle_score": 1.0,
+          "mean_segment_similarity": 0.2512
+        }
+      },
+      "raga_detection": {
+        "time_s": 0.002,
+        "ok": true,
+        "inconclusive": false,
+        "threshold": 0.4,
+        "frames": 431,
+        "source": "pcp",
+        "directional": true,
+        "n_swaras": 15,
+        "swaras": [
+          "Sa",
+          "Re1",
+          "Re2",
+          "Ga1",
+          "Ga2",
+          "Ga3",
+          "Ma1",
+          "Ma2",
+          "Ma3",
+          "Tivra Ma"
+        ],
+        "best": {
+          "name": "Todi",
+          "conf": 0.8399,
+          "tradition": "Hindustani"
+        },
+        "top3": [
+          {
+            "name": "Todi",
+            "conf": 0.8399,
+            "trad": "Hindustani"
+          },
+          {
+            "name": "Todi (Carnatic)",
+            "conf": 0.8399,
+            "trad": "Carnatic"
+          },
+          {
+            "name": "Marwa",
+            "conf": 0.8355,
+            "trad": "Hindustani"
+          }
+        ],
+        "inconcl_reason": null
+      }
+    },
+    "errors": [],
+    "total_time_s": 1.56,
+    "desc": "Real: test_10s.wav",
+    "synth": false
+  }
+]

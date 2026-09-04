@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 from django.conf import settings
 from django.http import StreamingHttpResponse
+from django.views.decorators.http import require_GET
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -124,7 +125,11 @@ def _build_pcp_time_axis(pcp_ds: np.ndarray, pcp_full_ncols: int) -> list[float]
 _WRITE_LOCKS: dict[int, threading.Lock] = {}
 _LOCKS_MUTEX = threading.Lock()
 
-_PROGRESS_DIR = os.environ.get('VEDIC_PROGRESS_DIR', tempfile.gettempdir())
+_PROGRESS_DIR = os.environ.get(
+    'VEDIC_PROGRESS_DIR',
+    os.path.join(settings.MEDIA_ROOT, 'progress'),
+)
+os.makedirs(_PROGRESS_DIR, exist_ok=True)
 
 
 def _progress_path(pk: int) -> str:
@@ -391,6 +396,7 @@ def analyze_audio(request, pk):
 
 
 
+@require_GET
 def analysis_status(request, pk):
     """
     GET /api/analyze/<pk>/status/

@@ -31,12 +31,18 @@ jobs:
 
       - name: Run Django checks
         run: python manage.py check
+        env:
+          DJANGO_DEBUG: "True"
 
       - name: Run Django tests
-        run: python manage.py test
+        run: python manage.py test --verbosity=2
+        env:
+          DJANGO_DEBUG: "True"
 
       - name: Verify ML engine imports (librosa + sklearn)
         run: python -c "from ml_engine import audio_processing, ml_engine, ghana_patha, raga_mapping; print('ML engine OK')"
+        env:
+          DJANGO_DEBUG: "True"
 
   frontend:
     name: Frontend (React + Vite)
@@ -62,3 +68,24 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  docker-build-check:
+    name: Docker Build Smoke Test
+    runs-on: ubuntu-latest
+    # Verify both Dockerfiles build without error on every PR/push.
+    # Images are NOT pushed here — that is the CD pipeline's job.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: |
+          docker build ./backend \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t vedic-backend:ci-check \
+            --no-cache
+
+      - name: Build frontend image
+        run: |
+          docker build ./frontend \
+            -t vedic-frontend:ci-check \
+            --no-cache

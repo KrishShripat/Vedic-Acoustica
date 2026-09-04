@@ -43,7 +43,7 @@ function ScaleStrip({ swaras, label, highlight }) {
 }
 
 /** Amber "Inconclusive" banner shown when confidence < threshold */
-function InconclusiveCard({ raga }) {
+function InconclusiveCard({ raga, onReady }) {
   const detectedSwaras = raga.detected_swaras || []
   const best = raga.best_match   // may be null or low-confidence
 
@@ -239,7 +239,7 @@ export default function RagaViz({ data, onReady }) {
                 background: 'rgba(233, 69, 96, 0.15)', color: '#e94560',
                 border: '1px solid #e94560',
               }}>
-                {s.swara} ({s.hits})
+                {s.swara} ({s.weight?.toFixed(2) ?? '—'})
               </span>
             ))}
           </div>
@@ -250,7 +250,7 @@ export default function RagaViz({ data, onReady }) {
 
   // ── Inconclusive path (matches exist but all below threshold) ────────────
   if (raga.is_inconclusive) {
-    return <InconclusiveCard raga={raga} />
+    return <InconclusiveCard raga={raga} onReady={onReady} />
   }
 
   // ── Conclusive match ─────────────────────────────────────────────────────

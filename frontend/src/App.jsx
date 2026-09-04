@@ -36,7 +36,7 @@ function App() {
       const res = await fetch(`${API_BASE}/recordings/`)
       if (!res.ok) throw new Error(`Backend returned ${res.status}`)
       const data = await res.json()
-      setRecordings(data)
+      setRecordings(data.results ?? data)
       setFetchError(null)
     } catch (err) {
       console.error('Failed to fetch recordings:', err)
@@ -57,15 +57,56 @@ function App() {
     formData.append('audio_file', file)
     formData.append('title', file.name)
 
-    const res = await fetch(`${API_BASE}/upload/`, {
-      method: 'POST',
-      body: formData,
-    })
-    const recording = await res.json()
-    setRecordings(prev => [recording, ...prev])
-    setSelectedRecording(recording)
-    setAnalysis(null)
+    try {
+      const res = await fetch(`${API_BASE}/upload/`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        // DRF field errors arrive as { audio_file: ['msg'], title: ['msg'] }
+        const msg =
+          err.audio_file?.[0] ||
+          err.title?.[0] ||
+          err.detail ||
+          err.error ||
+          `Upload failed (HTTP ${res.status})`
+        alert(msg)
+        return
+      }
+      const recording = await res.json()
+      setRecordings(prev => [recording, ...prev])
+      setSelectedRecording(recording)
+      setAnalysis(null)
+    } catch (err) {
+      alert(`Upload failed: ${err.message}`)
+    }
   }, [])
+
+  // Called by AnalysisProgress when the SSE stream reports status='done'.
+  // Fetches the actual analysis payload from the recording detail endpoint.
+  const handleAnalysisDone = useCallback(async () => {
+    if (!selectedRecording) return
+    try {
+      const res = await fetch(`${API_BASE}/recordings/${selectedRecording.id}/`)
+      if (!res.ok) throw new Error(`Backend returned ${res.status}`)
+      const recording = await res.json()
+      const result = recording.analysis_result ?? null
+      setAnalysis(result)
+      setRecordings(prev =>
+        prev.map(r =>
+          r.id === selectedRecording.id
+            ? { ...r, analysis_result: result, is_analyzed: true }
+            : r
+        )
+      )
+    } catch (err) {
+      console.error('Failed to fetch analysis result:', err)
+      setAnalyzeError(err.message)
+    } finally {
+      setAnalyzing(false)
+    }
+  }, [selectedRecording])
 
   const handleAnalyze = useCallback(async () => {
     if (!selectedRecording) return
@@ -77,14 +118,12 @@ function App() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
-      setAnalysis(data)
-      setRecordings(prev =>
-        prev.map(r => r.id === selectedRecording.id ? { ...r, analysis_result: data, is_analyzed: true } : r)
-      )
+      // POST returned HTTP 202 — analysis is now queued.
+      // AnalysisProgress will call handleAnalysisDone when the SSE stream
+      // reports status='done', at which point we fetch the real results.
     } catch (err) {
       console.error('Analysis failed:', err)
       setAnalyzeError(err.message)
-    } finally {
       setAnalyzing(false)
     }
   }, [selectedRecording])
@@ -159,7 +198,7 @@ function App() {
                   <AnalysisProgress
                     recordingId={selectedRecording.id}
                     apiBase={API_BASE}
-                    onDone={() => { /* POST response already handled above */ }}
+                    onDone={handleAnalysisDone}
                     onError={(msg) => setAnalyzeError(msg)}
                   />
                 </div>

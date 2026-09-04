@@ -51,7 +51,7 @@ export default function AudioUploader({ onUpload }) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="audio/*"
+        accept=".wav,.mp3,.ogg,.flac,audio/wav,audio/mpeg,audio/ogg,audio/flac"
         onChange={(e) => handleFile(e.target.files[0])}
         style={{ display: 'none' }}
       />
@@ -62,7 +62,7 @@ export default function AudioUploader({ onUpload }) {
           <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#x1f3b5;</p>
           <p>Drop a .wav file here or click to upload</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            Supports WAV, MP3, FLAC, OGG
+            Supports WAV · MP3 · OGG · FLAC &nbsp;(max 50 MB)
           </p>
         </>
       )}

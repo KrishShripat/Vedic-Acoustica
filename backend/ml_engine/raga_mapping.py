@@ -5,6 +5,14 @@ from .shruti_mapping import SHRUTI_NAMES
 
 logger = logging.getLogger(__name__)
 
+# ── Pakad (characteristic phrase) import — local to avoid circular deps ───────
+# DTW is already a project dependency (used in ghana_patha.py).
+try:
+    from .ghana_patha import dtw_distance as _dtw_distance
+    _PAKAD_DTW_AVAILABLE = True
+except Exception:  # pragma: no cover
+    _PAKAD_DTW_AVAILABLE = False
+
 # Minimum best-match confidence required to declare a conclusive raga match.
 # Anything below this is reported as "Inconclusive" to the client.
 CONFIDENCE_THRESHOLD = 0.40
@@ -470,6 +478,218 @@ RAGA_DATABASE = [
 ]
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Pakad (characteristic phrase) database — Stage 4b
+# ─────────────────────────────────────────────────────────────────────────────
+# Each entry is a list of (n_frames, 22) idealised PCP keyframe sequences that
+# represent the raga's pakad (signature melodic phrase).  DTW is used to
+# search for the best-matching subsequence in the audio's PCP matrix.
+#
+# Shruti→PCP index (0-based, same as SWARA_MAP above):
+#   0=Sa 1=Re1 2=Re2 3=Ga1 4=Ga2 5=Ga3 6=Ma1 7=Ma2 8=Ma3 9=TivraMa
+#   10=Pa 11=Dha1 12=Dha2 13=Ni1 14=Ni2 15=Ni3
+#
+# These templates encode *order* and *emphasis*, not just presence — allowing
+# the system to distinguish ragas that share the same swara set.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _pakad_template(frames_shruti_lists):
+    """Build a (T, 22) float32 PCP template from a list of active shruti indices."""
+    T = len(frames_shruti_lists)
+    tpl = np.zeros((T, 22), dtype=np.float32)
+    for t, indices in enumerate(frames_shruti_lists):
+        for idx in indices:
+            tpl[t, idx] = 1.0
+        norm = np.linalg.norm(tpl[t])
+        if norm > 0:
+            tpl[t] /= norm
+    return tpl
+
+
+PAKAD_DATABASE = {
+    # ── Ambiguous group 1: {0,2,4,6,10,12,14} ────────────────────────────────
+    # Yaman:    N Re Ga — Ga Ma (tivra) Pa — characteristic ni-re-ga opening
+    'Yaman': _pakad_template([
+        [14],           # Ni2 (strong opening note)
+        [2],            # Re2
+        [4],            # Ga2
+        [14, 2],        # Ni–Re oscillation
+        [4, 9],         # Ga–TivraMa (the diagnostic interval)
+        [10],           # Pa
+    ]),
+
+    # Bilawal:  Sa Re Ga Ma — Pa Dha — Ni Sa' — emphasis on Sa and Pa
+    'Bilawal': _pakad_template([
+        [0],            # Sa (strong start)
+        [2, 4],         # Re–Ga
+        [6],            # Ma1 (shuddha Ma)
+        [10],           # Pa
+        [12],           # Dha2
+        [0],            # Sa (return — vakra)
+    ]),
+
+    # Jhinjhoti: Sa Re Ga Ma Pa — Ni Dha Pa — Ga Re Sa — komal Ni in descent
+    'Jhinjhoti': _pakad_template([
+        [0, 2],         # Sa–Re
+        [4],            # Ga2
+        [10],           # Pa
+        [13],           # Ni1 (komal — diagnostic!)
+        [12],           # Dha2
+        [10],           # Pa
+        [4, 2, 0],      # Ga–Re–Sa
+    ]),
+
+    # Shankarabharanam: Pa Ma Ga Re Sa — Ni Dha Pa (Carnatic major scale, starts Pa)
+    'Shankarabharanam': _pakad_template([
+        [10],           # Pa (characteristic opening from Pa)
+        [6],            # Ma1
+        [4],            # Ga2
+        [2],            # Re2
+        [0],            # Sa
+        [14],           # Ni2
+        [12],           # Dha2
+        [10],           # Pa
+    ]),
+
+    # Mand:     Sa Ga Pa Dha — Ma Ga Re Sa — Rajasthani folk curve
+    'Mand': _pakad_template([
+        [0],            # Sa
+        [4],            # Ga2
+        [10],           # Pa
+        [12],           # Dha2
+        [6, 4, 2, 0],   # Ma–Ga–Re–Sa (folk descending)
+    ]),
+
+    # ── Ambiguous group 2: Bhairav region {0,1,4,6,10,11,13} ─────────────────
+    # Bhairav:        Sa Re1 — Ga Pa — Dha1 Ni1 Sa'
+    'Bhairav': _pakad_template([
+        [0],            # Sa
+        [1],            # Re1 (komal)
+        [4, 6],         # Ga–Ma
+        [10],           # Pa
+        [11],           # Dha1 (komal)
+        [13],           # Ni1 (komal)
+        [0],            # Sa'
+    ]),
+
+    # Mayamalavagowla:  Sa Re1 Ga2 — Pa Dha1 Ni1 — distinctive jump Re1→Ga2
+    'Mayamalavagowla': _pakad_template([
+        [0],            # Sa
+        [1],            # Re1
+        [4],            # Ga2 (shuddha — jumps over Ga1)
+        [10],           # Pa
+        [11],           # Dha1 (komal)
+        [13, 0],        # Ni1→Sa
+    ]),
+
+    # ── Ambiguous group 3: Kafi/Khamaj region ────────────────────────────────
+    # Kafi:   Sa Re Ga1 Ma Pa Dha — komal Ga and komal Ni
+    'Kafi': _pakad_template([
+        [0],            # Sa
+        [2],            # Re2
+        [3],            # Ga1 (komal — diagnostic)
+        [6, 10],        # Ma–Pa
+        [12],           # Dha2
+        [13],           # Ni1 (komal)
+        [0],            # Sa
+    ]),
+
+    # Khamaj: Pa Ni Dha Pa — Ga Ma Pa — Ni in descent only
+    'Khamaj': _pakad_template([
+        [10],           # Pa (characteristic start)
+        [13],           # Ni1 (komal in descent)
+        [12],           # Dha2
+        [10],           # Pa
+        [4, 6, 10],     # Ga–Ma–Pa ascending
+    ]),
+
+    # ── Ambiguous group 4: Todi variants ─────────────────────────────────────
+    # Todi (Hindustani): Re1 Ga1 Ma2 — Pa Dha1 Ni1 — all komal + tivra Ma
+    'Todi': _pakad_template([
+        [1],            # Re1 (komal)
+        [3],            # Ga1 (komal)
+        [8],            # Ma3/Tivra region
+        [10],           # Pa (avoided in avaroh)
+        [11],           # Dha1
+        [13, 1, 0],     # Ni1–Re1–Sa
+    ]),
+}
+
+
+def apply_pakad_tiebreak(matches, features, top_n=3):
+    """
+    Use DTW-based Pakad (phrase) matching to disambiguate ragas that scored
+    within ``PAKAD_TIEBREAK_MARGIN`` of each other in the primary scoring step.
+
+    For each candidate raga in ``matches[:top_n]`` that has a Pakad template,
+    the function searches for the best-matching subsequence in the audio's PCP
+    by sliding a window equal to the template length across the PCP matrix and
+    computing the minimum DTW distance.  The candidate with the best Pakad
+    match gets a confidence bonus, potentially re-ordering the top candidates.
+
+    Parameters
+    ----------
+    matches   : list of raga match dicts (already sorted by confidence desc)
+    features  : dict — extract_features() output; must contain 'pcp'
+    top_n     : int — how many top candidates to check (default 3)
+
+    Returns
+    -------
+    matches : list, potentially re-ordered if a Pakad match changes ranking
+    """
+    if not _PAKAD_DTW_AVAILABLE:
+        return matches
+    pcp = features.get('pcp')  # (22, n_frames)
+    if pcp is None or pcp.shape[1] < 5:
+        return matches
+
+    n_frames = pcp.shape[1]
+    pcp_T = pcp.T.astype(np.float32)  # (n_frames, 22) — row=frame, col=shruti
+
+    PAKAD_TIEBREAK_MARGIN = 0.05   # only fire when top-2 are within 5%
+    if len(matches) < 2:
+        return matches   # nothing to disambiguate — a tiebreak needs ≥2 candidates
+    if matches[0]['confidence'] - matches[1]['confidence'] > PAKAD_TIEBREAK_MARGIN:
+        return matches   # clear winner — no need for Pakad check
+
+    PAKAD_BONUS = 0.08   # maximum confidence boost awarded for a Pakad match
+
+    for i, m in enumerate(matches[:top_n]):
+        raga_name = m['raga_name']
+        template = PAKAD_DATABASE.get(raga_name)
+        if template is None:
+            continue   # no Pakad defined for this raga yet
+
+        T_tpl = len(template)   # number of keyframes in the Pakad template
+        if n_frames < T_tpl:
+            continue
+
+        # Sliding-window search: find the minimum DTW distance over all windows
+        best_sim = 0.0
+        for start in range(0, n_frames - T_tpl + 1, max(T_tpl // 2, 1)):
+            window = pcp_T[start: start + T_tpl]   # (T_tpl, 22)
+            dist, _ = _dtw_distance(window, template)
+            sim = 1.0 - dist
+            if sim > best_sim:
+                best_sim = sim
+
+        # Award a scaled bonus (up to PAKAD_BONUS) proportional to match quality
+        bonus = round(PAKAD_BONUS * best_sim, 4)
+        new_conf = round(min(m['confidence'] + bonus, 1.0), 4)
+
+        logger.info(
+            'Pakad tiebreak: %s best_sim=%.4f bonus=%.4f old_conf=%.4f new_conf=%.4f',
+            raga_name, best_sim, bonus, m['confidence'], new_conf,
+        )
+
+        matches[i] = dict(m, confidence=new_conf,
+                          pakad_similarity=round(best_sim, 4),
+                          pakad_bonus=bonus)
+
+    matches.sort(key=lambda x: x['confidence'], reverse=True)
+    return matches
+
+
 def _extract_detected_swaras(freq_assignments):
     """Legacy path: build swara hits from per-frame string assignments."""
     swara_hits = Counter()
@@ -721,12 +941,16 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
         )
         return {
             'detected_swaras': [],
+            'arohana_swaras': [],
+            'avarohana_swaras': [],
+            'directional_scoring': False,
             'matches': [],
             'best_match': None,
             'is_inconclusive': True,
             'inconclusive_reason': reason,
             'confidence_threshold': CONFIDENCE_THRESHOLD,
             'total_frames_analyzed': len(freq_assignments),
+            'detection_source': source,
             'reason': reason,
         }
 
@@ -782,6 +1006,13 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
             })
 
     matches.sort(key=lambda m: m['confidence'], reverse=True)
+
+    # ── Stage 4b: Pakad (phrase-level) tiebreak ───────────────────────────────
+    # When the top candidates are within 5% of each other, perform a sliding-
+    # window DTW search against the Pakad templates to differentiate ragas that
+    # share the same swara set (e.g. Yaman vs Bilawal vs Jhinjhoti vs Mand).
+    if features is not None and matches:
+        matches = apply_pakad_tiebreak(matches, features)
 
     # Build directional swara summary for the API response
     def _fmt(d):

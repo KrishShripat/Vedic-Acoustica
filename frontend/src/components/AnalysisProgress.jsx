@@ -28,7 +28,9 @@ function stageIndex(stageName) {
  */
 export default function AnalysisProgress({ recordingId, apiBase, onDone, onError }) {
   const [progress, setProgress] = useState({ stage: 'Queued', percent: 0, status: 'running' })
-  const esRef = useRef(null)
+  const esRef     = useRef(null)
+  // Tracks the latest status without creating a stale closure in onerror
+  const statusRef = useRef('running')
 
   useEffect(() => {
     if (!recordingId) return
@@ -40,6 +42,7 @@ export default function AnalysisProgress({ recordingId, apiBase, onDone, onError
     es.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data)
+        statusRef.current = data.status   // keep ref in sync
         setProgress(data)
         if (data.status === 'done') {
           es.close()
@@ -52,8 +55,8 @@ export default function AnalysisProgress({ recordingId, apiBase, onDone, onError
     }
 
     es.onerror = () => {
-      // EventSource auto-reconnects on network errors; only close on terminal state
-      if (progress.status === 'done' || progress.status === 'error') {
+      // Use ref — not the stale closure — to check terminal state
+      if (statusRef.current === 'done' || statusRef.current === 'error') {
         es.close()
       }
     }

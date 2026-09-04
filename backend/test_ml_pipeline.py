@@ -55,7 +55,8 @@ def generate_sine_tone(freq_hz, duration=5.0, sr=SR):
 
 def generate_ascending_scale(sr=SR):
     """Generate an ascending scale: Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa' (12s)."""
-    shruti_indices = [0, 2, 4, 6, 9, 11, 13, 15]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
+    # Correct SHRUTI_NAMES indices: Pa=10, Dha2=12, Ni2=14, Sa'=19
+    shruti_indices = [0, 2, 4, 6, 10, 12, 14, 19]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
     note_dur = 1.5
     waves = []
     for idx in shruti_indices:
@@ -66,7 +67,7 @@ def generate_ascending_scale(sr=SR):
 
 def generate_descending_scale(sr=SR):
     """Generate a descending scale: Sa' Ni2 Dha2 Pa Ma1 Ga2 Re2 Sa (12s)."""
-    shruti_indices = [15, 13, 11, 9, 6, 4, 2, 0]
+    shruti_indices = [19, 14, 12, 10, 6, 4, 2, 0]  # Sa'=19 Ni2=14 Dha2=12 Pa=10 Ma1 Ga2 Re2 Sa
     note_dur = 1.5
     waves = []
     for idx in shruti_indices:
@@ -81,8 +82,8 @@ def generate_ghana_pattern(sr=SR):
     Uses ascending/descending sine sequences with pitch glides.
     """
     cycle_parts = ['fwd', 'rev', 'fwd', 'rev', 'fwd']
-    ascending = [0, 2, 4, 6, 9]      # Sa Ga2 Pa region
-    descending = [9, 6, 4, 2, 0]     # Pa Ga2 Sa region
+    ascending = [0, 2, 4, 6, 10]     # Sa Re2 Ga2 Ma1 Pa (Pa=10)
+    descending = [10, 6, 4, 2, 0]    # Pa Ma1 Ga2 Re2 Sa (Pa=10)
 
     all_waves = []
     for part in cycle_parts:
@@ -98,8 +99,9 @@ def generate_bilawal_scale(sr=SR):
     """
     Bilawal-like pattern (major scale): Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
     with repeated phrases — 15s.
+    Pa=10, Dha2=12, Ni2=14, Sa'=19
     """
-    notes = [0, 2, 4, 6, 9, 11, 13, 15]
+    notes = [0, 2, 4, 6, 10, 12, 14, 19]
     waves = []
     for _ in range(3):  # repeat 3 times
         for idx in notes:
@@ -110,10 +112,10 @@ def generate_bilawal_scale(sr=SR):
 
 def generate_kalyani_scale(sr=SR):
     """
-    Kalyani-like pattern (Lydian): Sa Re2 Ga2 Ma_ Pa Dha2 Ni2 Sa'
-    Ma_ = Shruti 19 (Ma_) index 18
+    Kalyani-like pattern (Carnatic Lydian): Sa Re2 Ga2 Ma2 Pa Dha2 Ni2 Sa'
+    RAGA_DATABASE Kalyani swaras: [0,2,4,7,10,12,14] — Ma2=7, Pa=10, Dha2=12, Ni2=14, Sa'=19
     """
-    notes = [0, 2, 4, 7, 9, 11, 13, 15]
+    notes = [0, 2, 4, 7, 10, 12, 14, 19]
     waves = []
     for _ in range(3):
         for idx in notes:
@@ -125,9 +127,9 @@ def generate_kalyani_scale(sr=SR):
 def generate_bhairav_scale(sr=SR):
     """
     Bhairav-like: Sa Re1 Ga2 Ma1 Pa Dha1 Ni1 Sa'
-    Re1=1, Ga2=4, Ma1=6, Pa=9, Dha1=10, Ni1=12
+    RAGA_DATABASE Bhairav swaras: [0,1,4,6,10,11,13] — Pa=10, Dha1=11, Ni1=13, Sa'=19
     """
-    notes = [0, 1, 4, 6, 9, 10, 12, 15]
+    notes = [0, 1, 4, 6, 10, 11, 13, 19]
     waves = []
     for _ in range(3):
         for idx in notes:
@@ -141,6 +143,116 @@ def generate_silence(duration=5.0, sr=SR):
     return np.random.normal(0, 0.001, int(sr * duration)).astype(np.float32)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Real-world robustness: Gamaka, Vibrato, Breath-gap generators
+# ─────────────────────────────────────────────────────────────────────────────
+
+def generate_vibrato_note(freq_hz, duration=2.0, sr=SR,
+                          vibrato_rate=6.5, vibrato_depth_cents=35.0):
+    """
+    Generate a single note with sinusoidal vibrato (5–8 Hz FM).
+
+    Vedic chanting often has 5–8 Hz pitch oscillations.  This exercises the
+    pYIN F0 extractor to ensure it tracks the mean pitch rather than locking
+    onto the vibrato sidebands.
+
+    Parameters
+    ----------
+    vibrato_rate   : float — oscillation frequency in Hz (5–8 Hz typical)
+    vibrato_depth_cents : float — peak deviation in cents (±30–50 cents typical)
+    """
+    t = np.linspace(0, duration, int(sr * duration), endpoint=False)
+    # Convert cents deviation to frequency multiplier
+    cents_mod = vibrato_depth_cents * np.sin(2 * np.pi * vibrato_rate * t)
+    freq_mod = freq_hz * (2 ** (cents_mod / 1200.0))
+    # Instantaneous phase from cumulative frequency
+    phase = 2 * np.pi * np.cumsum(freq_mod) / sr
+    wave = (
+        np.sin(phase) * 0.50 +
+        np.sin(2 * phase) * 0.30 +
+        np.sin(3 * phase) * 0.15 +
+        np.sin(4 * phase) * 0.05
+    )
+    return wave.astype(np.float32)
+
+
+def generate_vibrato_scale(sr=SR):
+    """
+    Bilawal-like scale where every note is delivered with 6.5 Hz vibrato.
+    Tests that pYIN still assigns the correct Shruti despite continuous FM.
+    """
+    notes = [0, 2, 4, 6, 10, 12, 14, 19]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
+    waves = []
+    for idx in notes:
+        freq = SHRUTI_FREQUENCIES[SHRUTI_NAMES[idx]]
+        waves.append(generate_vibrato_note(freq, duration=1.5, sr=sr))
+    return np.concatenate(waves).astype(np.float32)
+
+
+def generate_gamaka_slide(freq_start, freq_end, duration=0.3, sr=SR):
+    """
+    Generate a continuous pitch glide (Gamaka / meend) between two Shruti frequencies.
+
+    The slide is a smooth exponential frequency interpolation, mimicking the
+    continuous microtonal transitions common in Vedic and Carnatic singing.
+    """
+    n = int(sr * duration)
+    t = np.linspace(0, 1, n, endpoint=False)
+    # Exponential glide: linear in log-frequency (musical pitch space)
+    freq_glide = freq_start * ((freq_end / freq_start) ** t)
+    phase = 2 * np.pi * np.cumsum(freq_glide) / sr
+    wave = (
+        np.sin(phase) * 0.50 +
+        np.sin(2 * phase) * 0.30 +
+        np.sin(3 * phase) * 0.15 +
+        np.sin(4 * phase) * 0.05
+    )
+    return wave.astype(np.float32)
+
+
+def generate_gamaka_scale(sr=SR):
+    """
+    Ascending scale with Gamaka (meend) slides between every note pair.
+
+    Each note is held for 0.8 s then glides into the next over 0.3 s,
+    producing continuous pitch trajectories instead of discrete steps.
+    Exercises the segmentation logic and pYIN’s ability to track glides.
+    """
+    note_indices = [0, 2, 4, 6, 10, 12, 14, 19]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
+    hold_dur = 0.8
+    slide_dur = 0.3
+    waves = []
+    freqs = [SHRUTI_FREQUENCIES[SHRUTI_NAMES[i]] for i in note_indices]
+    for k, freq in enumerate(freqs):
+        waves.append(generate_sine_tone(freq, hold_dur, sr))
+        if k < len(freqs) - 1:
+            waves.append(generate_gamaka_slide(freq, freqs[k + 1], slide_dur, sr))
+    return np.concatenate(waves).astype(np.float32)
+
+
+def generate_breath_gap_scale(sr=SR,
+                              note_dur=1.2,
+                              breath_dur=0.25,
+                              noise_level=0.001):
+    """
+    Scale with short breath-gap silences between each note.
+
+    Real vocal recordings have micro-silences (0.1–0.4 s) between phrases
+    where the singer breathes.  These unvoiced frames should be correctly
+    marked by pYIN as NaN and not misidentified as spurious Shrutis.
+    """
+    # Ascending then descending: Pa=10, Dha2=12, Ni2=14, Sa'=19
+    note_indices = [0, 2, 4, 6, 10, 12, 14, 19, 14, 12, 10, 6, 4, 2, 0]
+    waves = []
+    for idx in note_indices:
+        freq = SHRUTI_FREQUENCIES[SHRUTI_NAMES[idx]]
+        waves.append(generate_sine_tone(freq, note_dur, sr))
+        # Breath gap: near-silence with low Gaussian noise
+        gap = np.random.normal(0, noise_level, int(sr * breath_dur)).astype(np.float32)
+        waves.append(gap)
+    return np.concatenate(waves).astype(np.float32)
+
+
 def generate_all_synthetic():
     """Generate all synthetic test files."""
     SYNTH_DIR.mkdir(parents=True, exist_ok=True)
@@ -148,7 +260,7 @@ def generate_all_synthetic():
     tests = [
         ("sa_pure_261hz", generate_sine_tone(261.63, 5.0), "Sa (261.63 Hz) — pitch ground truth"),
         ("pa_pure_392hz", generate_sine_tone(392.44, 5.0), "Pa (392.44 Hz) — pitch ground truth"),
-        ("dha1_pure_392hz", generate_sine_tone(392.44, 5.0), "Dha1 (392.44 Hz) — same as Pa"),
+        ("dha1_pure_413hz", generate_sine_tone(413.43, 5.0), "Dha1 (413.43 Hz) — test Dha1 detection"),
         ("high_ni_697hz", generate_sine_tone(697.66, 5.0), "Dha_ (697.66 Hz) — high Shruti"),
         ("ascending_scale", generate_ascending_scale(), "8-note ascending scale — Sa→Sa'"),
         ("descending_scale", generate_descending_scale(), "8-note descending scale — Sa'→Sa"),
@@ -157,6 +269,13 @@ def generate_all_synthetic():
         ("kalyani_scale", generate_kalyani_scale(), "Kalyani-like Lydian scale ×3"),
         ("bhairav_scale", generate_bhairav_scale(), "Bhairav-like scale ×3"),
         ("silence_5s", generate_silence(5.0), "Near-silence baseline"),
+        # ── Real-world robustness tests (Gamaka, Vibrato, Breath-gap) ────────────
+        ("vibrato_scale",    generate_vibrato_scale(),
+         "Bilawal scale with 6.5 Hz vibrato — tests pYIN under FM"),
+        ("gamaka_scale",     generate_gamaka_scale(),
+         "Ascending scale with meend (pitch glide) ornaments — tests segmentation"),
+        ("breath_gap_scale", generate_breath_gap_scale(),
+         "Scale with 250 ms breath-gap silences — tests unvoiced frame handling"),
     ]
 
     files = []

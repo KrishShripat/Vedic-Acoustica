@@ -3,8 +3,8 @@ import Plot from 'react-plotly.js'
 
 const SHRUTI_NAMES = [
   'Sa', 'Re¹', 'Re²', 'Ga¹', 'Ga²', 'Ga³',
-  'Ma¹', 'Ma²', 'Ma³', 'Pa', 'Dha¹', 'Dha²',
-  'Ni¹', 'Ni²', 'Ni³', "Sa'", "Re'", "Ga'",
+  'Ma¹', 'Ma²', 'Ma³', 'Tivra Ma', 'Pa', 'Dha¹',
+  'Dha²', 'Ni¹', 'Ni²', 'Ni³', "Re'", "Ga'",
   "Ma'", "Pa'", "Dha'", "Ni'",
 ]
 

@@ -9,15 +9,26 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ── Gate: CI must be green before we build/push images ──────────────────────
+  ci-gate:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+
   build-and-push:
     name: Build & Push Docker Images
     runs-on: ubuntu-latest
+    needs: ci-gate
     permissions:
       contents: read
       packages: write
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -35,6 +46,9 @@ jobs:
         with:
           context: ./backend
           push: true
+          # Layer cache pulled from registry — speeds up repeat builds significantly
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:cache
+          cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:cache,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ steps.meta.outputs.sha }}
@@ -44,6 +58,8 @@ jobs:
         with:
           context: ./frontend
           push: true
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:cache
+          cache-to:   type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:cache,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ steps.meta.outputs.sha }}
@@ -52,8 +68,8 @@ jobs:
     name: Deploy to Kubernetes
     runs-on: ubuntu-latest
     needs: build-and-push
-    # Enable when you have a real cluster (e.g. AWS EKS) and kubeconfig secret
-    if: false
+    # Remove `if: false` and add your KUBECONFIG secret to enable this job
+    if: true
 
     steps:
       - uses: actions/checkout@v4
@@ -64,16 +80,30 @@ jobs:
       - name: Set up kubeconfig
         run: echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
 
-      - name: Set image refs
+      - name: Pin image tags in k8s manifests
         run: |
-          sed -i "s|vedic-acoustica/backend:latest|ghcr.io/${{ github.repository }}/backend:${GITHUB_SHA::7}|g" k8s/backend-deployment.yml
-          sed -i "s|vedic-acoustica/backend:latest|ghcr.io/${{ github.repository }}/backend:${GITHUB_SHA::7}|g" k8s/celery-deployment.yml
-          sed -i "s|vedic-acoustica/frontend:latest|ghcr.io/${{ github.repository }}/frontend:${GITHUB_SHA::7}|g" k8s/frontend-deployment.yml
+          SHA=${{ needs.build-and-push.outputs.sha }}
+          REGISTRY=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          sed -i "s|vedic-acoustica/backend:latest|${REGISTRY}/backend:${SHA}|g"   k8s/backend-deployment.yml
+          sed -i "s|vedic-acoustica/backend:latest|${REGISTRY}/backend:${SHA}|g"   k8s/celery-deployment.yml
+          sed -i "s|vedic-acoustica/frontend:latest|${REGISTRY}/frontend:${SHA}|g" k8s/frontend-deployment.yml
 
-      - name: Deploy
+      - name: Apply manifests
         run: kubectl apply -f k8s/
 
-      - name: Wait for rollout
+      - name: Wait for rollouts
         run: |
-          kubectl rollout status deployment/vedic-backend --timeout=300s
+          kubectl rollout status deployment/vedic-backend  --timeout=300s
+          kubectl rollout status deployment/vedic-celery   --timeout=300s
           kubectl rollout status deployment/vedic-frontend --timeout=300s
+
+      - name: Smoke-test deployed API
+        run: |
+          # Give the Ingress a moment to route traffic
+          sleep 10
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.DEPLOY_HOST }}/api/recordings/)
+          if [ "$STATUS" != "200" ]; then
+            echo "Smoke test failed: /api/recordings/ returned HTTP $STATUS"
+            exit 1
+          fi
+          echo "Smoke test passed (HTTP 200)"

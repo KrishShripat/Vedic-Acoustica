@@ -17,7 +17,7 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
             'id', 'uploaded_at', 'analysis_metadata', 'matrices_file', 'is_analyzed',
         ]
 
-    _ALLOWED_EXTENSIONS = ('.wav', '.mp3', '.ogg')
+    _ALLOWED_EXTENSIONS = ('.wav', '.mp3', '.ogg', '.flac')
     _MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
 
     def validate_audio_file(self, value):
