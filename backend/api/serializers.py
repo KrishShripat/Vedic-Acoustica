@@ -16,3 +16,19 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 'uploaded_at', 'analysis_metadata', 'matrices_file', 'is_analyzed',
         ]
+
+    _ALLOWED_EXTENSIONS = ('.wav', '.mp3', '.ogg')
+    _MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+
+    def validate_audio_file(self, value):
+        if value.size > self._MAX_UPLOAD_BYTES:
+            raise serializers.ValidationError(
+                f"File size cannot exceed 50 MB "
+                f"(received {value.size / 1024 / 1024:.1f} MB)."
+            )
+        if not value.name.lower().endswith(self._ALLOWED_EXTENSIONS):
+            raise serializers.ValidationError(
+                f"Unsupported file type. "
+                f"Allowed extensions: {', '.join(self._ALLOWED_EXTENSIONS)}."
+            )
+        return value

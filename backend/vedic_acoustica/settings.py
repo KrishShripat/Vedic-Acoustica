@@ -1,16 +1,29 @@
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-dev-key-replace-in-production',
-)
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') != 'False'
 
-DEBUG = True
+_secret_key = os.environ.get('DJANGO_SECRET_KEY', '')
+if not _secret_key:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "SECRET_KEY must be set via the DJANGO_SECRET_KEY environment variable in production."
+        )
+    _secret_key = 'django-insecure-dev-key-replace-in-production'
+SECRET_KEY = _secret_key
 
-ALLOWED_HOSTS = ['*']
+_allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
+elif DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    raise ImproperlyConfigured(
+        "ALLOWED_HOSTS must be set via the DJANGO_ALLOWED_HOSTS environment variable in production."
+    )
 
 INSTALLED_APPS = [
     'django.contrib.admin',

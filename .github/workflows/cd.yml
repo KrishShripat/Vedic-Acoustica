@@ -67,6 +67,7 @@ jobs:
       - name: Set image refs
         run: |
           sed -i "s|vedic-acoustica/backend:latest|ghcr.io/${{ github.repository }}/backend:${GITHUB_SHA::7}|g" k8s/backend-deployment.yml
+          sed -i "s|vedic-acoustica/backend:latest|ghcr.io/${{ github.repository }}/backend:${GITHUB_SHA::7}|g" k8s/celery-deployment.yml
           sed -i "s|vedic-acoustica/frontend:latest|ghcr.io/${{ github.repository }}/frontend:${GITHUB_SHA::7}|g" k8s/frontend-deployment.yml
 
       - name: Deploy
