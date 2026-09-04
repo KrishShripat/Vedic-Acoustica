@@ -4,8 +4,8 @@ import Plot from 'react-plotly.js'
 const SHRUTI_NAMES = [
   'Sa', 'Re¹', 'Re²', 'Ga¹', 'Ga²', 'Ga³',
   'Ma¹', 'Ma²', 'Ma³', 'Tivra Ma', 'Pa', 'Dha¹',
-  'Dha²', 'Ni¹', 'Ni²', 'Ni³', "Re'", "Ga'",
-  "Ma'", "Pa'", "Dha'", "Ni'",
+  'Dha²', 'Ni¹', 'Ni²', 'Ni³', 'Ni⁴', 'Ni⁵',
+  'Ni⁶', 'Ga-Komal', 'Ma-Komal', 'Tivra Ma²',
 ]
 
 /**
@@ -175,7 +175,7 @@ export default function ShrutiMap({ data, onReady }) {
               ],
             }}
             onInitialized={() => onReady?.()}
-            onUpdate={() => onReady?.()}
+
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
           />
@@ -224,7 +224,7 @@ export default function ShrutiMap({ data, onReady }) {
               showlegend: false,
             }}
             onInitialized={() => onReady?.()}
-            onUpdate={() => onReady?.()}
+
             config={{ displayModeBar: false, responsive: true }}
             style={{ width: '100%' }}
           />

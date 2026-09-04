@@ -21,6 +21,16 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
     _MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
 
     def validate_audio_file(self, value):
+        import os
+        import re
+        # Sanitize to an ASCII-safe basename: strip directory components,
+        # replace any character that isn't alphanumeric, dot, hyphen, or
+        # underscore with '_', and cap at 200 characters.
+        safe_name = re.sub(r'[^\w.\-]', '_', os.path.basename(value.name))
+        if len(safe_name) > 200:
+            safe_name = safe_name[:200]
+        value.name = safe_name
+
         if value.size > self._MAX_UPLOAD_BYTES:
             raise serializers.ValidationError(
                 f"File size cannot exceed 50 MB "

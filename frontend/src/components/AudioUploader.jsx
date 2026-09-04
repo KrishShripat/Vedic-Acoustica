@@ -9,10 +9,8 @@ export default function AudioUploader({ onUpload }) {
 
   const handleFile = async (file) => {
     if (!file) return
-    if (!file.type.startsWith('audio/')) {
-      alert('Please select an audio file.')
-      return
-    }
+    // Extension validation is handled by the backend serializer.
+    // Browser-reported MIME types are unreliable for audio formats.
     if (file.size > MAX_FILE_SIZE) {
       alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 50 MB.`)
       return

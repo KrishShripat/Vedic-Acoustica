@@ -123,8 +123,10 @@ def _build_pcp_time_axis(pcp_ds: np.ndarray, pcp_full_ncols: int) -> list[float]
 #     'error': str|None }
 # ---------------------------------------------------------------------------
 
-_WRITE_LOCKS: dict[int, threading.Lock] = {}
-_LOCKS_MUTEX = threading.Lock()
+# Single global lock — progress writes are infrequent and non-contended
+# in practice (one ML pipeline per recording at a time).  An unbounded
+# per-PK dict would grow indefinitely with thousands of analyses.
+_PROGRESS_LOCK = threading.Lock()
 
 _PROGRESS_DIR = os.environ.get(
     'VEDIC_PROGRESS_DIR',
@@ -137,11 +139,6 @@ def _progress_path(pk: int) -> str:
     return os.path.join(_PROGRESS_DIR, f'vedic_progress_{pk}.json')
 
 
-def _get_lock(pk: int) -> threading.Lock:
-    with _LOCKS_MUTEX:
-        if pk not in _WRITE_LOCKS:
-            _WRITE_LOCKS[pk] = threading.Lock()
-        return _WRITE_LOCKS[pk]
 
 
 def _set_progress(pk: int, stage: str, percent: int,
@@ -154,7 +151,7 @@ def _set_progress(pk: int, stage: str, percent: int,
         'error':   error,
     })
     dest = _progress_path(pk)
-    with _get_lock(pk):
+    with _PROGRESS_LOCK:
         fd, tmp = tempfile.mkstemp(dir=_PROGRESS_DIR, suffix='.json.tmp')
         try:
             with os.fdopen(fd, 'w') as fh:
@@ -182,8 +179,6 @@ def _delete_progress(pk: int) -> None:
         os.unlink(_progress_path(pk))
     except FileNotFoundError:
         pass
-    with _LOCKS_MUTEX:
-        _WRITE_LOCKS.pop(pk, None)
 
 
 # ---------------------------------------------------------------------------
@@ -429,11 +424,11 @@ def analysis_status(request, pk):
             time.sleep(poll_interval)
             elapsed += poll_interval
 
-        def _cleanup():
-            time.sleep(10)
-            _delete_progress(pk)
-
-        threading.Thread(target=_cleanup, daemon=True).start()
+        # Progress file cleanup is deferred: the next POST /analyze/<pk>/
+        # overwrites the file, and a periodic management command can purge
+        # stale ones.  A daemon thread sleeping here risks deleting the file
+        # from under a reconnecting client or being silently killed on
+        # Gunicorn worker shutdown, leaving orphan files either way.
 
     response = StreamingHttpResponse(
         _event_stream(),

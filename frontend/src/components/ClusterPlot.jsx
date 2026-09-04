@@ -39,7 +39,7 @@ export default function ClusterPlot({ data, onReady }) {
           height: 280,
         }}
         onInitialized={() => onReady?.()}
-        onUpdate={() => onReady?.()}
+
         config={{ displayModeBar: false, responsive: true }}
         style={{ width: '100%' }}
       />

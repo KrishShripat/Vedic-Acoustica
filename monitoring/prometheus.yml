@@ -11,6 +11,9 @@ scrape_configs:
       - targets: ['backend:8000']
     metrics_path: '/metrics'
     scrape_interval: 10s
+    # When METRICS_TOKEN is set on the backend, Prometheus must send it.
+    # Set the same value here. Leave blank for local dev (token guard is off).
+    bearer_token: ''
 
   - job_name: 'node-exporter'
     static_configs:

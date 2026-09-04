@@ -33,8 +33,10 @@ services:
       - DJANGO_DEBUG=True
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_DB_PATH=/app/data/db.sqlite3
     volumes:
       - media_data:/app/media
+      - db_data:/app/data  # SQLite DB lives here; survives container restarts
     mem_limit: 2g
     restart: unless-stopped
     <<: *default-logging
@@ -52,10 +54,12 @@ services:
       - DJANGO_DEBUG=True
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DJANGO_DB_PATH=/app/data/db.sqlite3
     volumes:
       # Share the same media volume so .npz files written by the worker
       # are visible to the Django backend when serving GET responses.
       - media_data:/app/media
+      - db_data:/app/data  # Same SQLite volume as backend; both services share the DB
     mem_limit: 6g   # 2 workers × ~1.5 GB peak each + 1 GB headroom
     restart: unless-stopped
     <<: *default-logging
@@ -110,3 +114,4 @@ volumes:
   media_data:
   grafana_data:
   redis_data:
+  db_data:  # Persists SQLite DB across backend/celery restarts

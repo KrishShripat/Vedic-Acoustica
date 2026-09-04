@@ -204,7 +204,7 @@ function ConfidenceChart({ matches, inconclusive, onReady }) {
         showlegend: false,
       }}
       onInitialized={() => onReady?.()}
-      onUpdate={() => onReady?.()}
+
       config={{ displayModeBar: false, responsive: true }}
     />
   )

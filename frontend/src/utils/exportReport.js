@@ -86,8 +86,9 @@ export default async function exportReport(recording, analysis) {
   y += 5.5
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(9)
-  const half = Math.ceil(summaryRows(analysis).length / 2)
-  summaryRows(analysis).forEach(([label, value], i) => {
+  const rows = summaryRows(analysis)
+  const half = Math.ceil(rows.length / 2)
+  rows.forEach(([label, value], i) => {
     const col = Math.floor(i / half)
     const row = i % half
     pdf.setTextColor(136, 136, 136)

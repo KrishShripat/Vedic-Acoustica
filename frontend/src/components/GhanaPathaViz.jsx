@@ -244,7 +244,7 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
         config={{ displayModeBar: false, responsive: true }}
         style={{ width: '100%' }}
         onInitialized={() => onReady?.()}
-        onUpdate={() => onReady?.()}
+
       />
 
       {data.ghana_patha_detected_pattern && (

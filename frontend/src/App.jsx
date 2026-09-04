@@ -130,7 +130,16 @@ function App() {
 
   const handleSelectRecording = useCallback((recording) => {
     setSelectedRecording(recording)
-    setAnalysis(recording.analysis_result || null)
+    // The list serializer excludes analysis_result (too large).
+    // Fetch the full detail endpoint to get the analysis payload.
+    if (recording.is_analyzed) {
+      fetch(`${API_BASE}/recordings/${recording.id}/`)
+        .then(r => r.json())
+        .then(data => setAnalysis(data.analysis_result ?? null))
+        .catch(() => setAnalysis(null))
+    } else {
+      setAnalysis(null)
+    }
   }, [])
 
   const handleDownloadReport = useCallback(async () => {

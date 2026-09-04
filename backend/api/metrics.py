@@ -1,3 +1,4 @@
+import os
 import re
 import time
 
@@ -51,10 +52,31 @@ class MetricsMiddleware:
         return response
 
 
+# ---------------------------------------------------------------------------
+# Bearer-token auth guard
+#
+# In production set the METRICS_TOKEN environment variable (any random string,
+# e.g. `openssl rand -hex 32`).  Then add the same value to prometheus.yml:
+#
+#   scrape_configs:
+#     - job_name: 'vedic-backend'
+#       bearer_token: '<your-token>'
+#       ...
+#
+# If the env var is absent (local dev / Docker Compose without the var set)
+# the endpoint is open — nothing breaks during development.
+# ---------------------------------------------------------------------------
+
+_METRICS_TOKEN: str | None = os.environ.get('METRICS_TOKEN') or None
+
+
 def metrics_view(request):
-    if request.method == 'GET':
-        return HttpResponse(
-            generate_latest(),
-            content_type=CONTENT_TYPE_LATEST,
-        )
-    return HttpResponse(status=405)
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+
+    if _METRICS_TOKEN is not None:
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header != f'Bearer {_METRICS_TOKEN}':
+            return HttpResponse(status=403)
+
+    return HttpResponse(generate_latest(), content_type=CONTENT_TYPE_LATEST)

@@ -108,6 +108,13 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1',
 ]
+# Production: set CORS_EXTRA_ORIGINS to a comma-separated list of allowed
+# origins (e.g. "https://vedic.local,https://www.vedic.example.com").
+# This avoids hardcoding the production domain and keeps the K8s deployment
+# fully configurable via ConfigMap / Secret.
+_extra_origins = os.environ.get('CORS_EXTRA_ORIGINS', '')
+if _extra_origins:
+    CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(',') if o.strip()]
 
 REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
