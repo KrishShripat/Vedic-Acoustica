@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vedic-celery
+  labels:
+    app: vedic-celery
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vedic-celery
+  template:
+    metadata:
+      labels:
+        app: vedic-celery
+    spec:
+      containers:
+        - name: celery
+          image: vedic-acoustica/backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - celery
+            - -A
+            - vedic_acoustica
+            - worker
+            - --loglevel=info
+            - --concurrency=2
+          env:
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: vedic-secrets
+                  key: django-secret-key
+            - name: DJANGO_DEBUG
+              value: "False"
+            - name: DJANGO_DB_PATH
+              value: /app/data/db.sqlite3
+            - name: DJANGO_MEDIA_ROOT
+              value: /app/data/media
+            - name: CELERY_BROKER_URL
+              value: redis://vedic-redis-service:6379/0
+            - name: CELERY_RESULT_BACKEND
+              value: redis://vedic-redis-service:6379/0
+          volumeMounts:
+            # Must mount the SAME shared PVC as the Django pods so that:
+            #  - Django (upload) writes .wav to /app/data/media
+            #  - Celery (ML task) reads .wav and writes .npz back
+            # This requires ReadWriteMany (e.g. NFS / AWS EFS provisioner).
+            - name: app-data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - vedic_acoustica
+                - inspect
+                - ping
+            initialDelaySeconds: 30
+            periodSeconds: 60
+            timeoutSeconds: 10
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: vedic-data-pvc   # shared with Django pods
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vedic-redis
+  labels:
+    app: vedic-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vedic-redis
+  template:
+    metadata:
+      labels:
+        app: vedic-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:alpine
+          ports:
+            - containerPort: 6379
+          args:
+            - redis-server
+            - --appendonly
+            - "yes"
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: vedic-redis-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vedic-redis-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce     # Redis is single-pod, so RWO is sufficient
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vedic-redis-service
+spec:
+  selector:
+    app: vedic-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP

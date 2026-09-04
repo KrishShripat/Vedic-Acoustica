@@ -73,6 +73,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.environ.get('DJANGO_DB_PATH', str(BASE_DIR / 'db.sqlite3')),
+        # Wait up to 20 s for a write lock to release before raising
+        # OperationalError. This reduces concurrent-write failures when
+        # multiple Celery workers and Gunicorn processes access the DB
+        # simultaneously.
+        'OPTIONS': {'timeout': 20},
     }
 }
 

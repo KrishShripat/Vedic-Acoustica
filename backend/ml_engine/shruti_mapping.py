@@ -43,7 +43,7 @@ SHRUTI_NAMES = [
     'Shruti 13 (Dha2)',
     'Shruti 14 (Ni1)',
     'Shruti 15 (Ni2)',
-    'Shruti 16 (Sa_)',
+    'Shruti 16 (Ni3)',
     'Shruti 17 (Re_)',
     'Shruti 18 (Ga_)',
     'Shruti 19 (Ma_)',
