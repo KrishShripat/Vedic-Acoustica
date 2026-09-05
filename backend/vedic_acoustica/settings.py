@@ -4,7 +4,15 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False') != 'False'
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None or value.strip() == '':
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+DEBUG = _env_bool('DJANGO_DEBUG')
 
 _secret_key = os.environ.get('DJANGO_SECRET_KEY', '')
 if not _secret_key:
