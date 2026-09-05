@@ -43,8 +43,12 @@ Ghana pattern encoding
 import logging
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from .shruti_mapping import SHRUTI_NAMES
 
 logger = logging.getLogger(__name__)
+
+# PCP row count — mirrors the 23 Shruti bins (incl. octave Sa') in shruti_mapping.
+_PCP_WIDTH = len(SHRUTI_NAMES)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Ghana pattern templates
@@ -61,9 +65,9 @@ logger = logging.getLogger(__name__)
 # 'reverse'  = descending contour: Pa → Ga → Sa
 
 def _make_template(shruti_indices_per_frame):
-    """Build a (T, 22) float32 template with unit-norm PCP rows."""
+    """Build a (T, _PCP_WIDTH) float32 template with unit-norm PCP rows."""
     T = len(shruti_indices_per_frame)
-    tpl = np.zeros((T, 22), dtype=np.float32)
+    tpl = np.zeros((T, _PCP_WIDTH), dtype=np.float32)
     for t, indices in enumerate(shruti_indices_per_frame):
         for idx in indices:
             tpl[t, idx] = 1.0

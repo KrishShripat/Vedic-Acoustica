@@ -494,9 +494,9 @@ RAGA_DATABASE = [
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _pakad_template(frames_shruti_lists):
-    """Build a (T, 22) float32 PCP template from a list of active shruti indices."""
+    """Build a (T, len(SHRUTI_NAMES)) float32 PCP template from a list of active shruti indices."""
     T = len(frames_shruti_lists)
-    tpl = np.zeros((T, 22), dtype=np.float32)
+    tpl = np.zeros((T, len(SHRUTI_NAMES)), dtype=np.float32)
     for t, indices in enumerate(frames_shruti_lists):
         for idx in indices:
             tpl[t, idx] = 1.0

@@ -10,14 +10,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 2.681,
+        "time_s": 2.47,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.042,
+        "time_s": 0.041,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -35,15 +35,15 @@
         "top3_pcp": [
           [
             "Shruti 1 (Sa)",
-            0.520666
+            0.594418
           ],
           [
-            "Shruti 20 (Pa_)",
-            0.26363
+            "Shruti 23 (Sa\u2019)",
+            0.300963
           ],
           [
-            "Shruti 22 (Ni_)",
-            0.124294
+            "Shruti 11 (Pa)",
+            0.071035
           ]
         ]
       },
@@ -51,7 +51,7 @@
         "pass": true,
         "time_s": 0.015,
         "is_valid": true,
-        "confidence": 0.9265,
+        "confidence": 0.9322,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -65,7 +65,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.026,
+        "time_s": 0.024,
         "is_inconclusive": false,
         "best": "Malkauns",
         "detected_swaras": [
@@ -86,14 +86,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.738,
+        "time_s": 0.724,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.026,
+        "time_s": 0.022,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -111,15 +111,15 @@
         "top3_pcp": [
           [
             "Shruti 11 (Pa)",
-            0.545786
-          ],
-          [
-            "Shruti 22 (Ni_)",
-            0.294292
+            0.772122
           ],
           [
             "Shruti 1 (Sa)",
-            0.090508
+            0.127985
+          ],
+          [
+            "Shruti 5 (Ga2)",
+            0.046947
           ]
         ]
       },
@@ -127,7 +127,7 @@
         "pass": true,
         "time_s": 0.015,
         "is_valid": true,
-        "confidence": 0.878,
+        "confidence": 0.913,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -162,14 +162,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.757,
+        "time_s": 0.729,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.022,
+        "time_s": 0.026,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -187,21 +187,21 @@
         "top3_pcp": [
           [
             "Shruti 3 (Re2)",
-            0.540039
+            0.539876
           ],
           [
             "Shruti 2 (Re1)",
-            0.305336
+            0.305236
           ],
           [
             "Shruti 13 (Dha2)",
-            0.095548
+            0.095518
           ]
         ]
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.016,
+        "time_s": 0.015,
         "is_valid": true,
         "confidence": 0.7949,
         "repetition": 1.0,
@@ -238,14 +238,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.76,
+        "time_s": 0.734,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.025,
+        "time_s": 0.023,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -263,15 +263,15 @@
         "top3_pcp": [
           [
             "Shruti 5 (Ga2)",
-            0.551285
+            0.55036
           ],
           [
             "Shruti 4 (Ga1)",
-            0.292539
+            0.292028
           ],
           [
             "Shruti 15 (Ni2)",
-            0.076375
+            0.07624
           ]
         ]
       },
@@ -295,7 +295,7 @@
         "pass": true,
         "time_s": 0.002,
         "is_inconclusive": false,
-        "best": "Hamsadhwani",
+        "best": "Bhupali",
         "detected_swaras": [
           "Ga2"
         ]
@@ -314,14 +314,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.771,
+        "time_s": 0.723,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.023,
+        "time_s": 0.025,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -339,15 +339,15 @@
         "top3_pcp": [
           [
             "Shruti 12 (Dha1)",
-            0.684356
+            0.684429
           ],
           [
             "Shruti 13 (Dha2)",
-            0.12722
+            0.127238
           ],
           [
             "Shruti 2 (Re1)",
-            0.102321
+            0.102333
           ]
         ]
       },
@@ -390,14 +390,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.756,
+        "time_s": 0.721,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.022,
+        "time_s": 0.023,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -405,39 +405,39 @@
         "pass": true,
         "expected": {
           "index": 20,
-          "name": "Shruti 21 (Dha_)",
-          "freq_hz": 697.67
+          "name": "Shruti 21 (Ma-Komal)",
+          "freq_hz": 353.2
         },
         "detected": {
           "index": 20,
-          "name": "Shruti 21 (Dha_)"
+          "name": "Shruti 21 (Ma-Komal)"
         },
         "top3_pcp": [
           [
-            "Shruti 21 (Dha_)",
-            0.56017
+            "Shruti 21 (Ma-Komal)",
+            0.515969
           ],
           [
             "Shruti 9 (Ma3)",
-            0.253605
+            0.313564
           ],
           [
-            "Shruti 16 (Ni3)",
-            0.076737
+            "Shruti 23 (Sa\u2019)",
+            0.076738
           ]
         ]
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.016,
+        "time_s": 0.014,
         "is_valid": true,
-        "confidence": 0.6308,
+        "confidence": 0.6891,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
           "reverse",
           "forward",
-          "forward",
+          "reverse",
           "reverse",
           "reverse",
           "forward"
@@ -472,65 +472,66 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.837,
+        "time_s": 1.746,
         "duration": 12.8,
         "frames": 552,
-        "voiced_ratio": 0.9891
+        "voiced_ratio": 0.9855
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.035,
+        "time_s": 0.034,
         "frames": 552,
-        "unique_shrutis": 18
+        "unique_shrutis": 17
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.083,
+        "time_s": 0.079,
         "is_valid": false,
-        "confidence": 0.5417,
+        "confidence": 0.4785,
         "repetition": 0.3273,
         "n_segments": 12,
         "detected_pattern": [
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse"
+          "forward",
+          "forward",
+          "forward",
+          "forward"
         ]
       },
       "raga_detection": {
         "pass": false,
-        "time_s": 0.124,
+        "time_s": 0.005,
         "expected_raga": "Bilawal",
         "detected_raga": "Sindhi Bhairavi",
-        "detected_confidence": 0.7985,
+        "detected_confidence": 0.9463,
         "top3": [
           {
             "name": "Sindhi Bhairavi",
-            "conf": 0.7985,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Bilawal",
-            "conf": 0.7948,
+            "conf": 0.9463,
             "tradition": "Hindustani"
           },
           {
             "name": "Yaman",
-            "conf": 0.7915,
+            "conf": 0.8364,
+            "tradition": "Hindustani"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.8364,
             "tradition": "Hindustani"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
+          "Re1",
           "Re2",
           "Ga1",
           "Ga2",
@@ -538,8 +539,7 @@
           "Pa",
           "Dha1",
           "Dha2",
-          "Ni1",
-          "Ni2"
+          "Ni1"
         ],
         "raga_expected_swaras": [
           0,
@@ -574,22 +574,22 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.844,
+        "time_s": 1.769,
         "duration": 12.8,
         "frames": 552,
-        "voiced_ratio": 0.9891
+        "voiced_ratio": 0.9855
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.032,
+        "time_s": 0.034,
         "frames": 552,
-        "unique_shrutis": 19
+        "unique_shrutis": 16
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.084,
+        "time_s": 0.08,
         "is_valid": false,
-        "confidence": 0.5248,
+        "confidence": 0.5163,
         "repetition": 0.3273,
         "n_segments": 12,
         "detected_pattern": [
@@ -608,25 +608,25 @@
         ]
       },
       "raga_detection": {
-        "pass": false,
-        "time_s": 0.127,
+        "pass": true,
+        "time_s": 0.12,
         "expected_raga": "Bhairav",
-        "detected_raga": "Mayamalavagowla",
-        "detected_confidence": 0.9684,
+        "detected_raga": "Bhairav",
+        "detected_confidence": 1.0,
         "top3": [
           {
-            "name": "Mayamalavagowla",
-            "conf": 0.9684,
-            "tradition": "Carnatic"
-          },
-          {
             "name": "Bhairav",
-            "conf": 0.9676,
+            "conf": 1.0,
             "tradition": "Hindustani"
           },
           {
+            "name": "Mayamalavagowla",
+            "conf": 1.0,
+            "tradition": "Carnatic"
+          },
+          {
             "name": "Poorvi",
-            "conf": 0.8375,
+            "conf": 0.9089,
             "tradition": "Hindustani"
           }
         ],
@@ -652,7 +652,7 @@
         "raga_known_limitation": null
       }
     },
-    "pipeline_ok": false
+    "pipeline_ok": true
   },
   {
     "name": "scale_malkauns",
@@ -671,28 +671,28 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.806,
+        "time_s": 1.727,
         "duration": 12.5,
         "frames": 539,
         "voiced_ratio": 0.9852
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.031,
+        "time_s": 0.034,
         "frames": 539,
-        "unique_shrutis": 12
+        "unique_shrutis": 15
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.08,
+        "time_s": 0.077,
         "is_valid": true,
-        "confidence": 0.6341,
-        "repetition": 0.6364,
+        "confidence": 0.6089,
+        "repetition": 0.5818,
         "n_segments": 12,
         "detected_pattern": [
           "forward",
           "reverse",
-          "reverse",
+          "forward",
           "forward",
           "reverse",
           "forward",
@@ -701,29 +701,29 @@
           "reverse",
           "reverse",
           "forward",
-          "reverse"
+          "forward"
         ]
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.007,
+        "time_s": 0.005,
         "expected_raga": "Malkauns",
         "detected_raga": "Malkauns",
-        "detected_confidence": 0.875,
+        "detected_confidence": 0.925,
         "top3": [
           {
             "name": "Malkauns",
-            "conf": 0.875,
+            "conf": 0.925,
             "tradition": "Hindustani"
           },
           {
             "name": "Todi",
-            "conf": 0.7872,
+            "conf": 0.8229,
             "tradition": "Hindustani"
           },
           {
             "name": "Todi (Carnatic)",
-            "conf": 0.7872,
+            "conf": 0.8229,
             "tradition": "Carnatic"
           }
         ],
@@ -767,10 +767,10 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.995,
+        "time_s": 1.774,
         "duration": 12.8,
         "frames": 552,
-        "voiced_ratio": 0.9891
+        "voiced_ratio": 0.9855
       },
       "clustering": {
         "pass": true,
@@ -780,52 +780,53 @@
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.083,
+        "time_s": 0.084,
         "is_valid": false,
-        "confidence": 0.5313,
+        "confidence": 0.4681,
         "repetition": 0.3273,
         "n_segments": 12,
         "detected_pattern": [
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse"
+          "forward",
+          "forward",
+          "forward",
+          "forward"
         ]
       },
       "raga_detection": {
-        "pass": true,
-        "time_s": 0.005,
+        "pass": false,
+        "time_s": 0.006,
         "expected_raga": "Kalyani",
-        "detected_raga": "Kalyani",
-        "detected_confidence": 0.7579,
+        "detected_raga": "Sindhi Bhairavi",
+        "detected_confidence": 0.8913,
         "top3": [
           {
-            "name": "Kalyani",
-            "conf": 0.7579,
-            "tradition": "Carnatic"
-          },
-          {
-            "name": "Mechakalyani",
-            "conf": 0.7579,
-            "tradition": "Carnatic"
-          },
-          {
             "name": "Sindhi Bhairavi",
-            "conf": 0.7433,
+            "conf": 0.8913,
             "tradition": "Hindustani"
+          },
+          {
+            "name": "Kalyani",
+            "conf": 0.8364,
+            "tradition": "Carnatic"
+          },
+          {
+            "name": "Latangi",
+            "conf": 0.8364,
+            "tradition": "Carnatic"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
+          "Re1",
           "Re2",
           "Ga1",
           "Ga2",
@@ -833,8 +834,7 @@
           "Pa",
           "Dha1",
           "Dha2",
-          "Ni1",
-          "Ni2"
+          "Ni1"
         ],
         "raga_expected_swaras": [
           0,
@@ -848,7 +848,7 @@
         "raga_known_limitation": "Kalyani has the same swaras as Bilawal/Shankarabharanam/Mand except for Ma2(7) vs Ma1(6). Detection depends on Ma2 energy being distinguished from Ma1. If Ma1 is also detected, all four ragas tie on swara overlap."
       }
     },
-    "pipeline_ok": true
+    "pipeline_ok": false
   },
   {
     "name": "scale_khamaj",
@@ -869,65 +869,66 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.937,
+        "time_s": 1.772,
         "duration": 12.8,
         "frames": 552,
-        "voiced_ratio": 0.9891
+        "voiced_ratio": 0.9855
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.039,
+        "time_s": 0.033,
         "frames": 552,
-        "unique_shrutis": 19
+        "unique_shrutis": 16
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.087,
+        "time_s": 0.079,
         "is_valid": false,
-        "confidence": 0.5401,
+        "confidence": 0.4763,
         "repetition": 0.3273,
         "n_segments": 12,
         "detected_pattern": [
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse",
           "forward",
           "forward",
-          "reverse"
+          "forward",
+          "forward",
+          "forward",
+          "forward"
         ]
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.098,
+        "time_s": 0.152,
         "expected_raga": "Khamaj",
         "detected_raga": "Khamaj",
-        "detected_confidence": 0.871,
+        "detected_confidence": 0.9218,
         "top3": [
           {
             "name": "Khamaj",
-            "conf": 0.871,
+            "conf": 0.9218,
             "tradition": "Hindustani"
           },
           {
-            "name": "Kambhoji",
-            "conf": 0.8286,
-            "tradition": "Carnatic"
+            "name": "Sindhi Bhairavi",
+            "conf": 0.9046,
+            "tradition": "Hindustani"
           },
           {
-            "name": "Charukeshi",
-            "conf": 0.8286,
+            "name": "Bhairav",
+            "conf": 0.9035,
             "tradition": "Hindustani"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
+          "Re1",
           "Re2",
           "Ga1",
           "Ga2",
@@ -968,23 +969,23 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.741,
+        "time_s": 1.659,
         "duration": 12.0,
         "frames": 517,
-        "voiced_ratio": 0.9845
+        "voiced_ratio": 0.9807
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.031,
+        "time_s": 0.033,
         "frames": 517,
-        "unique_shrutis": 14
+        "unique_shrutis": 12
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.079,
+        "time_s": 0.074,
         "is_valid": true,
-        "confidence": 0.6674,
-        "repetition": 0.5818,
+        "confidence": 0.615,
+        "repetition": 0.4909,
         "n_segments": 12,
         "detected_pattern": [
           "forward",
@@ -1006,27 +1007,28 @@
         "time_s": 0.005,
         "expected_raga": "Hamsadhwani",
         "detected_raga": "Hamsadhwani",
-        "detected_confidence": 0.875,
+        "detected_confidence": 0.8715,
         "top3": [
           {
             "name": "Hamsadhwani",
-            "conf": 0.875,
+            "conf": 0.8715,
             "tradition": "Carnatic"
           },
           {
             "name": "Bihag",
-            "conf": 0.8119,
+            "conf": 0.8491,
             "tradition": "Hindustani"
           },
           {
-            "name": "Yaman",
-            "conf": 0.7658,
+            "name": "Sindhi Bhairavi",
+            "conf": 0.8466,
             "tradition": "Hindustani"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
+          "Re1",
           "Re2",
           "Ga1",
           "Ga2",
@@ -1056,22 +1058,22 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.436,
+        "time_s": 1.437,
         "duration": 10.0,
         "frames": 431,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.03,
+        "time_s": 0.031,
         "frames": 431,
-        "unique_shrutis": 11
+        "unique_shrutis": 14
       },
       "ghana_patha": {
         "pass": false,
-        "time_s": 0.053,
+        "time_s": 0.051,
         "is_valid": false,
-        "confidence": 0.5567,
+        "confidence": 0.5657,
         "repetition": 0.2222,
         "n_segments": 10,
         "detected_pattern": [

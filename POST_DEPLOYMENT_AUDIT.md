@@ -614,3 +614,90 @@ if not settings.DEBUG and not _METRICS_TOKEN:
 ### Verified with computation
 
 All quantitative claims (F1 cents table, F2 min(15) truncation, F3 phase-shift, F4 spectrogram sizes, F5 metadata weight) were reproduced in this repository's environment before writing the document.
+
+---
+
+## 3D Frontend Rollback + F1 Regression Fix (2026-09-05)
+
+### Incident: VedicAcoustic3D frontend removal
+
+Commits `3ee5a07`, `f5a220c`, `57689e0` introduced a 3D glassmorphic background
+(`VedicAcoustic3D.jsx`, `@react-three/fiber`, Surya/Soma themes) that replaced
+the original maroon-black UI. These were reverted by resetting `origin/main`
+to commit `a84abe4` ("Fix UI: Update backend status pill to show dynamic
+production status") and force-pushing.
+
+**Verified clean:**
+- `VedicAcoustic3D.jsx` deleted; no three.js / `@react-three/fiber` imports remain
+- `prompt.md` (Antigravity prompt) removed
+- `package.json` has no 3D dependencies; `package-lock.json` updated
+- Frontend build (`vite build`) succeeds; `oxlint` passes clean
+- Original maroon-black UI confirmed in `App.jsx` (status-bar at line 167–171)
+
+### Critical fix: F1 regression — Ghana Patha + Raga detection broken
+
+**Root cause:** Commit `f0995f5` (Fix F1) added a 23rd Shruti bin (Sa', 2/1 octave)
+to `shruti_mapping.py` and `audio_processing.py`, making the PCP matrix 23-dimensional.
+However, the template builders in `ghana_patha.py` and `raga_mapping.py` still
+emitted `(T, 22)` templates, causing `sklearn.metrics.pairwise.cosine_similarity`
+to fail with:
+
+```
+Incompatible dimension for X and Y matrices: X.shape[1] == 23 while Y.shape[1] == 22
+```
+
+This broke **both** Ghana Patha validation and Raga detection for every recording —
+a silent P0 production regression since F1.
+
+**Fix applied:**
+
+| File | Change |
+|------|--------|
+| `backend/ml_engine/ghana_patha.py` | Import `SHRUTI_NAMES`; define `_PCP_WIDTH = len(SHRUTI_NAMES)`; `_make_template` builds `(T, _PCP_WIDTH)` instead of `(T, 22)` |
+| `backend/ml_engine/raga_mapping.py` | `_pakad_template` builds `(T, len(SHRUTI_NAMES))` instead of `(T, 22)` |
+
+**Post-fix verification (test_ml_quick.py, 13 synthetic + real clips):**
+- 4/4 stages OK on all 13 clips, 0 errors
+- Ghana Patha scores: 0.33–0.93 (was ERR on all)
+- Raga detection: all clips classified (was ERR on all)
+
+**Scope of remaining work (out of scope for this incident):**
+- `ml_engine.ml_engine.N_CLUSTERS = 22` — KMeans cluster count; still valid as a
+  model choice (KMeans operates on combined MFCC+chroma, not PCP directly)
+- `raga_mapping.py` docstrings still reference "(22, n_frames)" in comments;
+  purely cosmetic, functionally correct
+
+### Verification summary
+
+| Component | Status |
+|-----------|--------|
+| Frontend build | ✅ `vite build` + `oxlint` pass |
+| Frontend 3D removed | ✅ No three.js/VedicAcoustic3D in codebase |
+| Backend Django check | ✅ 0 issues |
+| Backend tests | ✅ 11/11 pass |
+| ML pipeline (13 clips) | ✅ 4/4 stages, 0 errors |
+
+---
+
+## Storage Cleanup (2026-09-05)
+
+Repo was ~2 GB. Removed ~330 MB without breaking the project or recordings:
+
+| Removed | Size | Why safe |
+|---------|------|----------|
+| `backend/media/analysis_matrices` | 135 MB | Regenerable `.npz` derived outputs — **recordings kept** (32 MB in `media/recordings`) |
+| `backend/tests/audio_samples/*.wav` | 74 MB | 4×19 MB WAVs with zero references in code, tests, or CI |
+| `test_audio/isavasya_ghanam.ogg` | 17 MB | Skipped by every ML harness (≥15 MB / >60 s caps) |
+| `test_audio/rudram.mp3` | 12 MB | Same — 66 min file, skipped by all test suites |
+| `__pycache__` + pip/npm caches | ~2.9 GB | Regenerable build/install caches (outside repo) |
+
+**Still present (intentionally):** `venv/` (601 MB) and `frontend/node_modules/` (444 MB) —
+required for local dev/builds, both gitignored. `.git/` (116 MB) is unchanged because the
+history rewrite was declined; the untracked blobs linger in history.
+
+**Verification after cleanup:** Django tests 11/11 pass; ML quick suite 13/13 clips at
+4/4 stages, 0 errors; frontend build/lint unaffected (test audio removal does not touch src/).
+
+> Note: `test_ml_pipeline.py` (end-to-end harness generating vibrato/gamaka/breath-gap
+> clips + ghana sim) is extremely slow locally and was aborted twice during verification;
+> the same 4 stages are covered by `test_ml_quick.py` and `test_ml_audit.py`, both green.
