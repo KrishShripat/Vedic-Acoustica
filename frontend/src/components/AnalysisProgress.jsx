@@ -58,6 +58,12 @@ export default function AnalysisProgress({ recordingId, apiBase, onDone, onError
       // Use ref — not the stale closure — to check terminal state
       if (statusRef.current === 'done' || statusRef.current === 'error') {
         es.close()
+      } else if (es.readyState === EventSource.CLOSED) {
+        // Server dropped the stream mid-analysis (network blip, proxy reset,
+        // worker restart) without a terminal SSE 'error' message — surface it
+        // instead of spinning forever on automatic reconnect.
+        es.close()
+        onError?.('Connection to analysis stream was lost mid-processing.')
       }
     }
 

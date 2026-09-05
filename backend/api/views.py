@@ -516,15 +516,18 @@ def analysis_status(request, pk):
     """
     throttle = StatusAnonThrottle()
     if not throttle.allow_request(request, None):
-        from django.http import HttpResponse  # noqa: PLC0415
         retry_after = throttle.wait()
-        resp = HttpResponse(
-            'Too Many Requests',
-            status=429,
-            content_type='text/plain',
+        # Speak SSE even on throttle — a bare 429 text/plain response makes
+        # EventSource fire onerror forever: the browser auto-reconnects and the
+        # status stays 'running', so the client retries every ~3 s indefinitely.
+        # Yielding a terminal SSE 'error' message closes the stream cleanly.
+        resp = StreamingHttpResponse(
+            [_sse_message({'stage': 'Queued', 'percent': 0, 'status': 'error',
+                           'error': 'Too many status requests — slow down.'})],
+            content_type='text/event-stream',
         )
-        if retry_after is not None:
-            resp['Retry-After'] = str(int(retry_after))
+        resp['Cache-Control'] = 'no-cache'
+        resp['Retry-After'] = str(int(retry_after)) if retry_after is not None else '60'
         return resp
 
     def _event_stream():
