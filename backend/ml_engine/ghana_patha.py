@@ -280,10 +280,11 @@ def _score_against_ghana_cycle(labels):
         for end in range(start + 3, n + 1):
             sub = labels[start:end]
             sub_len = len(sub)
-            # Align sub against (possibly repeated) cycle using element DTW
-            matches = sum(
-                sub[i] == cycle[(start + i) % c]
-                for i in range(sub_len)
+            # The Ghana phrase may begin on any phase (recitations start
+            # arbitrarily mid-cycle). Try every rotation and keep the best.
+            matches = max(
+                sum(sub[i] == cycle[(rot + i) % c] for i in range(sub_len))
+                for rot in range(c)
             )
             score = matches / sub_len
             if score > best:
