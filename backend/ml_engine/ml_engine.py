@@ -39,7 +39,8 @@ def run_clustering(features):
             'frame_count': int(len(frame_indices)),
             'centroid': kmeans.cluster_centers_[cluster_id].tolist(),
             'assigned_shruti': assign_shruti(
-                kmeans.cluster_centers_[cluster_id], features
+                kmeans.cluster_centers_[cluster_id], features,
+                cluster_frames=frame_indices,
             ),
         }
 

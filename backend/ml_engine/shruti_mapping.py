@@ -58,7 +58,7 @@ for name, ratio in zip(SHRUTI_NAMES, SHRUTI_RATIOS):
     SHRUTI_FREQUENCIES[name] = round(REFERENCE_FREQ * ratio, 2)
 
 
-def assign_shruti(centroid, features):
+def assign_shruti(centroid, features, cluster_frames=None):
     """
     Return the Shruti name whose bin has the highest energy in the chroma
     portion of the K-Means cluster centroid.
@@ -70,6 +70,22 @@ def assign_shruti(centroid, features):
     as a semitone offset from C4.
     """
     import numpy as np
+    from .audio_processing import _SHRUTI_FREQS_ARR, _THRESHOLD_CENTS
+
+    # Prefer the cluster's voiced F0s (musical truth); fall back to the
+    # dominant chroma bin only when the cluster has no F0 energy.
+    f0 = features.get('f0')
+    voiced = features.get('voiced_flag')
+    if f0 is not None and voiced is not None and cluster_frames is not None:
+        f0_voiced = np.asarray(f0, dtype=np.float64)[np.asarray(voiced, dtype=bool)]
+        if f0_voiced.size:
+            median = float(np.nanmedian(f0_voiced))
+            if np.isfinite(median):
+                cents = np.abs(1200.0 * np.log2(median / _SHRUTI_FREQS_ARR))
+                best = int(np.argmin(cents))
+                if cents[best] < _THRESHOLD_CENTS:
+                    return SHRUTI_NAMES[best]
+
     chroma_part = centroid[13:] if len(centroid) > 13 else centroid
     if len(chroma_part) == 0:
         return SHRUTI_NAMES[0]
