@@ -2,12 +2,16 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://krish-shripat-vedic-backend.hf.space/api/:path*"
+      "source": "/probe",
+      "destination": "https://krish-shripat-vedic-backend.hf.space/api/recordings/"
     },
     {
-      "source": "/media/:path*",
-      "destination": "https://krish-shripat-vedic-backend.hf.space/media/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://krish-shripat-vedic-backend.hf.space/api/$1"
+    },
+    {
+      "source": "/media/(.*)",
+      "destination": "https://krish-shripat-vedic-backend.hf.space/media/$1"
     }
   ]
 }
