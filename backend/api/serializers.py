@@ -47,3 +47,14 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
                 f"Allowed extensions: {', '.join(self._ALLOWED_EXTENSIONS)}."
             )
         return value
+
+
+class AudioRecordingListSerializer(AudioRecordingSerializer):
+    """Lightweight list view — heavy per-frame metadata belongs to the detail
+    endpoint only, otherwise GET /recordings/ bloats with every row."""
+
+    class Meta(AudioRecordingSerializer.Meta):
+        fields = [
+            'id', 'title', 'audio_file', 'playback_file', 'uploaded_at',
+            'is_analyzed',
+        ]

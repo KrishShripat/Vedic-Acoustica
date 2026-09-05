@@ -17,7 +17,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.throttling import AnonRateThrottle
 
 from .models import AudioRecording
-from .serializers import AudioRecordingSerializer
+from .serializers import AudioRecordingListSerializer, AudioRecordingSerializer
 
 
 # ---------------------------------------------------------------------------
@@ -430,7 +430,7 @@ def list_recordings(request):
 
     qs = AudioRecording.objects.all().order_by('-uploaded_at')
     page = paginator.paginate_queryset(qs, request)
-    serializer = AudioRecordingSerializer(page, many=True)
+    serializer = AudioRecordingListSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
 
 
