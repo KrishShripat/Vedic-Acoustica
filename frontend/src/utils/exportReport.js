@@ -23,10 +23,11 @@ async function findGraphDiv(chartId) {
 async function captureChart(chartId) {
   const graphDiv = await findGraphDiv(chartId)
   const dataUrl = await Plotly.toImage(graphDiv, {
-    format: 'png',
+    format: 'jpeg',
+    quality: 0.85,
     width: 900,
     height: 400,
-    scale: 2,
+    scale: 1.5,
   })
   return dataUrl
 }
@@ -118,7 +119,7 @@ export default async function exportReport(recording, analysis) {
     try {
       pdf.setFillColor(255, 255, 255)
       pdf.roundedRect(x, yPos, imgW, imgH, 3, 3, 'F')
-      pdf.addImage(dataUrl, 'PNG', x + 3, yPos + 3, imgW - 6, imgH - 6)
+      pdf.addImage(dataUrl, 'JPEG', x + 3, yPos + 3, imgW - 6, imgH - 6)
     } catch (imgErr) {
       throw new Error(`Failed to embed "${CHART_DEFS[i].title}" image in the PDF: ${imgErr.message}`)
     }
