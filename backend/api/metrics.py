@@ -2,8 +2,15 @@ import os
 import re
 import time
 
+import redis as redislib
 from django.conf import settings
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import (
+    Counter,
+    Histogram,
+    Gauge,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
 from django.http import HttpResponse
 
 REQUEST_COUNT = Counter(
@@ -17,6 +24,62 @@ REQUEST_DURATION = Histogram(
     'HTTP request duration in seconds',
     ['method', 'path'],
 )
+
+
+# ---------------------------------------------------------------------------
+# Cross-process ML + Celery metrics
+#
+# Gunicorn (serving /metrics) and the Celery workers are *separate processes*,
+# so histogram/counter samples recorded in the workers can never appear in the
+# web process's scrape.  We bridge that gap with Redis (already the broker):
+#   • workers INCR / SET keys when an analysis finishes (see api/tasks.py)
+#   • this view reads those keys and exposes them as gauges on every scrape
+# ---------------------------------------------------------------------------
+
+CELERY_QUEUE_DEPTH = Gauge(
+    'celery_queue_depth',
+    'Number of messages currently waiting in the Celery broker queue',
+    ['queue'],
+)
+
+ML_PROCESSING_LAST_SECONDS = Gauge(
+    'ml_processing_seconds_last',
+    'Duration in seconds of the most recently completed analysis',
+)
+
+ML_ANALYSES_TOTAL = Gauge(
+    'ml_analyses_total',
+    'Total analyses completed across all Celery workers',
+    ['status'],
+)
+
+_REDIS_URL = getattr(settings, 'CELERY_BROKER_URL', '') or ''
+
+
+def _redis_conn() -> redislib.Redis:
+    return redislib.from_url(_REDIS_URL)
+
+
+def _bridge_worker_metrics() -> None:
+    """Expose worker-side ML/celery state on this process's /metrics endpoint."""
+    if not _REDIS_URL:
+        return
+    queue = getattr(settings, 'CELERY_QUEUE', 'celery')
+    try:
+        conn = _redis_conn()
+        try:
+            last = conn.get('vedic:metrics:ml_last_seconds')
+            ok = conn.get('vedic:metrics:ml_analyses_ok')
+            err = conn.get('vedic:metrics:ml_analyses_error')
+            if last is not None:
+                ML_PROCESSING_LAST_SECONDS.set(float(last))
+            ML_ANALYSES_TOTAL.labels(status='ok').set(int(ok or 0))
+            ML_ANALYSES_TOTAL.labels(status='error').set(int(err or 0))
+            CELERY_QUEUE_DEPTH.labels(queue=queue).set(conn.llen(queue))
+        finally:
+            conn.close()
+    except (redislib.RedisError, TypeError, ValueError):
+        pass  # metrics must never break a scrape
 
 
 # Regex patterns that replace numeric primary keys with a fixed placeholder.
@@ -82,4 +145,5 @@ def metrics_view(request):
         if auth_header != f'Bearer {_METRICS_TOKEN}':
             return HttpResponse(status=403)
 
+    _bridge_worker_metrics()
     return HttpResponse(generate_latest(), content_type=CONTENT_TYPE_LATEST)

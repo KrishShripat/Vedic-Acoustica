@@ -86,12 +86,12 @@ jobs:
         run: |
           SHA=${{ needs.build-and-push.outputs.sha }}
           REGISTRY=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          sed -i "s|vedic-acoustica/backend:latest|${REGISTRY}/backend:${SHA}|g"   k8s/backend-deployment.yml
-          sed -i "s|vedic-acoustica/backend:latest|${REGISTRY}/backend:${SHA}|g"   k8s/celery-deployment.yml
-          sed -i "s|vedic-acoustica/frontend:latest|${REGISTRY}/frontend:${SHA}|g" k8s/frontend-deployment.yml
+          sed -i "s|vedic-acoustica/backend:latest|${REGISTRY}/backend:${SHA}|g"   k8s/backend/deployment.yaml
+          sed -i "s|vedic-acoustica/backend:latest|${REGISTRY}/backend:${SHA}|g"   k8s/celery/deployment.yaml
+          sed -i "s|vedic-acoustica/frontend:latest|${REGISTRY}/frontend:${SHA}|g" k8s/frontend/deployment.yaml
 
       - name: Apply manifests
-        run: kubectl apply -f k8s/
+        run: kubectl apply -k k8s/
 
       - name: Wait for rollouts
         run: |

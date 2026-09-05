@@ -378,21 +378,34 @@ Vedic-Acoustica/
 │   ├── Dockerfile                      # Multi-stage: node build + nginx serve
 │   └── .dockerignore
 │
-├── k8s/                                # Kubernetes manifests
-│   ├── backend-deployment.yml          # Backend Deployment + Service + PVC
-│   ├── frontend-deployment.yml         # Frontend Deployment + Service
-│   ├── services.yml                    # Secret + Ingress
+├── k8s/                                # Kubernetes manifests (kustomize)
+│   ├── kustomization.yaml              # `kubectl apply -k k8s/` deploys all
+│   ├── secret.yaml                     # Secret (django-secret-key, metrics-token)
+│   ├── ingress.yaml                    # Ingress (path-based routing)
+│   ├── storage.yaml                    # PVCs (RWX shared data + redis)
+│   ├── backend/
+│   │   ├── deployment.yaml             # Backend Deployment + initContainer
+│   │   └── service.yaml                # ClusterIP Service
+│   ├── frontend/
+│   │   ├── deployment.yaml             # Frontend Deployment
+│   │   └── service.yaml                # ClusterIP Service
+│   ├── celery/
+│   │   └── deployment.yaml             # Celery worker Deployment
+│   ├── redis/
+│   │   ├── deployment.yaml             # Redis broker Deployment
+│   │   └── service.yaml                # ClusterIP Service
 │   └── monitoring/
-│       ├── node-exporter.yml           # DaemonSet + Service
-│       ├── prometheus.yml              # ConfigMap + Deployment + Service
-│       ├── grafana.yml                 # Deployment + Service + ConfigMaps
-│       └── grafana-dashboard.yml       # Dashboard JSON as ConfigMap
+│       ├── kustomization.yaml
+│       ├── node-exporter.yaml          # DaemonSet + Service
+│       ├── prometheus.yaml             # ConfigMap + Deployment + Service
+│       ├── grafana.yaml                # Deployment + Service + ConfigMaps
+│       └── grafana-dashboard.yaml      # Dashboard JSON as ConfigMap
 │
 ├── monitoring/                         # Docker Compose monitoring configs
-│   ├── prometheus.yml                  # Scrape config
+│   ├── prometheus.yml                  # Scrape config (local + prod HF Space)
 │   ├── grafana-datasource.yml          # Prometheus datasource
 │   ├── grafana-provisioning.yml        # Dashboard provider
-│   └── grafana-dashboard.json          # Grafana dashboard (6 panels)
+│   └── grafana-dashboard.json          # Grafana dashboard (10 panels)
 │
 ├── test_audio/                         # Sample recordings
 │   ├── isavasya_ghanam_60s.wav         # Ghana Patha recording (60s)
@@ -684,7 +697,7 @@ services:
 | New npm package added to `package.json` | Frontend only | `docker compose build frontend` |
 | `Dockerfile` changes in either service | That service | `docker compose build backend` or `frontend` |
 | `docker-compose.yml` changes | Depends on section | `docker compose up -d` (auto-rebuilds if needed) |
-| `k8s/` manifest changes | No rebuild needed | `kubectl apply -f k8s/` |
+| `k8s/` manifest changes | No rebuild needed | `kubectl apply -k k8s/` |
 | Monitoring config changes | No rebuild needed | Restart the monitoring service |
 
 **Docker layer caching:** The Dockerfiles are structured so that:
@@ -708,17 +721,30 @@ services:
 
 ## Kubernetes Deployment
 
-Kubernetes manifests are in `k8s/`:
+Kubernetes manifests live in `k8s/` under standard `deployment.yaml` / `service.yaml`
+names per component and are wired together with kustomize. Deploy the whole stack
+with a single command:
 
-| File | Resources |
-|------|-----------|
-| `backend-deployment.yml` | Deployment (2 replicas) + initContainer (migrate/collectstatic) + PersistentVolumeClaim (shared SQLite + media) + ClusterIP Service |
-| `frontend-deployment.yml` | Deployment (2 replicas) + LoadBalancer Service |
-| `services.yml` | Secret (Django key) + Ingress (path-based routing) |
-| `monitoring/node-exporter.yml` | DaemonSet + Service |
-| `monitoring/prometheus.yml` | ConfigMap + Deployment + Service |
-| `monitoring/grafana.yml` | Deployment + Service + ConfigMaps |
-| `monitoring/grafana-dashboard.yml` | Dashboard JSON as ConfigMap |
+```bash
+kubectl apply -k k8s/
+```
+
+| File/Dir | Resources |
+|----------|-----------|
+| `kustomization.yaml` | Deploys everything below (components + monitoring) |
+| `secret.yaml` | Secret: `django-secret-key` + `metrics-token` (bearer for `/metrics`, F14) |
+| `ingress.yaml` | Ingress (path-based routing: /api, /media → backend; / → frontend) |
+| `storage.yaml` | PersistentVolumeClaims: `vedic-data-pvc` (RWX) + `vedic-redis-pvc` |
+| `backend/deployment.yaml` | Backend Deployment (1 replica — SQLite single-writer) + initContainer (migrate/collectstatic) |
+| `backend/service.yaml` | ClusterIP Service |
+| `frontend/deployment.yaml` | Frontend Deployment (2 replicas) |
+| `frontend/service.yaml` | ClusterIP Service |
+| `celery/deployment.yaml` | Celery worker Deployment (2 replicas) |
+| `redis/deployment.yaml` + `service.yaml` | Redis broker (persistent, appendonly) + ClusterIP Service |
+| `monitoring/node-exporter.yaml` | DaemonSet + Service |
+| `monitoring/prometheus.yaml` | ConfigMap + Deployment + Service (scrapes cluster + prod HF Space) |
+| `monitoring/grafana.yaml` | Deployment + Service + datasource/provider ConfigMaps |
+| `monitoring/grafana-dashboard.yaml` | Dashboard JSON as ConfigMap |
 
 ### Architecture Notes
 
@@ -739,7 +765,7 @@ minikube image load vedic-acoustica/backend:latest
 minikube image load vedic-acoustica/frontend:latest
 
 # 3. Deploy
-kubectl apply -f k8s/
+kubectl apply -k k8s/
 
 # 4. Wait for rollout
 kubectl rollout status deployment/vedic-backend
@@ -754,9 +780,9 @@ minikube service vedic-frontend-service --url
 | Change Type | K8s Action Required |
 |-------------|-------------------|
 | Python/JS code changes | Rebuild Docker image, load into Minikube, restart deployment |
-| `k8s/*.yml` changes | `kubectl apply -f k8s/` (no rebuild needed) |
-| Monitoring config changes | `kubectl apply -f k8s/monitoring/` (no rebuild needed) |
-| New secrets/environment variables | Update `k8s/services.yml` or add to Secret resource |
+| `k8s/**` manifest changes | `kubectl apply -k k8s/` (no rebuild needed) |
+| Monitoring config changes | `kubectl apply -k k8s/monitoring/` (no rebuild needed) |
+| New secrets/environment variables | Update `k8s/secret.yaml` (and matching env in the deployment manifests) |
 
 ```bash
 # After code changes, deploy to K8s:
@@ -836,6 +862,9 @@ Dashboard panels:
 - **CPU Usage** — node_exporter idle→busy calculation
 - **Memory Usage** — MemAvailable / MemTotal
 - **Node Uptime** — time since boot
+- **Celery Queue Depth** — messages waiting in the broker queue
+- **ML Analysis Duration (last)** — most recently completed analysis duration
+- **Analyses Completed / Failed** — cumulative worker-side totals (Redis-bridged)
 
 Access Grafana at `http://localhost:3000` (admin/admin). Prometheus at `http://localhost:9090`.
 
@@ -850,7 +879,7 @@ curl http://localhost:9090/api/v1/targets   # Verify all targets are UP
 ### Monitoring inside Kubernetes
 
 ```bash
-kubectl apply -f k8s/monitoring/
+kubectl apply -k k8s/monitoring/
 kubectl port-forward service/prometheus 9090:9090   # Prometheus UI
 kubectl port-forward service/grafana 3000:3000      # Grafana (admin/admin)
 ```

@@ -83,6 +83,9 @@ services:
       - "9090:9090"
     environment:
       - BACKEND_METRICS_HOST=backend
+      # Matches the METRICS_TOKEN set on the backend / HF Space. Prometheus
+      # injects its own env vars into ${METRICS_TOKEN} in prometheus.yml.
+      - METRICS_TOKEN=${METRICS_TOKEN:-}
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     restart: unless-stopped

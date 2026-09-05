@@ -1,20 +1,4 @@
 # ---------------------------------------------------------------------------
-# Secret — placeholder only.
-# NEVER commit a real key here. In production, manage this with:
-#   kubectl create secret generic vedic-secrets \
-#     --from-literal=django-secret-key="$(openssl rand -base64 50)" \
-#     --dry-run=client -o yaml | kubectl apply -f -
-# Or use Sealed Secrets / External Secrets Operator.
-# ---------------------------------------------------------------------------
-apiVersion: v1
-kind: Secret
-metadata:
-  name: vedic-secrets
-type: Opaque
-stringData:
-  django-secret-key: "REPLACE_WITH_REAL_SECRET_KEY_DO_NOT_COMMIT"
----
-# ---------------------------------------------------------------------------
 # Ingress
 # ---------------------------------------------------------------------------
 apiVersion: networking.k8s.io/v1

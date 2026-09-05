@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Deploy the whole home-lab stack (Minikube or a real cluster) with:
+#   kubectl apply -k k8s/
+resources:
+  - secret.yaml
+  - ingress.yaml
+  - storage.yaml
+  - backend
+  - frontend
+  - celery
+  - redis
+  - monitoring

@@ -12,11 +12,24 @@ data:
         static_configs:
           - targets: ['localhost:9090']
 
+      # In-cluster backend. Runs with DJANGO_DEBUG=False so /metrics is
+      # bearer-token guarded (F14); the token is mounted below from the
+      # vedic-secrets Secret.
       - job_name: 'vedic-backend'
         static_configs:
           - targets: ['vedic-backend-service:8000']
         metrics_path: '/metrics/'
         scrape_interval: 10s
+        bearer_token_file: /etc/prometheus/secrets/metrics-token
+
+      # Production Hugging Face Space — same token, guard enforced.
+      - job_name: 'vedic-backend-prod'
+        scheme: https
+        static_configs:
+          - targets: ['krish-shripat-vedic-backend.hf.space']
+        metrics_path: '/metrics/'
+        scrape_interval: 30s
+        bearer_token_file: /etc/prometheus/secrets/metrics-token
 
       - job_name: 'node-exporter'
         static_configs:
@@ -59,12 +72,24 @@ spec:
               mountPath: /etc/prometheus
             - name: data
               mountPath: /prometheus
+            - name: metrics-token
+              mountPath: /etc/prometheus/secrets
+              readOnly: true
       volumes:
         - name: config
           configMap:
             name: prometheus-config
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
         - name: data
           emptyDir: {}
+        - name: metrics-token
+          secret:
+            secretName: vedic-secrets
+            items:
+              - key: metrics-token
+                path: metrics-token
 ---
 apiVersion: v1
 kind: Service

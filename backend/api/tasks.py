@@ -15,6 +15,7 @@ progress flow is identical to the old synchronous path.
 """
 
 import os
+import time
 
 import redis as redislib
 from celery import shared_task
@@ -52,6 +53,22 @@ def build_playback_file_task(self, recording_id: int) -> bool:
     recording = AudioRecording.objects.get(pk=recording_id)
     _build_playback_file(recording)
     return True
+
+
+def _record_ml_metrics(conn: redislib.Redis, status: str, seconds: float | None = None) -> None:
+    """
+    Record an analysis outcome for the /metrics bridge (see api/metrics.py).
+
+    The Celery worker is a separate process from gunicorn, so it cannot append
+    directly to the /metrics output.  These keys are read by
+    ``metrics._bridge_worker_metrics()`` on every scrape.  Best-effort only.
+    """
+    try:
+        if status == 'ok' and seconds is not None:
+            conn.set('vedic:metrics:ml_last_seconds', seconds, ex=3600)
+        conn.incr(f'vedic:metrics:ml_analyses_{status}')
+    except redislib.RedisError:
+        pass
 
 
 def _run_pipeline(pk: int) -> dict:
@@ -216,7 +233,14 @@ def process_audio_task(self, recording_id: int) -> dict:
                       error='An analysis for this recording is already running.')
         return {'recording_id': pk, 'skipped': True}
     try:
-        return _run_pipeline(pk)
+        start = time.perf_counter()
+        try:
+            result = _run_pipeline(pk)
+            _record_ml_metrics(redis_conn, 'ok', time.perf_counter() - start)
+            return result
+        except Exception:
+            _record_ml_metrics(redis_conn, 'error')
+            raise
     finally:
         try:
             redis_conn.delete(lock_key)

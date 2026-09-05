@@ -64,6 +64,13 @@ spec:
               value: redis://vedic-redis-service:6379/0
             - name: CELERY_RESULT_BACKEND
               value: redis://vedic-redis-service:6379/0
+            # Must match the value in the vedic-secrets metrics-token key for
+            # /metrics scrapes to authenticate in-cluster (F14).
+            - name: METRICS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vedic-secrets
+                  key: metrics-token
           volumeMounts:
             - name: app-data
               mountPath: /app/data
@@ -90,28 +97,3 @@ spec:
         - name: app-data
           persistentVolumeClaim:
             claimName: vedic-data-pvc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: vedic-data-pvc
-spec:
-  accessModes:
-    - ReadWriteMany   # Required: Django pods + Celery pods mount this simultaneously.
-                      # Use an NFS provisioner (on-prem) or AWS EFS StorageClass.
-                      # Example StorageClass: storageClassName: efs-sc
-  resources:
-    requests:
-      storage: 10Gi  # Sized for audio uploads + .npz matrices
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: vedic-backend-service
-spec:
-  selector:
-    app: vedic-backend
-  ports:
-    - port: 8000
-      targetPort: 8000
-  type: ClusterIP

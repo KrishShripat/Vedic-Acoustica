@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vedic-data-pvc
+spec:
+  accessModes:
+    - ReadWriteMany   # Required: Django pods + Celery pods mount this simultaneously.
+                      # Use an NFS provisioner (on-prem) or AWS EFS StorageClass.
+                      # Example StorageClass: storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 10Gi  # Sized for audio uploads + .npz matrices
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vedic-redis-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce     # Redis is single-pod, so RWO is sufficient
+  resources:
+    requests:
+      storage: 1Gi

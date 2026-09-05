@@ -1,3 +1,14 @@
+# ---------------------------------------------------------------------------
+# Prometheus scrape configuration — local Docker Compose stack.
+#
+#   METRICS_TOKEN  token that also matches the value set as METRICS_TOKEN on
+#                  the production Hugging Face Space (see backend/api/metrics.py).
+#                  Supply it via a local .env file (git-ignored) or the shell:
+#                      METRICS_TOKEN=... docker compose up -d
+#
+# The 'vedic-backend-prod' job pulls live metrics from the hosted Space, so the
+# same Grafana dashboard displays dev + production side by side.
+# ---------------------------------------------------------------------------
 global:
   scrape_interval: 15s
 
@@ -6,14 +17,21 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
+  # Local compose backend — token guard is off when DJANGO_DEBUG=True.
   - job_name: 'vedic-backend'
     static_configs:
       - targets: ['backend:8000']
     metrics_path: '/metrics'
     scrape_interval: 10s
-    # When METRICS_TOKEN is set on the backend, Prometheus must send it.
-    # Set the same value here. Leave blank for local dev (token guard is off).
-    bearer_token: ''
+
+  # Production Hugging Face Space — /metrics is bearer-token guarded (F14).
+  - job_name: 'vedic-backend-prod'
+    scheme: https
+    static_configs:
+      - targets: ['krish-shripat-vedic-backend.hf.space']
+    metrics_path: '/metrics/'
+    scrape_interval: 30s
+    bearer_token: '${METRICS_TOKEN}'
 
   - job_name: 'node-exporter'
     static_configs:
