@@ -6,6 +6,7 @@ const SHRUTI_NAMES = [
   'Ma¹', 'Ma²', 'Ma³', 'Tivra Ma', 'Pa', 'Dha¹',
   'Dha²', 'Ni¹', 'Ni²', 'Ni³', 'Ni⁴', 'Ni⁵',
   'Ni⁶', 'Ga-Komal', 'Ma-Komal', 'Tivra Ma²',
+  'Sa’',
 ]
 
 /**
@@ -46,16 +47,16 @@ export default function ShrutiMap({ data, onReady }) {
 
   // ── Derive heatmap matrix ─────────────────────────────────────────────────
   const heatmapTrace = useMemo(() => {
-    const pcpMatrix = data?.pcp_data       // (22, n_cols)
+    const pcpMatrix = data?.pcp_data       // (23, n_cols)
     const timeAxis  = data?.pcp_time_axis  // [seconds …]
 
-    if (!Array.isArray(pcpMatrix) || pcpMatrix.length !== 22) return null
+    if (!Array.isArray(pcpMatrix) || pcpMatrix.length !== 23) return null
 
     const nCols = pcpMatrix[0]?.length ?? 0
     if (nCols === 0) return null
 
     // Plotly heatmap expects z[row][col] = value
-    // Our pcp_data is already (22, n_cols) — rows = Shrutis, cols = time
+    // Our pcp_data is already (23, n_cols) — rows = Shrutis, cols = time
     // We flip row order so Sa is at the bottom of the chart (low → high)
     const zFlipped = [...pcpMatrix].reverse()
     const yLabels  = [...SHRUTI_NAMES].reverse()
@@ -69,7 +70,7 @@ export default function ShrutiMap({ data, onReady }) {
 
   // ── Derive mean-PCP bar data ──────────────────────────────────────────────
   const barTrace = useMemo(() => {
-    if (!Array.isArray(data?.mean_pcp) || data.mean_pcp.length !== 22) return null
+    if (!Array.isArray(data?.mean_pcp) || data.mean_pcp.length !== 23) return null
     const rawMax = Math.max(...data.mean_pcp, 1e-9)
     const energies = data.mean_pcp.map(v => v / rawMax)
     return energies
@@ -229,7 +230,7 @@ export default function ShrutiMap({ data, onReady }) {
             style={{ width: '100%' }}
           />
           <p className="shruti-caption">
-            Mean Pitch-Class Profile energy across 22 Shruti bins (harmonic-weighted, octave-invariant)
+            Mean Pitch-Class Profile energy across 23 Shruti bins (harmonic-weighted, octave-invariant)
           </p>
         </>
       )}

@@ -25,6 +25,7 @@ SHRUTI_RATIOS = [
     6 / 5,        # S20 Ga-Komal    — 313.95 Hz  (6/5)    — replaces 2/1 (octave Sa’)
     27 / 20,      # S21 Ma-Komal    — 353.20 Hz  (27/20)  — replaces 8/3 (above octave)
     45 / 32,      # S22 Tivra Ma2   — 367.79 Hz  (45/32)  — replaces 3   (above octave)
+    2 / 1,        # S23 Sa’         — 523.25 Hz  (2/1)    — octave Sa’ (NEW)
 ]
 
 SHRUTI_NAMES = [
@@ -50,6 +51,7 @@ SHRUTI_NAMES = [
     'Shruti 20 (Ga-Komal)',
     'Shruti 21 (Ma-Komal)',
     'Shruti 22 (Tivra Ma2)',
+    'Shruti 23 (Sa’)',
 ]
 
 for name, ratio in zip(SHRUTI_NAMES, SHRUTI_RATIOS):

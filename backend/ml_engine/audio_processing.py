@@ -1,5 +1,6 @@
 import librosa
 import numpy as np
+from scipy.signal import medfilt
 from .shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES
 
 SR = 22050
@@ -201,6 +202,13 @@ def extract_features(audio_path):
 
     # ── F0 via pYIN ──────────────────────────────────────────────────────────
     f0, voiced_flag, voiced_probs = extract_f0(y, sr=SR, hop_length=HOP_LENGTH)
+
+    # Median-filter the F0 track (kernel 5) to stabilise the ~21.5 ¢ drift
+    # between neighbouring Śruti bins; micro-pitch jitter otherwise flips a
+    # note between labels frame-to-frame.  Where the filter would smear unvoiced
+    # NaN onto a voiced neighbour, keep the original voiced value.
+    f0_smooth = medfilt(np.asarray(f0, dtype=np.float64), kernel_size=5)
+    f0 = np.where(np.isfinite(f0_smooth), f0_smooth, f0)
 
     voiced_ratio = float(voiced_flag.mean()) if len(voiced_flag) > 0 else 0.0
 

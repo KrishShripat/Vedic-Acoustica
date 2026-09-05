@@ -16,7 +16,7 @@ export default function ClusterPlot({ data, onReady }) {
             type: 'bar',
             marker: {
               color: clusterNames.map((_, i) => {
-                const hue = (i / 22) * 360
+                const hue = (i / 23) * 360
                 return `hsl(${hue}, 70%, 55%)`
               }),
             },
