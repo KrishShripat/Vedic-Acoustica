@@ -11,13 +11,11 @@ import exportReport from './utils/exportReport'
 import './App.css'
 
 const API_BASE = '/api'
-const MEDIA_BASE = 'https://krish-shripat-vedic-backend.hf.space'
 const NUM_CHARTS = 5
 
-const resolveMediaUrl = (url) => {
-  if (!url) return url
-  return /^https?:\/\//i.test(url) ? url : `${MEDIA_BASE}${url.startsWith('/') ? '' : '/'}${url}`
-}
+// /media/... is relative on purpose: the Vite dev proxy (localhost:8000)
+// and the Vercel rewrite (HF Space) both resolve it for their environment.
+const resolveMediaUrl = (url) => url
 
 function App() {
   const [recordings, setRecordings] = useState([])
