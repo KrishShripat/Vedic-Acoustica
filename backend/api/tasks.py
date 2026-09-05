@@ -23,12 +23,33 @@ from celery import shared_task
 from api.views import (
     _set_progress,
     _save_matrices,
+    _build_playback_file,
 )
 from api.models import AudioRecording
 from ml_engine.audio_processing import extract_features
 from ml_engine.ml_engine import run_clustering
 from ml_engine.ghana_patha import validate_ghana_patha
 from ml_engine.raga_mapping import detect_raga
+
+
+@shared_task(bind=True, max_retries=2, name='api.tasks.build_playback_file_task')
+def build_playback_file_task(self, recording_id: int) -> bool:
+    """
+    Transcode the uploaded audio to an MP3 playback file in the background.
+
+    The ffmpeg transcode used to run synchronously inside the upload request,
+    racing gunicorn's ``--timeout 120`` — a slow transcode killed the worker
+    mid-request and the client got a 502 even though the upload itself had
+    succeeded.  Running it here frees the request thread entirely.
+
+    ``max_retries=2`` gives ffmpeg two retries before the task is marked
+    FAILURE (worst case the playback file is simply missing and the frontend
+    falls back to the raw audio — ``_build_playback_file`` already swallows
+    ffmpeg errors).
+    """
+    recording = AudioRecording.objects.get(pk=recording_id)
+    _build_playback_file(recording)
+    return True
 
 
 @shared_task(bind=True, max_retries=0, name='api.tasks.process_audio_task')
