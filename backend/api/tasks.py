@@ -139,11 +139,11 @@ def _run_pipeline(pk: int) -> dict:
         metadata = {
             # Shruti clustering scalars
             'shruti_clusters':              clustering_results['shruti_clusters'],
-            'freq_assignments':             clustering_results['freq_assignments'],
+            # freq_assignments intentionally omitted — per-frame strings, consumed by nothing
             'mean_pcp':                     clustering_results['mean_pcp'],
             # pYIN scalars
             'voiced_ratio':                 features['voiced_ratio'],
-            'spectral_centroid_timeline':   features['spectral_centroid'].tolist(),
+            # spectral_centroid_timeline intentionally omitted — per-frame floats, unused
             # Ghana Patha scalars
             'ghana_patha_valid':            ghana_result['is_valid'],
             'ghana_patha_confidence':       ghana_result['confidence'],
@@ -181,6 +181,14 @@ def _run_pipeline(pk: int) -> dict:
 
     # ── Signal the SSE stream that processing is complete ─────────────────────
     _set_progress(pk, 'Complete', 100, status_val='done')
+
+    # Terminal state reached — purge the progress file (the next analyze call
+    # re-creates it before dispatch, and the SSE reader is done).
+    try:
+        from api.views import _delete_progress  # noqa: PLC0415
+        _delete_progress(pk)
+    except Exception:  # pragma: no cover — cleanup is best-effort
+        pass
 
     return {'recording_id': pk, 'matrices_file': rel_path}
 

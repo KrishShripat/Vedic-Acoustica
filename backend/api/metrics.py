@@ -2,6 +2,7 @@ import os
 import re
 import time
 
+from django.conf import settings
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from django.http import HttpResponse
 
@@ -68,6 +69,8 @@ class MetricsMiddleware:
 # ---------------------------------------------------------------------------
 
 _METRICS_TOKEN: str | None = os.environ.get('METRICS_TOKEN') or None
+if not settings.DEBUG and not _METRICS_TOKEN:
+    _METRICS_TOKEN = chr(0)   # never match; deployers must set a token
 
 
 def metrics_view(request):
