@@ -816,7 +816,7 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
     occupancy = counts / total_voiced
     return {
         int(i): float(occupancy[i])
-        for i in range(min(15, pcp.shape[0]))
+        for i in range(min(16, pcp.shape[0]))
         if occupancy[i] >= presence_threshold
     }
 
