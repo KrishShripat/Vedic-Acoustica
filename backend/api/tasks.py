@@ -16,7 +16,9 @@ progress flow is identical to the old synchronous path.
 
 import os
 
+import redis as redislib
 from celery import shared_task
+from django.conf import settings
 
 # Re-use the progress helpers and matrix helpers from views.py so there
 # is a single source of truth for file paths and progress semantics.
@@ -52,10 +54,9 @@ def build_playback_file_task(self, recording_id: int) -> bool:
     return True
 
 
-@shared_task(bind=True, max_retries=0, name='api.tasks.process_audio_task')
-def process_audio_task(self, recording_id: int) -> dict:
+def _run_pipeline(pk: int) -> dict:
     """
-    Run the full ML analysis pipeline for *recording_id* in the background.
+    Run the full ML analysis pipeline for *pk* in the background.
 
     Stages
     ------
@@ -77,8 +78,6 @@ def process_audio_task(self, recording_id: int) -> dict:
 
     Returns a minimal dict summary (available via ``AsyncResult.result``).
     """
-    pk = recording_id
-
     # ── Fetch recording ────────────────────────────────────────────────────────
     try:
         recording = AudioRecording.objects.get(pk=pk)
@@ -184,3 +183,34 @@ def process_audio_task(self, recording_id: int) -> dict:
     _set_progress(pk, 'Complete', 100, status_val='done')
 
     return {'recording_id': pk, 'matrices_file': rel_path}
+
+
+@shared_task(bind=True, max_retries=0, name='api.tasks.process_audio_task')
+def process_audio_task(self, recording_id: int) -> dict:
+    """
+    Single-flight wrapper around ``_run_pipeline``.
+
+    ACKS_LATE re-delivers a task if a worker crashes mid-run, but ``max_retries``
+    does NOT prevent a duplicate broker redelivery, and a double-click on
+    "Analyze" dispatches two independent tasks for the same recording.  Both
+    would otherwise write the same progress file and call ``recording.save()``
+    (SQLite is the single writer — last-writer-wins, progress can regress).
+    A Redis ``SETNX`` lock (Redis is already the broker → zero new infra)
+    guarantees only one analysis of a recording ever runs concurrently.
+    """
+    pk = recording_id
+
+    # ── Single-flight fence: never run two analyses of the same recording ──
+    lock_key = f'vedic:analyze:lock:{pk}'
+    redis_conn = redislib.Redis.from_url(settings.CELERY_BROKER_URL)
+    if not redis_conn.set(lock_key, '1', nx=True, ex=3600):
+        _set_progress(pk, 'Queued', 0, status_val='error',
+                      error='An analysis for this recording is already running.')
+        return {'recording_id': pk, 'skipped': True}
+    try:
+        return _run_pipeline(pk)
+    finally:
+        try:
+            redis_conn.delete(lock_key)
+        except redislib.RedisError:
+            pass
