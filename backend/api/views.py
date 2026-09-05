@@ -337,11 +337,46 @@ def upload_audio(request):
     serializer = AudioRecordingSerializer(data=request.data)
     if serializer.is_valid():
         recording = serializer.save()
+        _build_playback_file(recording)
         return Response(
             AudioRecordingSerializer(recording).data,
             status=status.HTTP_201_CREATED,
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def _build_playback_file(recording):
+    import subprocess  # noqa: PLC0415
+
+    if not recording.audio_file:
+        return
+    src = recording.audio_file.path
+    dst = os.path.join(
+        os.path.dirname(src),
+        os.path.splitext(os.path.basename(src))[0] + '.mp3',
+    )
+    if not os.path.exists(src):
+        return
+    try:
+        subprocess.run(
+            [
+                'ffmpeg', '-y',
+                '-i', src,
+                '-codec:a', 'libmp3lame',
+                '-b:a', '96k',
+                '-ac', '1',
+                dst,
+            ],
+            check=True,
+            capture_output=True,
+            timeout=120,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        try:
+            if os.path.exists(dst):
+                os.remove(dst)
+        except OSError:
+            pass
 
 
 @api_view(['GET'])

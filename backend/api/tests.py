@@ -22,6 +22,36 @@ class RecordingAPITestCase(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
+class PlaybackFileTestCase(TestCase):
+    def test_playback_file_returns_mp3_url_when_present(self):
+        import os
+        from api.models import AudioRecording
+        from django.core.files.base import ContentFile
+
+        rec = AudioRecording.objects.create(title='t')
+        rec.audio_file.save('p1.wav', ContentFile(b'\x00' * 44))
+        mp3_path = os.path.splitext(rec.audio_file.path)[0] + '.mp3'
+        with open(mp3_path, 'wb') as fh:
+            fh.write(b'ID3')
+        try:
+            self.assertEqual(rec.playback_file, '/media/recordings/p1.mp3')
+        finally:
+            rec.audio_file.delete(save=False)
+            if os.path.exists(mp3_path):
+                os.remove(mp3_path)
+
+    def test_playback_file_none_when_missing(self):
+        from api.models import AudioRecording
+        from django.core.files.base import ContentFile
+
+        rec = AudioRecording.objects.create(title='t')
+        rec.audio_file.save('p2.wav', ContentFile(b'\x00' * 44))
+        try:
+            self.assertIsNone(rec.playback_file)
+        finally:
+            rec.audio_file.delete(save=False)
+
+
 class MatrixPathSecurityTestCase(TestCase):
     """Verify path traversal confinement on _load_matrices()."""
 

@@ -232,7 +232,7 @@ function App() {
       {selectedRecording && (
         <AudioPlayer
           ref={playerRef}
-          audioUrl={resolveMediaUrl(selectedRecording.audio_file)}
+          audioUrl={resolveMediaUrl(selectedRecording.playback_file || selectedRecording.audio_file)}
           title={selectedRecording.title}
           onTimeUpdate={(t) => setPlaybackTime(t)}
         />

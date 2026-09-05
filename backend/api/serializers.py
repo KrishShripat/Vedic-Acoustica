@@ -3,6 +3,8 @@ from .models import AudioRecording
 
 
 class AudioRecordingSerializer(serializers.ModelSerializer):
+    playback_file = serializers.SerializerMethodField()
+
     class Meta:
         model = AudioRecording
         # NOTE: analysis_result (legacy large blob) is intentionally excluded.
@@ -10,12 +12,15 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
         # analysis_metadata holds scalar metrics only; matrices_file is the
         # path to the compressed .npz file for the current record.
         fields = [
-            'id', 'title', 'audio_file', 'uploaded_at',
+            'id', 'title', 'audio_file', 'playback_file', 'uploaded_at',
             'analysis_metadata', 'matrices_file', 'is_analyzed',
         ]
         read_only_fields = [
             'id', 'uploaded_at', 'analysis_metadata', 'matrices_file', 'is_analyzed',
         ]
+
+    def get_playback_file(self, obj):
+        return obj.playback_file
 
     _ALLOWED_EXTENSIONS = ('.wav', '.mp3', '.ogg', '.flac')
     _MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
