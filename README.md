@@ -2,7 +2,22 @@
 
 **Microtonal Voice Analysis, Ghana Patha Validation & Raga Detection using Machine Learning**
 
+![Python](https://img.shields.io/badge/Python-3.13-3776AB) ![Django](https://img.shields.io/badge/Django-6-blue) ![React](https://img.shields.io/badge/React-19-61DAFB)
+
 Vedic Acoustica is a full-stack web application that analyzes audio recordings of Vedic chants, Indian classical singing, and traditional folk music. Unlike standard speech-to-text systems, it does not recognize *what* is being spoken. Instead, it analyzes the **mathematical structure, precise frequencies, and temporal patterns** of the audio using AI/ML.
+
+## Live Demo
+
+| Layer | Where it runs |
+|-------|---------------|
+| Frontend (React UI) | [Vercel](https://vercel.com) |
+| Backend API (Django + ML) | [Hugging Face Space](https://huggingface.co) — `krish-shripat-vedic-backend.hf.space` |
+| Kubernetes | Local Minikube (demo) |
+
+> The monitoring stack (see [Monitoring](#monitoring)) pulls live metrics from both the
+> local Compose stack and the hosted HF backend side by side.
+
+---
 
 The system combines modern machine learning with Indian Knowledge Systems (IKS) to automate three core tasks:
 
@@ -27,6 +42,7 @@ The system combines modern machine learning with Indian Knowledge Systems (IKS) 
 - [Test Results](#test-results)
 - [Docker & DevOps](#docker--devops)
 - [Kubernetes Deployment](#kubernetes-deployment)
+- [CI/CD](#cicd)
 - [Monitoring](#monitoring)
 - [Development](#development)
 
@@ -799,19 +815,23 @@ GitHub Actions workflows are in `.github/workflows/`:
 
 ### CI (`ci.yml`)
 
-Runs on every push/PR to `main`:
+Runs on every push/PR to `main`, and is reusable by `cd.yml` (via `workflow_call`):
 
 | Job | What it does |
 |-----|--------------|
 | **Backend** | `python manage.py check`, `python manage.py test`, verifies ML engine imports (audio_processing, ml_engine, ghana_patha, raga_mapping) |
 | **Frontend** | `npm ci`, `npm run lint` (oxlint), `npm run build` (Vite) |
+| **Docker Build Check** | Verifies both `Dockerfile`s build successfully (images not pushed) |
 
 ### CD (`cd.yml`)
 
 Runs on every push to `main`:
 
-1. **Build & Push** — Builds both Docker images and pushes to GitHub Container Registry (GHCR) with `:latest` + `:<sha>` tags
-2. **Deploy** — (disabled by default, `if: false`) Applies `k8s/` manifests to a cluster using a `KUBECONFIG` secret
+1. **CI Gate** — Reuses `ci.yml` via `workflow_call` so the build only runs when tests pass
+2. **Build & Push** — Builds both Docker images and pushes to GitHub Container Registry (GHCR) with `:latest` + `:<sha>` tags
+
+The Kubernetes deploy job was intentionally removed — the K8s demo runs on a local
+Minikube cluster, not a cloud cluster, so CI/CD is limited to test + container push.
 
 ### Enabling CI/CD
 
@@ -820,9 +840,8 @@ Runs on every push to `main`:
 git remote add origin https://github.com/<your-username>/Vedic-Acoustica.git
 git push -u origin main
 
-# 2. CI runs automatically on the first push — check Actions tab
-# 3. To enable the CD deploy step, remove `if: false` and add a
-#    KUBECONFIG secret (base64-encoded kubeconfig) to repo settings.
+# 2. CI runs automatically on the first push — check the Actions tab
+# 3. Deploy locally to Minikube with: kubectl apply -k k8s/
 ```
 
 ---
