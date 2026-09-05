@@ -1,0 +1,3 @@
+redis-server
+ffmpeg
+libsndfile1
