@@ -166,7 +166,7 @@ function App() {
 
       <div className="status-bar">
         <span className="dot"></span>
-        Backend: localhost:8000
+        {window.location.hostname === 'localhost' ? 'Backend: localhost:8000' : '● Backend Connected'}
         {analysis && <span style={{ marginLeft: 'auto', color: '#4caf50' }}>Analysis Complete</span>}
       </div>
 
