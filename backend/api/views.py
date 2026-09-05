@@ -77,13 +77,33 @@ def _npz_rel_path(recording_id: int) -> str:
     return f'{MATRICES_SUBDIR}/{recording_id}_matrices.npz'
 
 
+def _downsample_spectrogram(spec, max_cols=_MAX_PCP_COLS, max_rows=256):
+    """
+    Decimate the full-resolution dB spectrogram for browser delivery.
+
+    The raw STFT is 1025 freq bins × every frame; serialising that in full as
+    JSON blows past Vercel's ~4.5 MB serverless response ceiling on any clip
+    longer than ~13 s.  Cap the time columns (like the PCP heatmap) and cut the
+    1025 frequency bins down to at most ``max_rows`` — the heatmap never needs
+    full FFT resolution.
+    """
+    n_rows, n_cols = spec.shape
+    if n_cols > max_cols:
+        step_c = n_cols // max_cols
+        spec = spec[:, ::step_c][:, :max_cols]
+    if n_rows > max_rows:
+        step_r = n_rows // max_rows
+        spec = spec[::step_r][:max_rows]
+    return spec
+
+
 def _save_matrices(recording_id: int, features: dict) -> str:
     """
     Compress heavy arrays to disk with numpy's savez_compressed.
 
     Arrays saved
     ------------
-    spectrogram   : (n_fft_bins, n_frames) float32 — dB spectrogram
+    spectrogram   : (≤256, ≤500) float32 — downsampled dB spectrogram
     mfcc          : (13, n_frames)          float32
     chroma        : (22, n_frames)          float32
     pcp_full      : (22, n_frames)          float32 — full resolution PCP
@@ -93,6 +113,7 @@ def _save_matrices(recording_id: int, features: dict) -> str:
     Returns the relative path string stored on the model.
     """
     pcp_raw: np.ndarray = features['pcp']                 # (22, n_frames)
+    spec_raw: np.ndarray = features['spectrogram']        # (1025, n_frames) dB
     n_frames = pcp_raw.shape[1]
 
     if n_frames > _MAX_PCP_COLS:
@@ -110,7 +131,7 @@ def _save_matrices(recording_id: int, features: dict) -> str:
 
     np.savez_compressed(
         str(full_path),
-        spectrogram=features['spectrogram'].astype(np.float32),
+        spectrogram=_downsample_spectrogram(spec_raw).astype(np.float32),
         mfcc=features['mfcc'].astype(np.float32),
         chroma=features['chroma'].astype(np.float32),
         pcp_full=pcp_raw.astype(np.float32),
