@@ -11,7 +11,13 @@ import exportReport from './utils/exportReport'
 import './App.css'
 
 const API_BASE = '/api'
+const MEDIA_BASE = 'https://krish-shripat-vedic-backend.hf.space'
 const NUM_CHARTS = 5
+
+const resolveMediaUrl = (url) => {
+  if (!url) return url
+  return /^https?:\/\//i.test(url) ? url : `${MEDIA_BASE}${url.startsWith('/') ? '' : '/'}${url}`
+}
 
 function App() {
   const [recordings, setRecordings] = useState([])
@@ -226,7 +232,7 @@ function App() {
       {selectedRecording && (
         <AudioPlayer
           ref={playerRef}
-          audioUrl={selectedRecording.audio_file}
+          audioUrl={resolveMediaUrl(selectedRecording.audio_file)}
           title={selectedRecording.title}
           onTimeUpdate={(t) => setPlaybackTime(t)}
         />
