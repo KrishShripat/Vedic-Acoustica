@@ -78,10 +78,29 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vedic_acoustica.wsgi.application'
 
+# ── Persistent storage (Hugging Face Spaces) ───────────────────────────────
+# The container's default disk is wiped on every Space rebuild/restart, which
+# wiped users, recordings and media between deploys.  When a writable /data
+# volume is mounted (a storage bucket attached to the Space), keep the SQLite
+# DB and uploaded media there so data survives restarts.  Locally (or without
+# a mounted volume) it falls back to the repo directory.
+_DATA_DIR = os.environ.get('VEDIC_DATA_DIR')
+if not _DATA_DIR:
+    try:
+        _DATA_DIR = '/data' if os.path.isdir('/data') and os.access('/data', os.W_OK) else None
+    except OSError:
+        _DATA_DIR = None
+if _DATA_DIR:
+    Path(_DATA_DIR).mkdir(parents=True, exist_ok=True)
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.environ.get('DJANGO_DB_PATH', str(BASE_DIR / 'db.sqlite3')),
+        'NAME': os.environ.get(
+            'DJANGO_DB_PATH',
+            (str(Path(_DATA_DIR) / 'db.sqlite3')
+             if _DATA_DIR else str(BASE_DIR / 'db.sqlite3')),
+        ),
         # Wait up to 20 s for a write lock to release before raising
         # OperationalError. This reduces concurrent-write failures when
         # multiple Celery workers and Gunicorn processes access the DB
@@ -106,7 +125,10 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.environ.get('DJANGO_MEDIA_ROOT', str(BASE_DIR / 'media'))
+MEDIA_ROOT = os.environ.get(
+    'DJANGO_MEDIA_ROOT',
+    (str(Path(_DATA_DIR) / 'media') if _DATA_DIR else str(BASE_DIR / 'media')),
+)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

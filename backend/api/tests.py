@@ -177,7 +177,10 @@ class AnalysisProgressTestCase(TestCase):
         from api.models import AudioRecording
         from api.views import _progress_path
         rec = AudioRecording.objects.create(title='t')
-        os.unlink(_progress_path(rec.id))
+        try:
+            os.unlink(_progress_path(rec.id))
+        except FileNotFoundError:
+            pass
         response = self.client.get(reverse('analysis_progress', args=[rec.id]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['status'], 'running')
