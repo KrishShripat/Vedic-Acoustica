@@ -257,6 +257,41 @@ def _delete_progress(pk: int) -> None:
         pass
 
 
+_DONE_SNAPSHOT = {
+    'stage': 'Complete',
+    'percent': 100,
+    'status': 'done',
+    'error': None,
+    'detail': None,
+}
+
+_QUEUED_SNAPSHOT = {
+    'stage': 'Queued',
+    'percent': 0,
+    'status': 'running',
+    'error': None,
+    'detail': None,
+}
+
+
+def _progress_snapshot(pk: int) -> dict:
+    """Current progress state for ``pk``.
+
+    Reads the live JSON snapshot first; ``process_audio_task`` deletes the file
+    after writing ``done`` (and it can be lost on container restarts), so fall
+    back to the recording's persisted state: an already-analysed recording
+    reports ``done`` rather than a never-resolving ``Queued``.  This is what
+    keeps SSE reconnects and pollers from spinning forever at 0 %.
+    """
+    prog = _get_progress(pk)
+    if prog is not None:
+        return prog
+    rec = AudioRecording.objects.filter(pk=pk).values_list('is_analyzed', flat=True).first()
+    if rec is True:
+        return dict(_DONE_SNAPSHOT)
+    return dict(_QUEUED_SNAPSHOT)
+
+
 # ---------------------------------------------------------------------------
 # SSE helper
 # ---------------------------------------------------------------------------
@@ -540,18 +575,14 @@ def analysis_status(request, pk):
         elapsed = 0
         poll_interval = 0.8
 
-        yield _sse_message({'stage': 'Queued', 'percent': 0, 'status': 'running'})
+        yield _sse_message(_QUEUED_SNAPSHOT)
 
         while elapsed < max_wait_seconds:
-            prog = _get_progress(pk)
+            prog = _progress_snapshot(pk)
+            yield _sse_message(prog)
 
-            if prog is None:
-                yield _sse_message({'stage': 'Queued', 'percent': 0, 'status': 'running'})
-            else:
-                yield _sse_message(prog)
-
-                if prog['status'] in ('done', 'error'):
-                    break
+            if prog['status'] in ('done', 'error'):
+                break
 
             time.sleep(poll_interval)
             elapsed += poll_interval
@@ -581,13 +612,4 @@ def analysis_progress(request, pk):
     Mirrors the SSE ``analysis_status`` payload:
     { stage, percent, status, error, detail }.
     """
-    prog = _get_progress(pk)
-    if prog is None:
-        prog = {
-            'stage':   'Queued',
-            'percent': 0,
-            'status':  'running',
-            'error':   None,
-            'detail':  None,
-        }
-    return Response(prog)
+    return Response(_progress_snapshot(pk))

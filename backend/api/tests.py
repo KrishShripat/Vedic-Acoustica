@@ -173,19 +173,25 @@ class AnalysisProgressTestCase(TestCase):
             self.assertGreaterEqual(b, a)
 
     def test_analysis_progress_endpoint_defaults_to_running(self):
+        import os
         from api.models import AudioRecording
+        from api.views import _progress_path
         rec = AudioRecording.objects.create(title='t')
+        os.unlink(_progress_path(rec.id))
         response = self.client.get(reverse('analysis_progress', args=[rec.id]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['status'], 'running')
         self.assertEqual(response.data['stage'], 'Queued')
 
     def test_analysis_progress_endpoint_reflects_snapshot(self):
-        import json
         import os
         from api.models import AudioRecording
-        from api.views import _set_progress, _get_progress
+        from api.views import _set_progress, _progress_path
         rec = AudioRecording.objects.create(title='t')
+        try:
+            os.unlink(_progress_path(rec.id))
+        except FileNotFoundError:
+            pass
         _set_progress(rec.id, 'Feature Extraction', 26, detail='Extracting F0 pitch track (pYIN)…')
         response = self.client.get(reverse('analysis_progress', args=[rec.id]))
         self.assertEqual(response.status_code, 200)
@@ -193,9 +199,23 @@ class AnalysisProgressTestCase(TestCase):
         self.assertEqual(response.data['percent'], 26)
         self.assertEqual(response.data['status'], 'running')
         self.assertIn('pYIN', response.data['detail'])
-        _delete = getattr(self, '_delete_progress', None)
-        if _delete:
-            _delete(rec.id)
+        os.unlink(_progress_path(rec.id))
+
+
+def test_analysis_progress_endpoint_reports_done_when_file_cleaned(self):
+        import os
+        from api.models import AudioRecording
+        from api.views import _progress_path
+        rec = AudioRecording.objects.create(title='t', is_analyzed=True)
+        try:
+            os.unlink(_progress_path(rec.id))
+        except FileNotFoundError:
+            pass
+        response = self.client.get(reverse('analysis_progress', args=[rec.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'done')
+        self.assertEqual(response.data['percent'], 100)
+        self.assertEqual(response.data['stage'], 'Complete')
 
 
 class PlaybackFileTestCase(TestCase):
