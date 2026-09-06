@@ -51,24 +51,26 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-8 shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white">Vedic Acoustica</h1>
-          <p className="mt-2 text-sm text-slate-400">
+    <div className="min-h-screen w-full flex items-center justify-center p-6 bg-slate-950">
+      <div className="w-full max-w-md bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-xl flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-wide text-center text-rose-500">
+            Vedic Acoustica
+          </h1>
+          <p className="text-xs text-slate-400 text-center -mt-4">
             Microtonal Voice Analysis &middot; 22 Shrutis &middot; Raga Detection
           </p>
         </div>
 
-        <div className="flex p-1 mb-8 bg-slate-950/60 border border-slate-700/50 rounded-xl" role="tablist">
+        <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-xl border border-slate-800" role="tablist">
           <button
             type="button"
             role="tab"
             aria-selected={mode === 'login'}
             onClick={() => selectMode('login')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none ${
+            className={`py-2 text-xs font-semibold rounded-lg text-center transition-all cursor-pointer ${
               mode === 'login'
-                ? 'bg-cyan-500 text-slate-950 shadow'
+                ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -79,9 +81,9 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
             role="tab"
             aria-selected={mode === 'register'}
             onClick={() => selectMode('register')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors focus:outline-none ${
+            className={`py-2 text-xs font-semibold rounded-lg text-center transition-all cursor-pointer ${
               mode === 'register'
-                ? 'bg-cyan-500 text-slate-950 shadow'
+                ? 'bg-cyan-500 text-slate-950 shadow-md'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -89,11 +91,9 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
           </button>
         </div>
 
-        <form onSubmit={submit} className="space-y-5">
-          <label className="block">
-            <span className="block mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Username
-            </span>
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-slate-300 tracking-wider">Username</span>
             <input
               type="text"
               value={username}
@@ -101,13 +101,13 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
               autoComplete="username"
               placeholder="Enter your username"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+              className="w-full h-11 px-3.5 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
             />
           </label>
 
           {mode === 'register' && (
-            <label className="block">
-              <span className="block mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-slate-300 tracking-wider">
                 Email (optional)
               </span>
               <input
@@ -116,15 +116,13 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
               />
             </label>
           )}
 
-          <label className="block">
-            <span className="block mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Password
-            </span>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-slate-300 tracking-wider">Password</span>
             <input
               type="password"
               value={password}
@@ -132,13 +130,13 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               placeholder={mode === 'login' ? 'Enter your password' : 'At least 8 characters'}
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+              className="w-full h-11 px-3.5 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
             />
           </label>
 
           {mode === 'register' && (
-            <label className="block">
-              <span className="block mb-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-slate-300 tracking-wider">
                 Confirm password
               </span>
               <input
@@ -148,7 +146,7 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
                 autoComplete="new-password"
                 placeholder="Re-enter your password"
                 required
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950/60 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors"
               />
             </label>
           )}
@@ -165,7 +163,7 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
           <button
             type="submit"
             disabled={busy}
-            className="w-full px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 hover:from-cyan-400 hover:to-cyan-500 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full h-11 mt-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm transition-colors shadow-lg shadow-cyan-500/20 flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {busy
               ? <span className="inline-flex items-center gap-2"><span className="loading-spinner" /> Please wait…</span>
@@ -173,15 +171,13 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
           </button>
         </form>
 
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={onGuest}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-medium text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
-          >
-            Continue as Guest / Demo Mode
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onGuest}
+          className="w-full text-center text-xs text-slate-400 hover:text-slate-200 transition-colors py-2 cursor-pointer"
+        >
+          Continue as Guest / Demo Mode
+        </button>
       </div>
     </div>
   )
