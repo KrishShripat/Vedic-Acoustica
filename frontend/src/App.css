@@ -132,6 +132,12 @@
   flex: 1;
 }
 
+.ap-detail {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
 .ap-pct {
   font-size: 0.85rem;
   font-weight: 700;

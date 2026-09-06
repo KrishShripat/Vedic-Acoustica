@@ -177,31 +177,40 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
 # Top-level feature extraction
 # ─────────────────────────────────────────────────────────────────────────────
 
-def extract_features(audio_path):
+def extract_features(audio_path, progress_cb=None):
+    """Extract the full feature set. ``progress_cb(pct, detail)`` is optional and
+    fires at step boundaries so progress UIs can report sub-stage updates."""
+    def _report(pct, detail):
+        if progress_cb is not None:
+            progress_cb(pct, detail)
+
     y, sr = librosa.load(audio_path, sr=SR)
+    _report(7, 'Loading audio…')
     duration = librosa.get_duration(y=y, sr=sr)
 
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=N_MFCC, hop_length=HOP_LENGTH)
+    _report(11, 'Computing MFCC…')
 
     chroma = librosa.feature.chroma_stft(
         y=y, sr=sr, n_fft=2048, hop_length=HOP_LENGTH, n_chroma=N_CHROMA,
     )
-
     spectral_centroid = librosa.feature.spectral_centroid(
         y=y, sr=sr, hop_length=HOP_LENGTH,
     )[0]
-
     spectrogram = np.abs(librosa.stft(y, hop_length=HOP_LENGTH))
     spectrogram_db = librosa.amplitude_to_db(spectrogram, ref=np.max)
+    _report(15, 'Spectrum features…')
 
     tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
     if hasattr(tempo, '__len__'):
         tempo = float(tempo[0]) if len(tempo) > 0 else 0.0
     else:
         tempo = float(tempo)
+    _report(20, 'Estimating tempo…')
 
     # ── F0 via pYIN ──────────────────────────────────────────────────────────
     f0, voiced_flag, voiced_probs = extract_f0(y, sr=SR, hop_length=HOP_LENGTH)
+    _report(26, 'Extracting F0 pitch track (pYIN)…')
 
     # Median-filter the F0 track (kernel 5) to stabilise the ~21.5 ¢ drift
     # between neighbouring Śruti bins; micro-pitch jitter otherwise flips a
@@ -219,6 +228,7 @@ def extract_features(audio_path):
         f0=f0, voiced_flag=voiced_flag,
     )
     mean_pcp = pcp.mean(axis=1)    # (22,) — recording-level tonal fingerprint
+    _report(30, 'Building pitch-class profile…')
 
     # Serialise F0 track: NaN → None for clean JSON
     f0_track = [

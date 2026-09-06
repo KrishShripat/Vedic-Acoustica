@@ -216,13 +216,15 @@ def _progress_path(pk: int) -> str:
 
 
 def _set_progress(pk: int, stage: str, percent: int,
-                  status_val: str = 'running', error: str | None = None) -> None:
+                  status_val: str = 'running', error: str | None = None,
+                  detail: str | None = None) -> None:
     """Atomically write a progress snapshot visible to all Gunicorn workers."""
     payload = json.dumps({
         'stage':   stage,
         'percent': percent,
         'status':  status_val,
         'error':   error,
+        'detail':  detail,
     })
     dest = _progress_path(pk)
     with _PROGRESS_LOCK:
@@ -567,3 +569,25 @@ def analysis_status(request, pk):
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
     return response
+
+
+@api_view(['GET'])
+def analysis_progress(request, pk):
+    """
+    GET /api/analyze/<pk>/progress/   (public)
+
+    Lightweight JSON snapshot of the analysis state for clients that cannot
+    hold a streaming connection (e.g. polling through a buffering proxy).
+    Mirrors the SSE ``analysis_status`` payload:
+    { stage, percent, status, error, detail }.
+    """
+    prog = _get_progress(pk)
+    if prog is None:
+        prog = {
+            'stage':   'Queued',
+            'percent': 0,
+            'status':  'running',
+            'error':   None,
+            'detail':  None,
+        }
+    return Response(prog)

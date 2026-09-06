@@ -113,7 +113,12 @@ def _run_pipeline(pk: int) -> dict:
     # ── Stage 1: Feature Extraction ────────────────────────────────────────────
     try:
         _set_progress(pk, 'Feature Extraction', 5)
-        features = extract_features(audio_path)
+        features = extract_features(
+            audio_path,
+            progress_cb=lambda pct, detail: _set_progress(
+                pk, 'Feature Extraction', pct, detail=detail,
+            ),
+        )
         _set_progress(pk, 'Feature Extraction', 30)
     except Exception as exc:
         _set_progress(pk, 'Error', 0, status_val='error', error=str(exc))

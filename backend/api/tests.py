@@ -143,6 +143,61 @@ class AuthAPITestCase(TestCase):
         self.assertEqual(len(response.data['users']), 2)
 
 
+class AnalysisProgressTestCase(TestCase):
+    def test_extract_features_reports_granular_progress(self):
+        import wave
+        import numpy as np
+        from tempfile import NamedTemporaryFile
+        from ml_engine.audio_processing import extract_features
+
+        sr = 22050
+        t = np.arange(int(sr * 0.4)) / sr
+        tone = (0.4 * np.sin(2 * np.pi * 261.63 * t)).astype(np.float32)
+
+        with NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+            with wave.open(tmp.name, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(sr)
+                wf.writeframes((tone * 32767).astype(np.int16).tobytes())
+            seen = []
+            extract_features(tmp.name, progress_cb=lambda pct, detail: seen.append(pct))
+            import os
+            os.unlink(tmp.name)
+
+        self.assertGreaterEqual(len(seen), 3)
+        final = seen[-1]
+        self.assertEqual(final, 30)
+        steps = [p for p, _ in zip(seen[:-1], seen[1:])]
+        for a, b in zip(seen[:-1], seen[1:]):
+            self.assertGreaterEqual(b, a)
+
+    def test_analysis_progress_endpoint_defaults_to_running(self):
+        from api.models import AudioRecording
+        rec = AudioRecording.objects.create(title='t')
+        response = self.client.get(reverse('analysis_progress', args=[rec.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['status'], 'running')
+        self.assertEqual(response.data['stage'], 'Queued')
+
+    def test_analysis_progress_endpoint_reflects_snapshot(self):
+        import json
+        import os
+        from api.models import AudioRecording
+        from api.views import _set_progress, _get_progress
+        rec = AudioRecording.objects.create(title='t')
+        _set_progress(rec.id, 'Feature Extraction', 26, detail='Extracting F0 pitch track (pYIN)…')
+        response = self.client.get(reverse('analysis_progress', args=[rec.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['stage'], 'Feature Extraction')
+        self.assertEqual(response.data['percent'], 26)
+        self.assertEqual(response.data['status'], 'running')
+        self.assertIn('pYIN', response.data['detail'])
+        _delete = getattr(self, '_delete_progress', None)
+        if _delete:
+            _delete(rec.id)
+
+
 class PlaybackFileTestCase(TestCase):
     def test_playback_file_returns_mp3_url_when_present(self):
         import os
