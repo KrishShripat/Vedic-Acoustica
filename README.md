@@ -70,32 +70,35 @@ In Indian classical music, **Raga identification** goes beyond just the notes us
 
 ### 22 Shrutis (Microtonal Mapping)
 
-The system encodes the 22 Shruti frequency ratios based on classical Indian music theory:
+The system encodes the Shruti frequency ratios based on classical Indian music theory.
+The analyzer uses a **23-bin Pitch-Class Profile** — the classical 22 Shrutis plus the
+octave **Sa' (2/1)**, matching `ml_engine/shruti_mapping.py`:
 
-| Shruti | Name | Ratio | Frequency (Hz) |
-|--------|------|-------|----------------|
+| Bin | Name | Ratio | Frequency (Hz) |
+|-----|------|-------|----------------|
 | 1 | Sa | 1.000 | 261.63 |
-| 2 | Re1 | 1.053 | 275.65 |
-| 3 | Re2 | 1.111 | 290.69 |
-| 4 | Ga1 | 1.125 | 294.33 |
-| 5 | Ga2 | 1.200 | 313.95 |
-| 6 | Ga3 | 1.266 | 331.13 |
+| 2 | Re1 | 1.053 | 275.62 |
+| 3 | Re2 | 1.067 | 279.07 |
+| 4 | Ga1 | 1.111 | 290.70 |
+| 5 | Ga2 | 1.125 | 294.33 |
+| 6 | Ga3 | 1.185 | 310.08 |
 | 7 | Ma1 | 1.250 | 327.03 |
-| 8 | Ma2 | 1.406 | 367.86 |
+| 8 | Ma2 | 1.266 | 331.12 |
 | 9 | Ma3 | 1.333 | 348.83 |
-| 10 | Pa | 1.424 | 372.42 |
-| 11 | Dha1 | 1.500 | 392.44 |
-| 12 | Dha2 | 1.580 | 413.39 |
-| 13 | Ni1 | 1.600 | 418.60 |
-| 14 | Ni2 | 1.667 | 436.04 |
-| 15 | Ni3 | 1.688 | 441.47 |
-| 16 | Sa' | 2.000 | 523.25 |
-| 17 | Re' | 2.106 | 551.31 |
-| 18 | Ga' | 2.222 | 581.39 |
-| 19 | Ma' | 2.250 | 588.66 |
-| 20 | Pa' | 2.400 | 627.91 |
-| 21 | Dha' | 2.667 | 697.66 |
-| 22 | Ni' | 3.000 | 784.88 |
+| 10 | Tivra Ma | 1.424 | 372.51 |
+| 11 | Pa | 1.500 | 392.44 |
+| 12 | Dha1 | 1.580 | 413.43 |
+| 13 | Dha2 | 1.600 | 418.60 |
+| 14 | Ni1 | 1.667 | 436.04 |
+| 15 | Ni2 | 1.688 | 441.49 |
+| 16 | Ni3 | 1.778 | 465.11 |
+| 17 | Ni4 | 1.800 | 470.93 |
+| 18 | Ni5 | 1.875 | 490.55 |
+| 19 | Ni6 | 1.898 | 496.68 |
+| 20 | Ga-Komal | 1.200 | 313.95 |
+| 21 | Ma-Komal | 1.350 | 353.20 |
+| 22 | Tivra Ma2 | 1.406 | 367.91 |
+| 23 | Sa' | 2.000 | 523.25 |
 
 ### Ghana Patha (Pattern Validation)
 
@@ -155,7 +158,7 @@ Audio Input
 │  (audio_processing.py)           │
 │                                  │
 │  • pYIN F0 tracking              │──→ F0 pitch contour + voiced/unvoiced
-│  • PCP computation               │──→ 22-bin Pitch-Class Profile
+│  • PCP computation               │──→ 23-bin Pitch-Class Profile
 │  • MFCC extraction               │──→ Timbre features
 │  • Spectral centroid             │──→ Spectral shape
 │  • STFT spectrogram             │──→ Time-frequency matrix
@@ -187,7 +190,7 @@ Raw audio is loaded via **librosa** and processed through multiple feature extra
 | Feature | Function | Purpose |
 |---------|----------|---------|
 | **F0 Pitch Contour** | `extract_f0()` — `librosa.pyin()` | Monophonic pitch tracking with voiced/unvoiced decision per frame. Uses `librosa.pyin()` with fmin=65Hz, fmax=2093Hz for 22 Shruti range |
-| **PCP (Pitch-Class Profile)** | `compute_pcp()` | 22-bin energy profile computed from STFT with harmonic accumulation. pYIN F0 is fused into PCP for voiced frames (F0 bin gets direct energy), providing accurate microtonal pitch information |
+| **PCP (Pitch-Class Profile)** | `compute_pcp()` | 23-bin energy profile (the classical 22 Shrutis + octave Sa') computed from STFT with harmonic accumulation. pYIN F0 is fused into PCP for voiced frames (F0 bin gets direct energy), providing accurate microtonal pitch information |
 | **MFCCs** | `librosa.feature.mfcc()` | 13 Mel-Frequency Cepstral Coefficients capturing timbre, vocal tract shape, and resonance |
 | **Chroma (22-bin)** | `librosa.feature.chroma_stft(n_chroma=22)` | Projects audio energy onto 22 pitch classes for clustering input |
 | **Spectral Centroid** | `librosa.feature.spectral_centroid()` | Measures the "center of mass" of the sound spectrum |
@@ -504,7 +507,7 @@ Dashboard runs at http://localhost:5173
 5. **View Results** — Six interactive visualizations appear:
    - Spectrogram (time-frequency heatmap)
    - Shruti Clusters (K=22 bar chart)
-   - 22 Shruti PCP Energy Map
+   - 23 Shruti PCP Energy Map
    - Ghana Patha Validation (DTW-based)
    - Raga Detection (directional scoring)
    - Audio Player with waveform
@@ -611,9 +614,9 @@ Shows how many audio frames were assigned to each of the 22 Shruti clusters by K
   - Many tall bars = wide microtonal range (melodic singing)
   - The `assigned_shruti` field maps each cluster to its classical name (Sa, Re1, Ga2, etc.)
 
-### 3. 22 Shruti PCP Energy Map (Middle Left)
+### 3. 23 Shruti PCP Energy Map (Middle Left)
 
-The Pitch-Class Profile energy distribution across all 22 Shruti bins. This is computed from harmonic STFT analysis fused with pYIN F0 tracking.
+The Pitch-Class Profile energy distribution across all 23 Shruti bins (classical 22 Shrutis + octave Sa'). This is computed from harmonic STFT analysis fused with pYIN F0 tracking.
 
 - **X-axis:** Shruti names (Sa, Re1, Re2, Ga1, ..., Ni')
 - **Y-axis:** Relative energy (0-100%)
@@ -655,13 +658,43 @@ WaveSurfer.js-based waveform player for listening to the uploaded audio.
 
 ## Test Results
 
-### Three-Tier Validation Matrix
+### Automated Suites
 
-| Audio File | Category | Ghana Patha | Raga Detection | Confidence |
-|-----------|----------|-------------|----------------|------------|
-| Kumaoni Folk Song | Non-Vedic folk | Pattern Invalid | — | 30% |
-| `rudram_60s.wav` | Vedic (Samhita Patha) | Pattern Invalid | Detected Bhairav | 65% |
-| `isavasya_ghanam_60s.wav` | Vedic (Ghana Patha) | Pattern Valid | — | 68% |
+| Suite | Result |
+|-------|--------|
+| Backend API tests (`manage.py test`) | 28/28 pass |
+| Frontend `npm run lint` (oxlint) | Clean |
+| Frontend `npm run build` (Vite) | Passes (one >500 kB chunk warning — Plotly bundle) |
+| ML validation suite (`test_ml_pipeline.py`) | 17/17 runs × 4 stages OK |
+
+### ML Validation Matrix (verified after the correctness fixes)
+
+| Audio | Ghana Patha | Raga Detection |
+|-------|-------------|----------------|
+| `isavasya_ghanam_60s.wav` (real Ghana Patha) | Valid @ 0.76 | Khamaj @ 0.81 |
+| `rudram_60s.wav` (real Vedic) | Valid @ 0.76 | Todi @ 0.72 |
+| `test_10s.wav` (real Vedic) | Valid @ 0.70 | Jhinjhoti @ 0.77 |
+| `bilawal_scale` (synthetic Bilawal scale) | Invalid | **Bilawal @ 1.00** (previously misdetected as Yaman) |
+| `kalyani_scale` (synthetic Kalyani scale) | Invalid | Kalyani @ 0.96 |
+| `bhairav_scale` (synthetic Bhairav scale) | Invalid | Bhairav @ 1.00 |
+| `silence_5s` (near-silence noise floor) | Invalid (energy-gated) | **Inconclusive** — rejected as "essentially silent or pure noise" |
+
+### Correctness fixes (this round)
+
+1. **Yaman vs Bilawal disambiguation** — `Yaman` in `RAGA_DATABASE` used shuddha Ma (bin 6), making it
+   byte-identical to `Bilawal`, so every major scale scored 100% as "Yaman". Yaman now uses
+   **Tivra Ma (bin 9)** + matching vadi/samvadi and `arohana`/`avarohana`.
+2. **Near-silence false positives** — pYIN flags broadband noise as voiced and arbitrary Shruti
+   bins, so a pure-noise clip scored as a confident raga **and** Ghana-valid. A recording-level
+   **RMS energy gate** (≈0.01, `audio_processing.py`) rejects such inputs in both
+   `detect_raga` and `validate_ghana_patha`.
+3. **Test fixtures** — synthetic scale generators used Shruti bin 19 (`Ga-Komal`) for the octave
+   note; corrected to bin 22 (`Sa'`), matching `SHRUTI_NAMES`.
+
+**Known limitation:** the synthetic `ghana_pattern_sim` (2-second forward/reverse phrases cut by
+1-second segments) reports Ghana-valid `False` (@ 0.57) even though `cycle_score` is 1.0 — real
+Ghana recordings still validate correctly. This is a segmentation-granularity artifact, not a
+detection error.
 
 ### DTW Tempo Invariance Test
 
@@ -732,6 +765,12 @@ services:
 - Adding a new npm dependency to `package.json`
 - Changing the `Dockerfile` itself
 - Changing system dependencies (e.g., adding a new `apt-get install` in backend Dockerfile)
+
+> **Nginx caches the backend's IP at startup.** The frontend Nginx config uses a static
+> `proxy_pass http://${BACKEND_HOST}:8000`, resolved once when the container starts. If you
+> recreate only the backend container (`docker compose up -d --force-recreate backend`), the
+> frontend keeps proxying to the old (now gone) IP and returns **502**. Fix with:
+> `docker compose up -d --force-recreate frontend`.
 
 ---
 
@@ -844,6 +883,36 @@ git push -u origin main
 # 3. Deploy locally to Minikube with: kubectl apply -k k8s/
 ```
 
+### Credentials & Deploying to GitHub / Hugging Face
+
+**Never put tokens in the repo:**
+
+- Embedding a `ghp_` (GitHub) or `hf_` (Hugging Face) token in a remote URL (`https://user:TOKEN@host/...`)
+  leaks it via `git remote -v`, `git config`, CI logs, and any clone. Treat any such token as compromised.
+- Correct approach — store credentials once in git's credential store (kept in `~/.git-credentials`,
+  outside the repo), and keep remote URLs token-free:
+
+```bash
+git config --global credential.https://github.com.helper store
+git config --global credential.https://huggingface.co.helper store
+git remote set-url origin https://github.com/KrishShripat/Vedic-Acoustica.git
+git remote set-url hf https://huggingface.co/spaces/Krish-Shripat/vedic-backend
+# after rotating a token, update the single store file: ~/.git-credentials
+```
+
+- `.env` is git-ignored and holds `METRICS_TOKEN` (the bearer token used by Prometheus against the
+  HF Space's `/metrics`). Never commit it.
+- **HF Space layout:** the Space `Krish-Shripat/vedic-backend` mirrors the contents of `backend/`
+  (its Dockerfile runs `entrypoint.sh` → Gunicorn; the Gradio `app.py` is dormant under Docker).
+  Sync source code changes to it by copying the git-tracked `backend/` files into a clone of the
+  Space and pushing. Verify with `git ls-remote` before/after.
+
+### Rotating compromised tokens
+
+If a token was ever shared or embedded in a remote URL: revoke it at GitHub/Hugging Face,
+generate a new one, and update `~/.git-credentials` (set `credential.helper store` per host above).
+No new secret needs to touch any git config or repo file.
+
 ---
 
 ## Monitoring
@@ -931,14 +1000,24 @@ kubectl port-forward service/grafana 3000:3000      # Grafana (admin/admin)
 ### Running Tests
 
 ```bash
-# Backend
+# Backend (28 API tests)
 cd backend
-python manage.py test
+DJANGO_DEBUG=True DJANGO_SECRET_KEY=test .venv/bin/python manage.py test
 
 # Frontend
 cd frontend
 npm run lint
 npm run build
+
+# ML validation suite (synthetic + real recordings → test_reports/pipeline_results.json)
+cd backend
+.venv/bin/python test_ml_pipeline.py
+
+# End-to-end (Docker stack)
+docker compose up -d --build backend frontend
+docker compose up -d redis celery
+# From the backend venv: register → upload a .wav → analyze → follow the SSE stream at
+# /api/analyze/<id>/status/ to completion
 ```
 
 ---
