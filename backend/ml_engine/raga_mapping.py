@@ -27,10 +27,10 @@ RAGA_DATABASE = [
     {
         'name': 'Yaman',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 12, 14],
-        'arohana': [0, 2, 4, 6, 10, 12, 14],
-        'avarohana': [14, 12, 10, 6, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': [0, 2, 4, 9, 10, 12, 14],
+        'arohana': [0, 2, 4, 9, 10, 12, 14],
+        'avarohana': [14, 12, 10, 9, 4, 2, 0],
+        'vadi': 4, 'samvadi': 14,
         'time': 'Evening (9 PM - Midnight)',
         'mood': 'Devotional, serene, romantic',
     },
@@ -1019,6 +1019,31 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
     """
     mean_pcp = clustering_results.get('mean_pcp')
     freq_assignments = clustering_results.get('freq_assignments', [])
+
+    # ── Near-silence / noise guard ─────────────────────────────────────────────
+    # pYIN marks broadband-noise frames as voiced and their PCP argmax lands on
+    # arbitrary Shruti bins, so silent clips can be scored as a confident raga.
+    # Reject recording-level RMS at or below room-noise floor first.
+    if features is not None and features.get('rms', 1.0) < 0.01:
+        reason = 'Audio is essentially silent or pure noise'
+        logger.warning(
+            'Raga detection (%s): %s (rms=%.4f)',
+            'energy-gate', reason, features.get('rms'),
+        )
+        return {
+            'detected_swaras': [],
+            'arohana_swaras': [],
+            'avarohana_swaras': [],
+            'directional_scoring': False,
+            'matches': [],
+            'best_match': None,
+            'is_inconclusive': True,
+            'inconclusive_reason': reason,
+            'confidence_threshold': CONFIDENCE_THRESHOLD,
+            'total_frames_analyzed': 0,
+            'detection_source': 'energy-gate',
+            'reason': reason,
+        }
 
     # Prefer duration/salience-gated detection from frame-level PCP (it rejects
     # tanpura drone bleed / slides that falsely light up 15 swaras).  Fall back

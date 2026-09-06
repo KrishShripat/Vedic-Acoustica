@@ -220,6 +220,7 @@ def extract_features(audio_path, progress_cb=None):
     f0 = np.where(np.isfinite(f0_smooth), f0_smooth, f0)
 
     voiced_ratio = float(voiced_flag.mean()) if len(voiced_flag) > 0 else 0.0
+    rms = float(np.sqrt(np.mean(np.square(y))))
 
     # ── PCP with F0 fusion ───────────────────────────────────────────────────
     # Pass f0 and voiced_flag so the PCP is reinforced at voiced frames.
@@ -250,6 +251,7 @@ def extract_features(audio_path, progress_cb=None):
         'voiced_flag': voiced_flag,# ndarray bool (n_frames,)
         'voiced_probs': voiced_probs,
         'voiced_ratio': voiced_ratio,
+        'rms': rms,
         # ── Other ─────────────────────────────────────────────────────────────
         'tempo': tempo,
         'duration': duration,

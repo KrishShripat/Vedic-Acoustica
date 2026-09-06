@@ -55,8 +55,8 @@ def generate_sine_tone(freq_hz, duration=5.0, sr=SR):
 
 def generate_ascending_scale(sr=SR):
     """Generate an ascending scale: Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa' (12s)."""
-    # Correct SHRUTI_NAMES indices: Pa=10, Dha2=12, Ni2=14, Sa'=19
-    shruti_indices = [0, 2, 4, 6, 10, 12, 14, 19]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
+    # Correct SHRUTI_NAMES indices: Pa=10, Dha2=12, Ni2=14, Sa'=22
+    shruti_indices = [0, 2, 4, 6, 10, 12, 14, 22]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
     note_dur = 1.5
     waves = []
     for idx in shruti_indices:
@@ -67,7 +67,7 @@ def generate_ascending_scale(sr=SR):
 
 def generate_descending_scale(sr=SR):
     """Generate a descending scale: Sa' Ni2 Dha2 Pa Ma1 Ga2 Re2 Sa (12s)."""
-    shruti_indices = [19, 14, 12, 10, 6, 4, 2, 0]  # Sa'=19 Ni2=14 Dha2=12 Pa=10 Ma1 Ga2 Re2 Sa
+    shruti_indices = [22, 14, 12, 10, 6, 4, 2, 0]  # Sa'=22 Ni2=14 Dha2=12 Pa=10 Ma1 Ga2 Re2 Sa
     note_dur = 1.5
     waves = []
     for idx in shruti_indices:
@@ -99,9 +99,9 @@ def generate_bilawal_scale(sr=SR):
     """
     Bilawal-like pattern (major scale): Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
     with repeated phrases — 15s.
-    Pa=10, Dha2=12, Ni2=14, Sa'=19
+    Pa=10, Dha2=12, Ni2=14, Sa'=22
     """
-    notes = [0, 2, 4, 6, 10, 12, 14, 19]
+    notes = [0, 2, 4, 6, 10, 12, 14, 22]
     waves = []
     for _ in range(3):  # repeat 3 times
         for idx in notes:
@@ -113,9 +113,9 @@ def generate_bilawal_scale(sr=SR):
 def generate_kalyani_scale(sr=SR):
     """
     Kalyani-like pattern (Carnatic Lydian): Sa Re2 Ga2 Ma2 Pa Dha2 Ni2 Sa'
-    RAGA_DATABASE Kalyani swaras: [0,2,4,7,10,12,14] — Ma2=7, Pa=10, Dha2=12, Ni2=14, Sa'=19
+    RAGA_DATABASE Kalyani swaras: [0,2,4,7,10,12,14] — Ma2=7, Pa=10, Dha2=12, Ni2=14, Sa'=22
     """
-    notes = [0, 2, 4, 7, 10, 12, 14, 19]
+    notes = [0, 2, 4, 7, 10, 12, 14, 22]
     waves = []
     for _ in range(3):
         for idx in notes:
@@ -127,9 +127,9 @@ def generate_kalyani_scale(sr=SR):
 def generate_bhairav_scale(sr=SR):
     """
     Bhairav-like: Sa Re1 Ga2 Ma1 Pa Dha1 Ni1 Sa'
-    RAGA_DATABASE Bhairav swaras: [0,1,4,6,10,11,13] — Pa=10, Dha1=11, Ni1=13, Sa'=19
+    RAGA_DATABASE Bhairav swaras: [0,1,4,6,10,11,13] — Pa=10, Dha1=11, Ni1=13, Sa'=22
     """
-    notes = [0, 1, 4, 6, 10, 11, 13, 19]
+    notes = [0, 1, 4, 6, 10, 11, 13, 22]
     waves = []
     for _ in range(3):
         for idx in notes:
@@ -181,7 +181,7 @@ def generate_vibrato_scale(sr=SR):
     Bilawal-like scale where every note is delivered with 6.5 Hz vibrato.
     Tests that pYIN still assigns the correct Shruti despite continuous FM.
     """
-    notes = [0, 2, 4, 6, 10, 12, 14, 19]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
+    notes = [0, 2, 4, 6, 10, 12, 14, 22]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
     waves = []
     for idx in notes:
         freq = SHRUTI_FREQUENCIES[SHRUTI_NAMES[idx]]
@@ -218,7 +218,7 @@ def generate_gamaka_scale(sr=SR):
     producing continuous pitch trajectories instead of discrete steps.
     Exercises the segmentation logic and pYIN’s ability to track glides.
     """
-    note_indices = [0, 2, 4, 6, 10, 12, 14, 19]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
+    note_indices = [0, 2, 4, 6, 10, 12, 14, 22]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
     hold_dur = 0.8
     slide_dur = 0.3
     waves = []
@@ -241,8 +241,8 @@ def generate_breath_gap_scale(sr=SR,
     where the singer breathes.  These unvoiced frames should be correctly
     marked by pYIN as NaN and not misidentified as spurious Shrutis.
     """
-    # Ascending then descending: Pa=10, Dha2=12, Ni2=14, Sa'=19
-    note_indices = [0, 2, 4, 6, 10, 12, 14, 19, 14, 12, 10, 6, 4, 2, 0]
+    # Ascending then descending: Pa=10, Dha2=12, Ni2=14, Sa'=22
+    note_indices = [0, 2, 4, 6, 10, 12, 14, 22, 14, 12, 10, 6, 4, 2, 0]
     waves = []
     for idx in note_indices:
         freq = SHRUTI_FREQUENCIES[SHRUTI_NAMES[idx]]

@@ -360,6 +360,22 @@ def validate_ghana_patha(features):
     hop_length = 512
     total_duration = features['duration']
 
+    # ── Near-silence / noise guard ─────────────────────────────────────────────
+    # pYIN treats broadband noise frames as voiced, so a pure-noise clip can
+    # look "repetitive" and falsely sail through the DTW checks.  Anything at
+    # or below room-noise RMS is rejected outright.
+    rms = features.get('rms', 1.0)
+    if rms < 0.01:
+        return {
+            'is_valid': False,
+            'confidence': 0.0,
+            'reason': 'Audio is essentially silent or pure noise',
+            'segments': [],
+            'repetition_score': 0.0,
+            'self_similarity': 0.0,
+            'n_segments': 0,
+        }
+
     # ── Minimum duration guard ────────────────────────────────────────────────
     if total_duration < 2.0:
         return {
