@@ -74,6 +74,11 @@ function App() {
     return () => window.removeEventListener('auth-expired', onExpired)
   }, [])
 
+  const handleGuest = useCallback(() => {
+    clearAuth()
+    setUser({ username: 'Guest', email: '', is_staff: false, is_superuser: false, is_guest: true })
+  }, [])
+
   const handleLogout = useCallback(async () => {
     const tokenExists = !!localStorage.getItem('va_token')
     if (tokenExists) {
@@ -225,7 +230,7 @@ function App() {
   }
 
   if (!user) {
-    return <AuthScreen apiBase={API_BASE} onAuthed={setUser} />
+    return <AuthScreen apiBase={API_BASE} onAuthed={setUser} onGuest={handleGuest} />
   }
 
   return (
@@ -237,7 +242,7 @@ function App() {
         <span className="dot"></span>
         {window.location.hostname === 'localhost' ? 'Backend: localhost:8000' : '● Backend Connected'}
         {analysis && <span style={{ marginLeft: 'auto', color: '#4caf50' }}>Analysis Complete</span>}
-        <span className="auth-badge">👤 {user.username}{user.is_staff ? ' (admin)' : ''}</span>
+        <span className="auth-badge">👤 {user.username}{user.is_staff ? ' (admin)' : user.is_guest ? ' (read-only)' : ''}</span>
         {user.is_staff && (
           <button type="button" className="btn btn-secondary auth-btn" onClick={() => setShowAdmin(s => !s)}>
             {showAdmin ? 'Hide Admin' : 'Admin'}
