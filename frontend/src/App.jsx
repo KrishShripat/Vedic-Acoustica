@@ -7,7 +7,10 @@ import GhanaPathaViz from './components/GhanaPathaViz'
 import RagaViz from './components/RagaViz'
 import AudioPlayer from './components/AudioPlayer'
 import AnalysisProgress from './components/AnalysisProgress'
+import AuthScreen from './components/AuthScreen'
+import AdminOverview from './components/AdminOverview'
 import exportReport from './utils/exportReport'
+import { getUser, clearAuth, authFetch } from './utils/auth'
 import './App.css'
 
 const API_BASE = '/api'
@@ -31,13 +34,66 @@ function App() {
   // Imperative ref to AudioPlayer — lets GhanaPathaViz call seekTo(seconds)
   const playerRef = useRef(null)
 
+  // ── Auth: user identity + token gate (backend /api/auth/*) ────────────────
+  const [user, setUser] = useState(() => getUser())
+  const [authLoading, setAuthLoading] = useState(true)
+  const [showAdmin, setShowAdmin] = useState(false)
+
+  // Validate a stored token on load; clear it if the backend rejects it.
+  useEffect(() => {
+    let cancelled = false
+    const verify = async () => {
+      if (!getUser()) {
+        setAuthLoading(false)
+        return
+      }
+      try {
+        const res = await authFetch(`${API_BASE}/auth/me/`)
+        if (!res.ok) {
+          clearAuth()
+          if (!cancelled) setUser(null)
+        } else {
+          const data = await res.json()
+          if (!cancelled) setUser(data.user)
+        }
+      } catch {
+        clearAuth()
+        if (!cancelled) setUser(null)
+      } finally {
+        if (!cancelled) setAuthLoading(false)
+      }
+    }
+    verify()
+    return () => { cancelled = true }
+  }, [])
+
+  // AdminOverview signals an expired token → bounce to the login screen.
+  useEffect(() => {
+    const onExpired = () => { clearAuth(); setUser(null) }
+    window.addEventListener('auth-expired', onExpired)
+    return () => window.removeEventListener('auth-expired', onExpired)
+  }, [])
+
+  const handleLogout = useCallback(async () => {
+    const tokenExists = !!localStorage.getItem('va_token')
+    if (tokenExists) {
+      try {
+        await authFetch(`${API_BASE}/auth/logout/`, { method: 'POST' })
+      } catch { /* token is cleared client-side regardless */}
+    }
+    clearAuth()
+    setUser(null)
+    setAnalysis(null)
+    setSelectedRecording(null)
+  }, [])
+
   const markChartReady = useCallback(() => {
     setChartsReady(prev => (prev >= NUM_CHARTS ? prev : prev + 1))
   }, [])
 
   const fetchRecordings = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/recordings/`)
+      const res = await authFetch(`${API_BASE}/recordings/`)
       if (!res.ok) throw new Error(`Backend returned ${res.status}`)
       const data = await res.json()
       setRecordings(data.results ?? data)
@@ -62,7 +118,7 @@ function App() {
     formData.append('title', file.name)
 
     try {
-      const res = await fetch(`${API_BASE}/upload/`, {
+      const res = await authFetch(`${API_BASE}/upload/`, {
         method: 'POST',
         body: formData,
       })
@@ -92,7 +148,7 @@ function App() {
   const handleAnalysisDone = useCallback(async () => {
     if (!selectedRecording) return
     try {
-      const res = await fetch(`${API_BASE}/recordings/${selectedRecording.id}/`)
+      const res = await authFetch(`${API_BASE}/recordings/${selectedRecording.id}/`)
       if (!res.ok) throw new Error(`Backend returned ${res.status}`)
       const recording = await res.json()
       const result = recording.analysis_result ?? null
@@ -117,7 +173,7 @@ function App() {
     setAnalyzing(true)
     setAnalyzeError(null)
     try {
-      const res = await fetch(`${API_BASE}/analyze/${selectedRecording.id}/`, {
+      const res = await authFetch(`${API_BASE}/analyze/${selectedRecording.id}/`, {
         method: 'POST',
       })
       const data = await res.json()
@@ -137,7 +193,7 @@ function App() {
     // The list serializer excludes analysis_result (too large).
     // Fetch the full detail endpoint to get the analysis payload.
     if (recording.is_analyzed) {
-      fetch(`${API_BASE}/recordings/${recording.id}/`)
+      authFetch(`${API_BASE}/recordings/${recording.id}/`)
         .then(r => r.json())
         .then(data => setAnalysis(data.analysis_result ?? null))
         .catch(() => setAnalysis(null))
@@ -159,6 +215,19 @@ function App() {
     }
   }, [analysis, selectedRecording])
 
+  // ── Auth gate: show login until identity is confirmed ────────────────────
+  if (authLoading) {
+    return (
+      <div className="card" style={{ textAlign: 'center' }}>
+        <span className="loading-spinner" style={{ width: 26, height: 26 }} /> Loading…
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen apiBase={API_BASE} onAuthed={setUser} />
+  }
+
   return (
     <div>
       <h1>Vedic Acoustica</h1>
@@ -168,7 +237,20 @@ function App() {
         <span className="dot"></span>
         {window.location.hostname === 'localhost' ? 'Backend: localhost:8000' : '● Backend Connected'}
         {analysis && <span style={{ marginLeft: 'auto', color: '#4caf50' }}>Analysis Complete</span>}
+        <span className="auth-badge">👤 {user.username}{user.is_staff ? ' (admin)' : ''}</span>
+        {user.is_staff && (
+          <button type="button" className="btn btn-secondary auth-btn" onClick={() => setShowAdmin(s => !s)}>
+            {showAdmin ? 'Hide Admin' : 'Admin'}
+          </button>
+        )}
+        <button type="button" className="btn btn-secondary auth-btn" onClick={handleLogout}>Logout</button>
       </div>
+
+      {showAdmin && (
+        <div style={{ marginTop: '1rem' }}>
+          <AdminOverview apiBase={API_BASE} />
+        </div>
+      )}
 
       <AudioUploader onUpload={handleUpload} />
 

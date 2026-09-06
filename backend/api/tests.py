@@ -1,11 +1,17 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
 
 class RecordingAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username='tester', password='password123'
+        )
+        self.client.force_authenticate(user=self.user)
 
     def test_list_recordings_empty(self):
         response = self.client.get(reverse('list_recordings'))
@@ -17,9 +23,124 @@ class RecordingAPITestCase(TestCase):
         response = self.client.post(reverse('upload_audio'), {}, format='multipart')
         self.assertEqual(response.status_code, 400)
 
+    def test_upload_requires_auth(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post(reverse('upload_audio'), {}, format='multipart')
+        self.assertEqual(response.status_code, 401)
+
     def test_analyze_missing_recording_returns_404(self):
         response = self.client.post(reverse('analyze_audio', args=[999]))
         self.assertEqual(response.status_code, 404)
+
+    def test_analyze_requires_auth(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.post(reverse('analyze_audio', args=[999]))
+        self.assertEqual(response.status_code, 401)
+
+
+class AuthAPITestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def register(self, **overrides):
+        payload = {
+            'username': 'alice',
+            'email': 'alice@example.com',
+            'password': 'supersecret123',
+        }
+        payload.update(overrides)
+        return self.client.post(reverse('auth_register'), payload, format='json')
+
+    def test_register_returns_token_and_user(self):
+        response = self.register()
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('token', response.data)
+        self.assertEqual(response.data['user']['username'], 'alice')
+        self.assertFalse(response.data['user']['is_staff'])
+
+    def test_register_duplicate_username_rejected(self):
+        self.register()
+        response = self.register(username='ALICE')
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_requires_fields(self):
+        response = self.client.post(reverse('auth_register'), {}, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_short_password_rejected(self):
+        response = self.register(password='short')
+        self.assertEqual(response.status_code, 400)
+
+    def test_login_with_username(self):
+        self.register()
+        response = self.client.post(
+            reverse('auth_login'),
+            {'username': 'alice', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('token', response.data)
+
+    def test_login_with_email(self):
+        self.register()
+        response = self.client.post(
+            reverse('auth_login'),
+            {'email': 'alice@example.com', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_wrong_password_rejected(self):
+        self.register()
+        response = self.client.post(
+            reverse('auth_login'),
+            {'username': 'alice', 'password': 'wrongpass'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_me_returns_current_user(self):
+        user = get_user_model().objects.create_user(username='bob', password='password123')
+        token = Token.objects.create(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
+        response = self.client.get(reverse('auth_me'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['user']['username'], 'bob')
+
+    def test_me_requires_auth(self):
+        response = self.client.get(reverse('auth_me'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_logout_revokes_token(self):
+        response = self.register()
+        token = response.data['token']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+        logout_resp = self.client.post(reverse('auth_logout'))
+        self.assertEqual(logout_resp.status_code, 200)
+        me_resp = self.client.get(reverse('auth_me'))
+        self.assertEqual(me_resp.status_code, 401)
+
+    def test_admin_overview_requires_staff(self):
+        user = get_user_model().objects.create_user(username='bob', password='password123')
+        self.client.force_authenticate(user=user)
+        response = self.client.get(reverse('admin_overview'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_overview_returns_counts(self):
+        from api.models import AudioRecording
+        admin = get_user_model().objects.create_user(
+            username='admin1', password='password123', is_staff=True
+        )
+        get_user_model().objects.create_user(username='regular1', password='password123')
+        AudioRecording.objects.create(title='rec-a')
+        AudioRecording.objects.create(title='rec-b', is_analyzed=True)
+        self.client.force_authenticate(user=admin)
+        response = self.client.get(reverse('admin_overview'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['counts']['total_recordings'], 2)
+        self.assertEqual(response.data['counts']['analyzed_recordings'], 1)
+        self.assertEqual(len(response.data['recordings']), 2)
+        self.assertEqual(len(response.data['users']), 2)
 
 
 class PlaybackFileTestCase(TestCase):

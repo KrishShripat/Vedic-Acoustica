@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'api',
     'ml_engine',
@@ -125,6 +126,19 @@ if _extra_origins:
     CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(',') if o.strip()]
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Token auth is what the React frontend uses
+        # (Authorization: Token <key>).  SessionAuthentication is intentionally
+        # omitted: its CSRF enforcement turns unauthenticated POSTs into 403
+        # instead of 401, which muddies the login workflow.  The Django admin
+        # (/admin/) authenticates via its own session auth, not DRF.
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        # Read endpoints stay open by default; upload/analyze opt in to
+        # IsAuthenticated at the view level, and /api/admin/* requires staff.
+        'rest_framework.permissions.AllowAny',
+    ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.JSONParser',

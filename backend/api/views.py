@@ -11,9 +11,10 @@ from django.http import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET
 from rest_framework import status
-from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle
 
 from .models import AudioRecording
@@ -353,6 +354,7 @@ def _build_analysis_response(recording: 'AudioRecording') -> dict | None:
 # ---------------------------------------------------------------------------
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @throttle_classes([UploadAnonThrottle])
 def upload_audio(request):
     serializer = AudioRecordingSerializer(data=request.data)
@@ -455,6 +457,7 @@ def recording_detail(request, pk):
 
 
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 @throttle_classes([AnalyzeAnonThrottle])
 def analyze_audio(request, pk):
     """
