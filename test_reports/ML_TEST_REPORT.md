@@ -1,5 +1,11 @@
 # Vedic Acoustica — ML Pipeline Test Report
 
+> ⚠️ **SUPERSEDED (2026-09-21).** This 2026-09-03 run reported raga detection 0/6 against the
+> broken pre-23-bin table (Sindhi Bhairavi bias) via circular synthetic scales.  The current
+> `test_ml_audit.py` is **15/15** (pitch 7/7, raga 7/7, ghana valid) using independent 12-TET
+> scales and a correct 23-bin Shruti table.  See `POST_DEPLOYMENT_AUDIT.md → "23-Bin Shruti &
+> Raga Database Correction (2026-09-21)"`.
+
 > **Date:** 2026-09-03
 > **Test suite:** `backend/test_ml_audit.py`
 > **Environment:** Python 3.x, librosa 0.11.0, scikit-learn 1.9.0, numpy 2.4.6

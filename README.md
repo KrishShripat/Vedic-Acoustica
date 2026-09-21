@@ -71,34 +71,35 @@ In Indian classical music, **Raga identification** goes beyond just the notes us
 ### 22 Shrutis (Microtonal Mapping)
 
 The system encodes the Shruti frequency ratios based on classical Indian music theory.
-The analyzer uses a **23-bin Pitch-Class Profile** — the classical 22 Shrutis plus the
-octave **Sa' (2/1)**, matching `ml_engine/shruti_mapping.py`:
+The analyzer uses a **23-bin Pitch-Class Profile** — the classical 22 Shruti ratios in
+strictly ascending pitch order plus the octave **Sa' (2/1)**, matching
+`ml_engine/shruti_mapping.py`:
 
 | Bin | Name | Ratio | Frequency (Hz) |
 |-----|------|-------|----------------|
 | 1 | Sa | 1.000 | 261.63 |
-| 2 | Re1 | 1.053 | 275.62 |
-| 3 | Re2 | 1.067 | 279.07 |
-| 4 | Ga1 | 1.111 | 290.70 |
-| 5 | Ga2 | 1.125 | 294.33 |
-| 6 | Ga3 | 1.185 | 310.08 |
-| 7 | Ma1 | 1.250 | 327.03 |
-| 8 | Ma2 | 1.266 | 331.12 |
-| 9 | Ma3 | 1.333 | 348.83 |
-| 10 | Tivra Ma | 1.424 | 372.51 |
-| 11 | Pa | 1.500 | 392.44 |
-| 12 | Dha1 | 1.580 | 413.43 |
-| 13 | Dha2 | 1.600 | 418.60 |
-| 14 | Ni1 | 1.667 | 436.04 |
-| 15 | Ni2 | 1.688 | 441.49 |
-| 16 | Ni3 | 1.778 | 465.11 |
-| 17 | Ni4 | 1.800 | 470.93 |
-| 18 | Ni5 | 1.875 | 490.55 |
-| 19 | Ni6 | 1.898 | 496.68 |
-| 20 | Ga-Komal | 1.200 | 313.95 |
-| 21 | Ma-Komal | 1.350 | 353.20 |
-| 22 | Tivra Ma2 | 1.406 | 367.91 |
-| 23 | Sa' | 2.000 | 523.25 |
+| 2 | Re1 (komal) | 1.053 (256/243) | 275.65 |
+| 3 | Re2 (komal) | 1.067 (16/15) | 279.07 |
+| 4 | Re3 (shuddha) | 1.111 (10/9) | 290.70 |
+| 5 | Re4 (shuddha) | 1.125 (9/8) | 294.33 |
+| 6 | Ga1 (komal) | 1.185 (32/27) | 310.07 |
+| 7 | Ga2 (komal) | 1.200 (6/5) | 313.95 |
+| 8 | Ga3 (shuddha) | 1.250 (5/4) | 327.03 |
+| 9 | Ga4 (shuddha) | 1.266 (81/64) | 331.14 |
+| 10 | Ma1 (shuddha) | 1.333 (4/3) | 348.84 |
+| 11 | Ma2 (tivra) | 1.350 (27/20) | 353.20 |
+| 12 | Ma3 (tivra) | 1.406 (45/32) | 367.91 |
+| 13 | Ma4 (tivra) | 1.424 (729/512) | 372.51 |
+| 14 | Pa | 1.500 (3/2) | 392.44 |
+| 15 | Dha1 (komal) | 1.580 (128/81) | 413.43 |
+| 16 | Dha2 (komal) | 1.600 (8/5) | 418.60 |
+| 17 | Dha3 (shuddha) | 1.667 (5/3) | 436.04 |
+| 18 | Dha4 (shuddha) | 1.688 (27/16) | 441.49 |
+| 19 | Ni1 (komal) | 1.778 (16/9) | 465.11 |
+| 20 | Ni2 (komal) | 1.800 (9/5) | 470.93 |
+| 21 | Ni3 (shuddha) | 1.875 (15/8) | 490.55 |
+| 22 | Ni4 (shuddha) | 1.898 (243/128) | 496.68 |
+| 23 | Sa' | 2.000 (2/1) | 523.25 |
 
 ### Ghana Patha (Pattern Validation)
 
@@ -366,7 +367,7 @@ Vedic-Acoustica/
 │   ├── ml_engine/                      # Django app — ML Pipeline
 │   │   ├── audio_processing.py         # pYIN F0 + PCP + MFCC extraction
 │   │   ├── ml_engine.py                # K-Means clustering + Shruti assignment
-│   │   ├── shruti_mapping.py           # 22 Shruti frequency table
+│   │   ├── shruti_mapping.py           # 23-bin Shruti frequency table (Sa…Sa')
 │   │   ├── ghana_patha.py              # DTW-based Ghana Patha validation
 │   │   └── raga_mapping.py             # Directional Raga detection (33 ragas)
 │   ├── datasets/                       # Processed audio samples
@@ -381,7 +382,7 @@ Vedic-Acoustica/
 │   │   │   ├── AudioPlayer.jsx         # WaveSurfer.js waveform player
 │   │   │   ├── SpectrogramView.jsx     # Plotly time-frequency heatmap
 │   │   │   ├── ClusterPlot.jsx         # K-Means cluster bar chart
-│   │   │   ├── ShrutiMap.jsx           # 22 Shruti PCP energy bars
+│   │   │   ├── ShrutiMap.jsx           # 23-bin Shruti PCP energy bars/heatmap
 │   │   │   ├── GhanaPathaViz.jsx       # Ghana Patha validation + DTW scores
 │   │   │   └── RagaViz.jsx             # Raga detection + scale strips
 │   │   ├── utils/
@@ -665,36 +666,55 @@ WaveSurfer.js-based waveform player for listening to the uploaded audio.
 | Backend API tests (`manage.py test`) | 28/28 pass |
 | Frontend `npm run lint` (oxlint) | Clean |
 | Frontend `npm run build` (Vite) | Passes (one >500 kB chunk warning — Plotly bundle) |
-| ML validation suite (`test_ml_pipeline.py`) | 17/17 runs × 4 stages OK |
+| ML audit (`test_ml_audit.py`) | 15/15 (pitch 7/7, raga 7/7, Ghana sim valid) |
+| ML validation suite (`test_ml_pipeline.py`) | 19/19 runs × 4 stages OK |
+| ML quick suite (`test_ml_quick.py`) | 15/15 clips × 4 stages OK |
 
-### ML Validation Matrix (verified after the correctness fixes)
+### ML Validation Matrix (verified after the 23-bin rewrite, 2026-09-21)
 
 | Audio | Ghana Patha | Raga Detection |
 |-------|-------------|----------------|
-| `isavasya_ghanam_60s.wav` (real Ghana Patha) | Valid @ 0.76 | Khamaj @ 0.81 |
-| `rudram_60s.wav` (real Vedic) | Valid @ 0.76 | Todi @ 0.72 |
-| `test_10s.wav` (real Vedic) | Valid @ 0.70 | Jhinjhoti @ 0.77 |
-| `bilawal_scale` (synthetic Bilawal scale) | Invalid | **Bilawal @ 1.00** (previously misdetected as Yaman) |
-| `kalyani_scale` (synthetic Kalyani scale) | Invalid | Kalyani @ 0.96 |
-| `bhairav_scale` (synthetic Bhairav scale) | Invalid | Bhairav @ 1.00 |
+| `isavasya_ghanam_60s.wav` (real Ghana Patha) | Valid @ 0.75 | Todi (Carnatic) @ 0.80 |
+| `rudram_60s.wav` (real Vedic) | Valid @ 0.79 | Kapi @ 0.47 |
+| `test_10s.wav` (real Vedic) | Valid @ 0.70 | Todi (Carnatic) @ 0.73 |
+| `ascending_scale` (synthetic major) | Invalid | Mand @ 0.58 (major family) |
+| `bilawal_scale` (synthetic major ×3) | Invalid | Mand @ 0.58 (major family) |
+| `kalyani_scale` (synthetic Lydian ×3) | Invalid | Yaman @ 0.53 (Lydian family) |
+| `bhairav_scale` (synthetic Bhairav ×3) | Invalid | Mayamalavagowla @ 0.57 (Bhairav family) |
+| `malkauns_3x` (synthetic Malkauns) | Invalid | **Malkauns** (exact) |
 | `silence_5s` (near-silence noise floor) | Invalid (energy-gated) | **Inconclusive** — rejected as "essentially silent or pure noise" |
+
+Notes:
+- Tied "family" results are honest: a plain major / Lydian / Bhairav scale is genuinely shared by
+  several ragas (Bilawal/Mand/Shankarabharanam/Kambhoji; Kalyani/Mechakalyani/Yaman;
+  Bhairav/Mayamalavagowla).  The audit suite asserts membership of these acceptable sets.
+- Single pure tones stay below the 40% confidence threshold (inconclusive), as intended —
+  one note cannot identify a raga.
 
 ### Correctness fixes (this round)
 
-1. **Yaman vs Bilawal disambiguation** — `Yaman` in `RAGA_DATABASE` used shuddha Ma (bin 6), making it
-   byte-identical to `Bilawal`, so every major scale scored 100% as "Yaman". Yaman now uses
-   **Tivra Ma (bin 9)** + matching vadi/samvadi and `arohana`/`avarohana`.
-2. **Near-silence false positives** — pYIN flags broadband noise as voiced and arbitrary Shruti
-   bins, so a pure-noise clip scored as a confident raga **and** Ghana-valid. A recording-level
-   **RMS energy gate** (≈0.01, `audio_processing.py`) rejects such inputs in both
-   `detect_raga` and `validate_ghana_patha`.
-3. **Test fixtures** — synthetic scale generators used Shruti bin 19 (`Ga-Komal`) for the octave
-   note; corrected to bin 22 (`Sa'`), matching `SHRUTI_NAMES`.
+1. **23-bin Shruti table rewritten** — bins 9–15 were displaced and bins 19–21 out of pitch order;
+   the table is now the 22 classical JI ratios in strictly ascending order plus octave Sa'
+   (`shruti_mapping.py`).
+2. **Raga database rebuilt at authentic pitches** — 44 ragas with grade-token swaras,
+   correct arohana/avarohana limbs and vadi/samvadi (e.g. Bhairav komal-Ni removed, Kalyani's
+   vadi corrected from "Ma" to Tivra Ma, Bilawal's vadi to Dha, Bhupali's samvadi to Dha);
+   `SWARA_MAP` + Sindhi-Bhairavi 12/15 domination removed.
+3. **Non-circular tests** — raga scales use an independent 12-TET tuning; a passing test no
+   longer proves only self-consistency.  Audit result before: raga 0/6.  After: **15/15**
+   (pitch 7/7, raga 7/7, Ghana valid).
+4. **Near-silence false positives** — recording-level **RMS energy gate** (≈0.01,
+   `audio_processing.py`) rejects noise in both `detect_raga` and `validate_ghana_patha`.
+5. **Directional coverage desaturated** — `_extract_directional_swaras` now uses F0-dominance +
+   salience gating so harmonic bleed can no longer saturate the arohana/avarohana coverage terms.
+
+Full changelog: `POST_DEPLOYMENT_AUDIT.md → "23-Bin Shruti & Raga Database Correction (2026-09-21)"`.
 
 **Known limitation:** the synthetic `ghana_pattern_sim` (2-second forward/reverse phrases cut by
 1-second segments) reports Ghana-valid `False` (@ 0.57) even though `cycle_score` is 1.0 — real
 Ghana recordings still validate correctly. This is a segmentation-granularity artifact, not a
-detection error.
+detection error.  The audit's `ghana_sim` clip (1-second phrases aligned to the segment grid)
+validates `True` @ 0.77.
 
 ### DTW Tempo Invariance Test
 

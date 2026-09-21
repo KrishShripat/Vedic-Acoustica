@@ -1,5 +1,12 @@
 # Vedic Acoustica — Raga Detection Accuracy Report
 
+> ⚠️ **SUPERSEDED (2026-09-21).** The defects this report analyses — Sindhi Bhairavi's 12-of-15
+> swara dominance and the wrong-slot scoring — stemmed from the broken pre-23-bin index table
+> and have been **fixed** by the raga_mapping.py rewrite (authentic 44-raga database,
+> zone-based scoring, paired with the reworked `test_ml_audit.py`).  See
+> `POST_DEPLOYMENT_AUDIT.md → "23-Bin Shruti & Raga Database Correction (2026-09-21)"` for the
+> verification summary (audit 15/15).  Kept for the record.
+
 > **Date:** 2026-09-03
 > **Module:** `backend/ml_engine/raga_mapping.py`
 > **Issue:** Systematic Sindhi Bhairavi bias in raga scoring

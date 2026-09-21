@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Fix the Shruti naming shift in shruti_mapping.py and raga_mapping.py.
+⚠️  OBSOLETE — DO NOT RUN.
 
-Why this script exists
-----------------------
+This script was a one-off patch for the ORIGINAL (broken) 16-entry SHRUTI_NAMES
+table.  shruti_mapping.py has since been rewritten to a 23-bin ascending
+canonical table, and raga_mapping.py no longer defines `SWARA_MAP` (replaced by
+`SWARA_ZONES`).  Running this script will fail on the missing symbols and must
+never be re-applied.  Kept only for git archaeology.
+
+Historical intent (superceded by the 23-bin rewrite):
 The SHRUTI_NAMES list currently has incorrect names for indices 9-15:
   index 9  has ratio 729/512 (≈372 Hz) which is Tivra Ma  — NOT Pa
   index 10 has ratio 3/2     (≈392 Hz) which is Pa

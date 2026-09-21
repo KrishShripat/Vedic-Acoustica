@@ -45,8 +45,8 @@ def run_clustering(features):
         }
 
     # ── Per-frame Shruti assignment (pYIN F0 preferred, PCP fallback) ────────
-    pcp = features['pcp']                         # (22, n_frames)
-    mean_pcp = features['mean_pcp']               # (22,)
+    pcp = features['pcp']                         # (23, n_frames)
+    mean_pcp = features['mean_pcp']               # (23,)
     f0 = features.get('f0')                       # (n_f0,) or None
     voiced_flag = features.get('voiced_flag')     # (n_f0,) bool or None
 
@@ -77,5 +77,5 @@ def run_clustering(features):
         'shruti_clusters': shruti_clusters,
         'labels': labels.tolist(),
         'freq_assignments': freq_assignments,
-        'mean_pcp': mean_pcp.tolist(),            # 22 floats in [0, 1]
+        'mean_pcp': mean_pcp.tolist(),            # 23 floats in [0, 1]
     }

@@ -15,7 +15,7 @@ Design
 ------
 Feature representation
     Each phrase segment is described by its Pitch-Class Profile (PCP) sequence —
-    a (22, n_frames) array of per-frame Shruti energies, already computed in
+    a (23, n_frames) array of per-frame Shruti energies, already computed in
     audio_processing.py.  The PCP is used instead of raw MFCC because:
     - It is octave-invariant (useful when chanting shifts register)
     - It directly encodes Vedic Shruti relationships
@@ -32,7 +32,7 @@ Ghana pattern encoding
     - 'forward'  — the ascending phrase (1→2→3)
     - 'reverse'  — the descending phrase (3→2→1)
     A full Ghana cycle is encoded as [fwd, rev, fwd, rev, fwd].
-    Reference PCP frames are stored as idealised 22-dim unit vectors where
+    Reference PCP frames are stored as idealised 23-dim unit vectors where
     energy is concentrated on the Shruti bins characterising that phrase class.
 
     In production these templates would be learned from annotated examples; the
@@ -53,16 +53,17 @@ _PCP_WIDTH = len(SHRUTI_NAMES)
 # ─────────────────────────────────────────────────────────────────────────────
 # Ghana pattern templates
 # ─────────────────────────────────────────────────────────────────────────────
-# Each template is a (T, 22) array of idealised PCP frames.
+# Each template is a (T, 23) array of idealised PCP frames.
 # T=3 frames is a symbolic minimum; the DTW path scales to any real segment.
 #
 # Shruti indices (0-based, matching SHRUTI_NAMES / PCP bin order):
-#   0=Sa  1=Re1  2=Re2  3=Ga1  4=Ga2  5=Ga3
-#   6=Ma1 7=Ma2  8=Ma3  9=TivraMa 10=Pa 11=Dha1
-#   12=Dha2 13=Ni1 14=Ni2 15=Ni3 16=Re_ ...
+#   0=Sa  1=Re1  2=Re2  3=Re3  4=Re4  5=Ga1
+#   6=Ga2 7=Ga3  8=Ga4  9=Ma1  10=Ma2 11=Ma3
+#   12=Ma4 13=Pa 14=Dha1 15=Dha2 16=Dha3 17=Dha4
+#   18=Ni1 19=Ni2 20=Ni3 21=Ni4 22=Sa'
 #
-# 'forward'  = ascending contour: Sa → Ga → Pa
-# 'reverse'  = descending contour: Pa → Ga → Sa
+# 'forward'  = ascending contour: Sa → Re → Ga → Ma → Pa
+# 'reverse'  = descending contour: Pa → Ma → Ga → Re → Sa
 
 def _make_template(shruti_indices_per_frame):
     """Build a (T, _PCP_WIDTH) float32 template with unit-norm PCP rows."""
@@ -79,18 +80,18 @@ def _make_template(shruti_indices_per_frame):
 # Forward phrase: Sa – Re – Ga – Ma – Pa  (ascending, 5 keyframes)
 _TPL_FORWARD = _make_template([
     [0],           # Sa
-    [2, 4],        # Re / Ga region
-    [4, 6],        # Ga / Ma region
-    [6, 10],       # Ma / Pa region
-    [10],          # Pa
+    [3, 4],        # Re region (shuddha Re3/Re4)
+    [7, 8],        # Ga region (shuddha Ga3/Ga4)
+    [9, 13],       # Ma / Pa region
+    [13],          # Pa
 ])
 
 # Reverse phrase: Pa – Ma – Ga – Re – Sa  (descending, 5 keyframes)
 _TPL_REVERSE = _make_template([
-    [10],          # Pa
-    [6, 10],       # Ma / Pa region
-    [4, 6],        # Ga / Ma region
-    [2, 4],        # Re / Ga region
+    [13],          # Pa
+    [9, 13],       # Ma / Pa region
+    [7, 8],        # Ga region (shuddha Ga3/Ga4)
+    [3, 4],        # Re region (shuddha Re3/Re4)
     [0],           # Sa
 ])
 
@@ -116,9 +117,9 @@ def dtw_distance(seq_a, seq_b):
 
     Parameters
     ----------
-    seq_a : ndarray, shape (T_a, 22)
+    seq_a : ndarray, shape (T_a, 23)
         Query PCP sequence.
-    seq_b : ndarray, shape (T_b, 22)
+    seq_b : ndarray, shape (T_b, 23)
         Reference PCP sequence (template).
 
     Returns

@@ -1,23 +1,23 @@
 [
   {
     "name": "pitch_sa_261",
-    "notes": "Pure Sa tone \u2014 pitch detection ground truth",
+    "notes": "Pure Sa tone (261.63 Hz) \u2014 pitch detection ground truth",
     "expected_raga": null,
+    "acceptable_ragas": null,
     "expected_shruti": 0,
-    "raga_expected_swaras": null,
     "raga_known_limitation": null,
     "check_ghana": false,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 2.47,
+        "time_s": 2.578,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.041,
+        "time_s": 0.043,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -42,16 +42,16 @@
             0.300963
           ],
           [
-            "Shruti 11 (Pa)",
+            "Shruti 14 (Pa)",
             0.071035
           ]
         ]
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.015,
+        "time_s": 0.017,
         "is_valid": true,
-        "confidence": 0.9322,
+        "confidence": 0.9323,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -65,9 +65,9 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.024,
-        "is_inconclusive": false,
-        "best": "Malkauns",
+        "time_s": 0.003,
+        "is_inconclusive": true,
+        "best": "Megh",
         "detected_swaras": [
           "Sa"
         ]
@@ -77,86 +77,10 @@
   },
   {
     "name": "pitch_pa_392",
-    "notes": "Pure Pa tone \u2014 pitch detection ground truth",
+    "notes": "Pure Pa tone (392.44 Hz) \u2014 pitch detection ground truth",
     "expected_raga": null,
-    "expected_shruti": 10,
-    "raga_expected_swaras": null,
-    "raga_known_limitation": null,
-    "check_ghana": false,
-    "tests": {
-      "feature_extraction": {
-        "pass": true,
-        "time_s": 0.724,
-        "duration": 5.0,
-        "frames": 216,
-        "voiced_ratio": 1.0
-      },
-      "clustering": {
-        "pass": true,
-        "time_s": 0.022,
-        "frames": 216,
-        "unique_shrutis": 1
-      },
-      "pitch_accuracy": {
-        "pass": true,
-        "expected": {
-          "index": 10,
-          "name": "Shruti 11 (Pa)",
-          "freq_hz": 392.44
-        },
-        "detected": {
-          "index": 10,
-          "name": "Shruti 11 (Pa)"
-        },
-        "top3_pcp": [
-          [
-            "Shruti 11 (Pa)",
-            0.772122
-          ],
-          [
-            "Shruti 1 (Sa)",
-            0.127985
-          ],
-          [
-            "Shruti 5 (Ga2)",
-            0.046947
-          ]
-        ]
-      },
-      "ghana_patha": {
-        "pass": true,
-        "time_s": 0.015,
-        "is_valid": true,
-        "confidence": 0.913,
-        "repetition": 1.0,
-        "n_segments": 6,
-        "detected_pattern": [
-          "forward",
-          "reverse",
-          "reverse",
-          "reverse",
-          "reverse",
-          "reverse"
-        ]
-      },
-      "raga_detection": {
-        "pass": true,
-        "time_s": 0.002,
-        "is_inconclusive": false,
-        "best": "Shankara",
-        "detected_swaras": [
-          "Pa"
-        ]
-      }
-    },
-    "pipeline_ok": true
-  },
-  {
-    "name": "pitch_re2_278",
-    "notes": "Pure Re2 tone \u2014 tests microtonal resolution",
-    "expected_raga": null,
-    "expected_shruti": 2,
-    "raga_expected_swaras": null,
+    "acceptable_ragas": null,
+    "expected_shruti": 13,
     "raga_known_limitation": null,
     "check_ghana": false,
     "tests": {
@@ -176,26 +100,26 @@
       "pitch_accuracy": {
         "pass": true,
         "expected": {
-          "index": 2,
-          "name": "Shruti 3 (Re2)",
-          "freq_hz": 279.07
+          "index": 13,
+          "name": "Shruti 14 (Pa)",
+          "freq_hz": 392.44
         },
         "detected": {
-          "index": 2,
-          "name": "Shruti 3 (Re2)"
+          "index": 13,
+          "name": "Shruti 14 (Pa)"
         },
         "top3_pcp": [
           [
-            "Shruti 3 (Re2)",
-            0.539876
+            "Shruti 14 (Pa)",
+            0.772122
           ],
           [
-            "Shruti 2 (Re1)",
-            0.305236
+            "Shruti 1 (Sa)",
+            0.127985
           ],
           [
-            "Shruti 13 (Dha2)",
-            0.095518
+            "Shruti 5 (Re4, shuddha)",
+            0.046947
           ]
         ]
       },
@@ -203,7 +127,7 @@
         "pass": true,
         "time_s": 0.015,
         "is_valid": true,
-        "confidence": 0.7949,
+        "confidence": 0.9127,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -217,9 +141,161 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.002,
-        "is_inconclusive": false,
-        "best": "Durga",
+        "time_s": 0.003,
+        "is_inconclusive": true,
+        "best": "Shankara",
+        "detected_swaras": [
+          "Pa"
+        ]
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "pitch_re1_276",
+    "notes": "Pure Re1 (275.65 Hz) \u2014 komal Re limb",
+    "expected_raga": null,
+    "acceptable_ragas": null,
+    "expected_shruti": 1,
+    "raga_known_limitation": null,
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 0.731,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.026,
+        "frames": 216,
+        "unique_shrutis": 1
+      },
+      "pitch_accuracy": {
+        "pass": true,
+        "expected": {
+          "index": 1,
+          "name": "Shruti 2 (Re1, komal)",
+          "freq_hz": 275.62
+        },
+        "detected": {
+          "index": 1,
+          "name": "Shruti 2 (Re1, komal)"
+        },
+        "top3_pcp": [
+          [
+            "Shruti 2 (Re1, komal)",
+            0.602837
+          ],
+          [
+            "Shruti 3 (Re2, komal)",
+            0.241845
+          ],
+          [
+            "Shruti 15 (Dha1, komal)",
+            0.09139
+          ]
+        ]
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.015,
+        "is_valid": true,
+        "confidence": 0.676,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "detected_pattern": [
+          "forward",
+          "reverse",
+          "reverse",
+          "forward",
+          "reverse",
+          "reverse"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.003,
+        "is_inconclusive": true,
+        "best": "Marwa",
+        "detected_swaras": [
+          "Re1"
+        ]
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "pitch_re2_279",
+    "notes": "Pure Re2 (279.07 Hz) \u2014 komal Re limb",
+    "expected_raga": null,
+    "acceptable_ragas": null,
+    "expected_shruti": 2,
+    "raga_known_limitation": null,
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 0.765,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.023,
+        "frames": 216,
+        "unique_shrutis": 1
+      },
+      "pitch_accuracy": {
+        "pass": true,
+        "expected": {
+          "index": 2,
+          "name": "Shruti 3 (Re2, komal)",
+          "freq_hz": 279.07
+        },
+        "detected": {
+          "index": 2,
+          "name": "Shruti 3 (Re2, komal)"
+        },
+        "top3_pcp": [
+          [
+            "Shruti 3 (Re2, komal)",
+            0.539876
+          ],
+          [
+            "Shruti 2 (Re1, komal)",
+            0.305236
+          ],
+          [
+            "Shruti 16 (Dha2, komal)",
+            0.095518
+          ]
+        ]
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.017,
+        "is_valid": true,
+        "confidence": 0.6746,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "detected_pattern": [
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.003,
+        "is_inconclusive": true,
+        "best": "Marwa",
         "detected_swaras": [
           "Re2"
         ]
@@ -228,64 +304,64 @@
     "pipeline_ok": true
   },
   {
-    "name": "pitch_ga2_294",
-    "notes": "Pure Ga2 tone",
+    "name": "pitch_ga4_331",
+    "notes": "Pure Ga4 (331.14 Hz) \u2014 shuddha Ga limb",
     "expected_raga": null,
-    "expected_shruti": 4,
-    "raga_expected_swaras": null,
+    "acceptable_ragas": null,
+    "expected_shruti": 8,
     "raga_known_limitation": null,
     "check_ghana": false,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.734,
+        "time_s": 0.767,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.023,
+        "time_s": 0.024,
         "frames": 216,
         "unique_shrutis": 1
       },
       "pitch_accuracy": {
         "pass": true,
         "expected": {
-          "index": 4,
-          "name": "Shruti 5 (Ga2)",
-          "freq_hz": 294.33
+          "index": 8,
+          "name": "Shruti 9 (Ga4, shuddha)",
+          "freq_hz": 331.12
         },
         "detected": {
-          "index": 4,
-          "name": "Shruti 5 (Ga2)"
+          "index": 8,
+          "name": "Shruti 9 (Ga4, shuddha)"
         },
         "top3_pcp": [
           [
-            "Shruti 5 (Ga2)",
-            0.55036
+            "Shruti 9 (Ga4, shuddha)",
+            0.478899
           ],
           [
-            "Shruti 4 (Ga1)",
-            0.292028
+            "Shruti 8 (Ga3, shuddha)",
+            0.361477
           ],
           [
-            "Shruti 15 (Ni2)",
-            0.07624
+            "Shruti 22 (Ni4, shuddha)",
+            0.087773
           ]
         ]
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.015,
+        "time_s": 0.016,
         "is_valid": true,
-        "confidence": 0.8054,
+        "confidence": 0.9582,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
+          "reverse",
           "forward",
-          "reverse",
-          "reverse",
+          "forward",
           "reverse",
           "reverse",
           "forward"
@@ -293,11 +369,11 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.002,
-        "is_inconclusive": false,
+        "time_s": 0.003,
+        "is_inconclusive": true,
         "best": "Bhupali",
         "detected_swaras": [
-          "Ga2"
+          "Ga4"
         ]
       }
     },
@@ -305,49 +381,125 @@
   },
   {
     "name": "pitch_dha1_413",
-    "notes": "Pure Dha1 tone \u2014 tests upper Shruti detection",
+    "notes": "Pure Dha1 (413.43 Hz) \u2014 komal Dha limb",
     "expected_raga": null,
-    "expected_shruti": 11,
-    "raga_expected_swaras": null,
+    "acceptable_ragas": null,
+    "expected_shruti": 14,
     "raga_known_limitation": null,
     "check_ghana": false,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.723,
+        "time_s": 0.737,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.025,
+        "time_s": 0.026,
         "frames": 216,
         "unique_shrutis": 1
       },
       "pitch_accuracy": {
         "pass": true,
         "expected": {
-          "index": 11,
-          "name": "Shruti 12 (Dha1)",
+          "index": 14,
+          "name": "Shruti 15 (Dha1, komal)",
           "freq_hz": 413.43
         },
         "detected": {
-          "index": 11,
-          "name": "Shruti 12 (Dha1)"
+          "index": 14,
+          "name": "Shruti 15 (Dha1, komal)"
         },
         "top3_pcp": [
           [
-            "Shruti 12 (Dha1)",
+            "Shruti 15 (Dha1, komal)",
             0.684429
           ],
           [
-            "Shruti 13 (Dha2)",
+            "Shruti 16 (Dha2, komal)",
             0.127238
           ],
           [
-            "Shruti 2 (Re1)",
+            "Shruti 2 (Re1, komal)",
             0.102333
+          ]
+        ]
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.016,
+        "is_valid": true,
+        "confidence": 0.6742,
+        "repetition": 1.0,
+        "n_segments": 6,
+        "detected_pattern": [
+          "reverse",
+          "reverse",
+          "forward",
+          "reverse",
+          "reverse",
+          "forward"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.048,
+        "is_inconclusive": true,
+        "best": "Mayamalavagowla",
+        "detected_swaras": [
+          "Dha1"
+        ]
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "pitch_ma_oct_698",
+    "notes": "High tone (697.66 Hz) \u2014 octave-invariance of PCP folds it to Ma1 bin",
+    "expected_raga": null,
+    "acceptable_ragas": null,
+    "expected_shruti": 9,
+    "raga_known_limitation": null,
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 0.745,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.026,
+        "frames": 216,
+        "unique_shrutis": 1
+      },
+      "pitch_accuracy": {
+        "pass": true,
+        "expected": {
+          "index": 9,
+          "name": "Shruti 10 (Ma1, shuddha)",
+          "freq_hz": 348.83
+        },
+        "detected": {
+          "index": 9,
+          "name": "Shruti 10 (Ma1, shuddha)"
+        },
+        "top3_pcp": [
+          [
+            "Shruti 10 (Ma1, shuddha)",
+            0.52015
+          ],
+          [
+            "Shruti 19 (Ni1, komal)",
+            0.173287
+          ],
+          [
+            "Shruti 3 (Re2, komal)",
+            0.105503
           ]
         ]
       },
@@ -355,647 +507,341 @@
         "pass": true,
         "time_s": 0.015,
         "is_valid": true,
-        "confidence": 0.6751,
+        "confidence": 0.8605,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
-          "reverse",
-          "reverse",
           "forward",
-          "reverse",
-          "reverse",
-          "forward"
-        ]
-      },
-      "raga_detection": {
-        "pass": true,
-        "time_s": 0.002,
-        "is_inconclusive": false,
-        "best": "Marwa",
-        "detected_swaras": [
-          "Dha1"
-        ]
-      }
-    },
-    "pipeline_ok": true
-  },
-  {
-    "name": "pitch_dha__697",
-    "notes": "High Dha_ tone 697 Hz \u2014 tests octave-extended range",
-    "expected_raga": null,
-    "expected_shruti": 20,
-    "raga_expected_swaras": null,
-    "raga_known_limitation": null,
-    "check_ghana": false,
-    "tests": {
-      "feature_extraction": {
-        "pass": true,
-        "time_s": 0.721,
-        "duration": 5.0,
-        "frames": 216,
-        "voiced_ratio": 1.0
-      },
-      "clustering": {
-        "pass": true,
-        "time_s": 0.023,
-        "frames": 216,
-        "unique_shrutis": 1
-      },
-      "pitch_accuracy": {
-        "pass": true,
-        "expected": {
-          "index": 20,
-          "name": "Shruti 21 (Ma-Komal)",
-          "freq_hz": 353.2
-        },
-        "detected": {
-          "index": 20,
-          "name": "Shruti 21 (Ma-Komal)"
-        },
-        "top3_pcp": [
-          [
-            "Shruti 21 (Ma-Komal)",
-            0.515969
-          ],
-          [
-            "Shruti 9 (Ma3)",
-            0.313564
-          ],
-          [
-            "Shruti 23 (Sa\u2019)",
-            0.076738
-          ]
-        ]
-      },
-      "ghana_patha": {
-        "pass": true,
-        "time_s": 0.014,
-        "is_valid": true,
-        "confidence": 0.6891,
-        "repetition": 1.0,
-        "n_segments": 6,
-        "detected_pattern": [
-          "reverse",
+          "forward",
           "forward",
           "reverse",
           "reverse",
-          "reverse",
-          "forward"
-        ]
-      },
-      "raga_detection": {
-        "pass": true,
-        "time_s": 0.001,
-        "is_inconclusive": true,
-        "best": null,
-        "detected_swaras": []
-      }
-    },
-    "pipeline_ok": true
-  },
-  {
-    "name": "scale_bilawal",
-    "notes": "Bilawal scale x4 \u2014 Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'",
-    "expected_raga": "Bilawal",
-    "expected_shruti": null,
-    "raga_expected_swaras": [
-      0,
-      2,
-      4,
-      6,
-      10,
-      12,
-      14
-    ],
-    "raga_known_limitation": null,
-    "check_ghana": false,
-    "tests": {
-      "feature_extraction": {
-        "pass": true,
-        "time_s": 1.746,
-        "duration": 12.8,
-        "frames": 552,
-        "voiced_ratio": 0.9855
-      },
-      "clustering": {
-        "pass": true,
-        "time_s": 0.034,
-        "frames": 552,
-        "unique_shrutis": 17
-      },
-      "ghana_patha": {
-        "pass": true,
-        "time_s": 0.079,
-        "is_valid": false,
-        "confidence": 0.4785,
-        "repetition": 0.3273,
-        "n_segments": 12,
-        "detected_pattern": [
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward"
-        ]
-      },
-      "raga_detection": {
-        "pass": false,
-        "time_s": 0.005,
-        "expected_raga": "Bilawal",
-        "detected_raga": "Sindhi Bhairavi",
-        "detected_confidence": 0.9463,
-        "top3": [
-          {
-            "name": "Sindhi Bhairavi",
-            "conf": 0.9463,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Yaman",
-            "conf": 0.8364,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Bilawal",
-            "conf": 0.8364,
-            "tradition": "Hindustani"
-          }
-        ],
-        "is_inconclusive": false,
-        "detected_swaras": [
-          "Sa",
-          "Re1",
-          "Re2",
-          "Ga1",
-          "Ga2",
-          "Ma1",
-          "Pa",
-          "Dha1",
-          "Dha2",
-          "Ni1"
-        ],
-        "raga_expected_swaras": [
-          0,
-          2,
-          4,
-          6,
-          10,
-          12,
-          14
-        ],
-        "raga_known_limitation": null
-      }
-    },
-    "pipeline_ok": false
-  },
-  {
-    "name": "scale_bhairav",
-    "notes": "Bhairav scale x4 \u2014 Sa Re1 Ga2 Ma1 Pa Dha1 Ni1 Sa'",
-    "expected_raga": "Bhairav",
-    "expected_shruti": null,
-    "raga_expected_swaras": [
-      0,
-      1,
-      4,
-      6,
-      10,
-      11,
-      13
-    ],
-    "raga_known_limitation": null,
-    "check_ghana": false,
-    "tests": {
-      "feature_extraction": {
-        "pass": true,
-        "time_s": 1.769,
-        "duration": 12.8,
-        "frames": 552,
-        "voiced_ratio": 0.9855
-      },
-      "clustering": {
-        "pass": true,
-        "time_s": 0.034,
-        "frames": 552,
-        "unique_shrutis": 16
-      },
-      "ghana_patha": {
-        "pass": true,
-        "time_s": 0.08,
-        "is_valid": false,
-        "confidence": 0.5163,
-        "repetition": 0.3273,
-        "n_segments": 12,
-        "detected_pattern": [
-          "forward",
-          "forward",
-          "reverse",
-          "forward",
-          "forward",
-          "reverse",
-          "forward",
-          "forward",
-          "reverse",
-          "forward",
-          "forward",
           "reverse"
         ]
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.12,
-        "expected_raga": "Bhairav",
-        "detected_raga": "Bhairav",
-        "detected_confidence": 1.0,
-        "top3": [
-          {
-            "name": "Bhairav",
-            "conf": 1.0,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Mayamalavagowla",
-            "conf": 1.0,
-            "tradition": "Carnatic"
-          },
-          {
-            "name": "Poorvi",
-            "conf": 0.9089,
-            "tradition": "Hindustani"
-          }
-        ],
-        "is_inconclusive": false,
+        "time_s": 0.003,
+        "is_inconclusive": true,
+        "best": "Malkauns",
         "detected_swaras": [
-          "Sa",
-          "Re1",
-          "Ga2",
-          "Ma1",
-          "Pa",
-          "Dha1",
-          "Ni1"
-        ],
-        "raga_expected_swaras": [
-          0,
-          1,
-          4,
-          6,
-          10,
-          11,
-          13
-        ],
-        "raga_known_limitation": null
+          "Ma1"
+        ]
       }
     },
     "pipeline_ok": true
   },
   {
-    "name": "scale_malkauns",
-    "notes": "Malkauns scale x5 \u2014 Sa Ga1 Ma1 Ma3 Dha1",
-    "expected_raga": "Malkauns",
-    "expected_shruti": null,
-    "raga_expected_swaras": [
-      0,
-      3,
-      6,
-      8,
-      11
+    "name": "scale_major",
+    "notes": "12-TET major scale \u2014 shared by several heptatonic ragas",
+    "expected_raga": "Bilawal",
+    "acceptable_ragas": [
+      "Bilawal",
+      "Mand",
+      "Shankarabharanam",
+      "Kambhoji"
     ],
-    "raga_known_limitation": "Malkauns (5 notes) is a strict subset of Bilawal (7 notes). Jaccard scoring gives Bilawal a higher score because it contains all Malkauns swaras plus extras. Expected: may detect Bilawal.",
+    "expected_shruti": null,
+    "raga_known_limitation": "A plain 12-TET major scale is genuinely shared by Bilawal, Mand, Shankarabharanam and Kambhoji (same swara zones). Detection should pick one of them at \u226540%.",
     "check_ghana": false,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.727,
-        "duration": 12.5,
-        "frames": 539,
-        "voiced_ratio": 0.9852
+        "time_s": 1.587,
+        "duration": 11.2,
+        "frames": 483,
+        "voiced_ratio": 0.9917
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.034,
-        "frames": 539,
-        "unique_shrutis": 15
+        "time_s": 0.033,
+        "frames": 483,
+        "unique_shrutis": 22
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.077,
-        "is_valid": true,
-        "confidence": 0.6089,
-        "repetition": 0.5818,
-        "n_segments": 12,
+        "time_s": 0.065,
+        "is_valid": false,
+        "confidence": 0.508,
+        "repetition": 0.1778,
+        "n_segments": 11,
         "detected_pattern": [
           "forward",
-          "reverse",
-          "forward",
           "forward",
           "reverse",
           "forward",
+          "forward",
           "reverse",
           "forward",
           "reverse",
           "reverse",
-          "forward",
-          "forward"
+          "reverse",
+          "reverse"
         ]
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.005,
-        "expected_raga": "Malkauns",
-        "detected_raga": "Malkauns",
-        "detected_confidence": 0.925,
+        "time_s": 0.168,
+        "expected_raga": "Bilawal",
+        "acceptable_ragas": [
+          "Bilawal",
+          "Mand",
+          "Shankarabharanam",
+          "Kambhoji"
+        ],
+        "detected_raga": "Mand",
+        "detected_confidence": 0.9123,
+        "above_threshold": true,
         "top3": [
           {
-            "name": "Malkauns",
-            "conf": 0.925,
-            "tradition": "Hindustani"
+            "name": "Mand",
+            "conf": 0.9123,
+            "tradition": "Rajasthani folk"
           },
           {
-            "name": "Todi",
-            "conf": 0.8229,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Todi (Carnatic)",
-            "conf": 0.8229,
+            "name": "Shankarabharanam",
+            "conf": 0.9105,
             "tradition": "Carnatic"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.9063,
+            "tradition": "Hindustani"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
-          "Ga1",
+          "Re4",
+          "Ga3",
+          "Ga4",
           "Ma1",
-          "Ma2",
-          "Ma3",
-          "Dha1"
+          "Pa",
+          "Dha4",
+          "Ni4"
         ],
-        "raga_expected_swaras": [
-          0,
-          3,
-          6,
-          8,
-          11
-        ],
-        "raga_known_limitation": "Malkauns (5 notes) is a strict subset of Bilawal (7 notes). Jaccard scoring gives Bilawal a higher score because it contains all Malkauns swaras plus extras. Expected: may detect Bilawal."
+        "raga_known_limitation": "A plain 12-TET major scale is genuinely shared by Bilawal, Mand, Shankarabharanam and Kambhoji (same swara zones). Detection should pick one of them at \u226540%."
       }
     },
     "pipeline_ok": true
   },
   {
     "name": "scale_kalyani",
-    "notes": "Kalyani scale x4 \u2014 Sa Re2 Ga2 Ma2 Pa Dha2 Ni2 Sa'",
+    "notes": "12-TET Lydian scale \u2014 distinguishes via tivra Ma",
     "expected_raga": "Kalyani",
-    "expected_shruti": null,
-    "raga_expected_swaras": [
-      0,
-      2,
-      4,
-      7,
-      10,
-      12,
-      14
+    "acceptable_ragas": [
+      "Kalyani",
+      "Mechakalyani",
+      "Yaman"
     ],
-    "raga_known_limitation": "Kalyani has the same swaras as Bilawal/Shankarabharanam/Mand except for Ma2(7) vs Ma1(6). Detection depends on Ma2 energy being distinguished from Ma1. If Ma1 is also detected, all four ragas tie on swara overlap.",
+    "expected_shruti": null,
+    "raga_known_limitation": "Kalyani and Mechakalyani are the same (Carnatic) Lydian scale; the Hindustani raga Yaman shares that scale so all three are acceptable. Yaman can win because it owns a Pakad template used as a tiebreak.",
     "check_ghana": false,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.774,
-        "duration": 12.8,
-        "frames": 552,
-        "voiced_ratio": 0.9855
+        "time_s": 1.577,
+        "duration": 11.2,
+        "frames": 483,
+        "voiced_ratio": 0.9917
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.033,
-        "frames": 552,
-        "unique_shrutis": 18
+        "time_s": 0.03,
+        "frames": 483,
+        "unique_shrutis": 22
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.084,
+        "time_s": 0.065,
         "is_valid": false,
-        "confidence": 0.4681,
-        "repetition": 0.3273,
-        "n_segments": 12,
+        "confidence": 0.4843,
+        "repetition": 0.1778,
+        "n_segments": 11,
         "detected_pattern": [
           "forward",
           "forward",
+          "reverse",
           "forward",
+          "reverse",
+          "reverse",
           "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward"
+          "reverse",
+          "reverse",
+          "reverse",
+          "reverse"
         ]
       },
       "raga_detection": {
-        "pass": false,
-        "time_s": 0.006,
+        "pass": true,
+        "time_s": 0.057,
         "expected_raga": "Kalyani",
-        "detected_raga": "Sindhi Bhairavi",
-        "detected_confidence": 0.8913,
+        "acceptable_ragas": [
+          "Kalyani",
+          "Mechakalyani",
+          "Yaman"
+        ],
+        "detected_raga": "Yaman",
+        "detected_confidence": 0.8495,
+        "above_threshold": true,
         "top3": [
           {
-            "name": "Sindhi Bhairavi",
-            "conf": 0.8913,
+            "name": "Yaman",
+            "conf": 0.8495,
             "tradition": "Hindustani"
           },
           {
             "name": "Kalyani",
-            "conf": 0.8364,
+            "conf": 0.8077,
             "tradition": "Carnatic"
           },
           {
-            "name": "Latangi",
-            "conf": 0.8364,
+            "name": "Mechakalyani",
+            "conf": 0.8077,
             "tradition": "Carnatic"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
-          "Re1",
-          "Re2",
-          "Ga1",
-          "Ga2",
-          "Ma2",
+          "Re4",
+          "Ga3",
+          "Ga4",
+          "Ma3",
+          "Ma4",
           "Pa",
-          "Dha1",
-          "Dha2",
-          "Ni1"
+          "Dha4",
+          "Ni4"
         ],
-        "raga_expected_swaras": [
-          0,
-          2,
-          4,
-          7,
-          10,
-          12,
-          14
-        ],
-        "raga_known_limitation": "Kalyani has the same swaras as Bilawal/Shankarabharanam/Mand except for Ma2(7) vs Ma1(6). Detection depends on Ma2 energy being distinguished from Ma1. If Ma1 is also detected, all four ragas tie on swara overlap."
-      }
-    },
-    "pipeline_ok": false
-  },
-  {
-    "name": "scale_khamaj",
-    "notes": "Khamaj scale x4 \u2014 Sa Re2 Ga2 Ma1 Pa Dha2 Ni1 Sa'",
-    "expected_raga": "Khamaj",
-    "expected_shruti": null,
-    "raga_expected_swaras": [
-      0,
-      2,
-      4,
-      6,
-      10,
-      12,
-      13
-    ],
-    "raga_known_limitation": null,
-    "check_ghana": false,
-    "tests": {
-      "feature_extraction": {
-        "pass": true,
-        "time_s": 1.772,
-        "duration": 12.8,
-        "frames": 552,
-        "voiced_ratio": 0.9855
-      },
-      "clustering": {
-        "pass": true,
-        "time_s": 0.033,
-        "frames": 552,
-        "unique_shrutis": 16
-      },
-      "ghana_patha": {
-        "pass": true,
-        "time_s": 0.079,
-        "is_valid": false,
-        "confidence": 0.4763,
-        "repetition": 0.3273,
-        "n_segments": 12,
-        "detected_pattern": [
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward",
-          "forward"
-        ]
-      },
-      "raga_detection": {
-        "pass": true,
-        "time_s": 0.152,
-        "expected_raga": "Khamaj",
-        "detected_raga": "Khamaj",
-        "detected_confidence": 0.9218,
-        "top3": [
-          {
-            "name": "Khamaj",
-            "conf": 0.9218,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Sindhi Bhairavi",
-            "conf": 0.9046,
-            "tradition": "Hindustani"
-          },
-          {
-            "name": "Bhairav",
-            "conf": 0.9035,
-            "tradition": "Hindustani"
-          }
-        ],
-        "is_inconclusive": false,
-        "detected_swaras": [
-          "Sa",
-          "Re1",
-          "Re2",
-          "Ga1",
-          "Ga2",
-          "Ma1",
-          "Pa",
-          "Dha1",
-          "Dha2",
-          "Ni1"
-        ],
-        "raga_expected_swaras": [
-          0,
-          2,
-          4,
-          6,
-          10,
-          12,
-          13
-        ],
-        "raga_known_limitation": null
+        "raga_known_limitation": "Kalyani and Mechakalyani are the same (Carnatic) Lydian scale; the Hindustani raga Yaman shares that scale so all three are acceptable. Yaman can win because it owns a Pakad template used as a tiebreak."
       }
     },
     "pipeline_ok": true
   },
   {
-    "name": "scale_hamsadhwani",
-    "notes": "Hamsadhwani pentatonic x5 \u2014 Sa Re2 Ga2 Pa Ni2 Sa'",
-    "expected_raga": "Hamsadhwani",
-    "expected_shruti": null,
-    "raga_expected_swaras": [
-      0,
-      2,
-      4,
-      10,
-      14
+    "name": "scale_bhairav",
+    "notes": "12-TET Bhairav scale (komal Re & Dha, shuddha Ga & Ni)",
+    "expected_raga": "Bhairav",
+    "acceptable_ragas": [
+      "Bhairav",
+      "Mayamalavagowla"
     ],
+    "expected_shruti": null,
+    "raga_known_limitation": "Mayamalavagowla shares Bhairav's swara set; either may win the tie.",
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 1.602,
+        "duration": 11.2,
+        "frames": 483,
+        "voiced_ratio": 0.9917
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.032,
+        "frames": 483,
+        "unique_shrutis": 21
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.065,
+        "is_valid": false,
+        "confidence": 0.4704,
+        "repetition": 0.1778,
+        "n_segments": 11,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "reverse",
+          "forward",
+          "reverse",
+          "reverse"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.108,
+        "expected_raga": "Bhairav",
+        "acceptable_ragas": [
+          "Bhairav",
+          "Mayamalavagowla"
+        ],
+        "detected_raga": "Mayamalavagowla",
+        "detected_confidence": 0.8569,
+        "above_threshold": true,
+        "top3": [
+          {
+            "name": "Mayamalavagowla",
+            "conf": 0.8569,
+            "tradition": "Carnatic"
+          },
+          {
+            "name": "Bhairav",
+            "conf": 0.8532,
+            "tradition": "Hindustani"
+          },
+          {
+            "name": "Shankara",
+            "conf": 0.7722,
+            "tradition": "Hindustani"
+          }
+        ],
+        "is_inconclusive": false,
+        "detected_swaras": [
+          "Sa",
+          "Re1",
+          "Ga3",
+          "Ga4",
+          "Ma1",
+          "Pa",
+          "Dha1",
+          "Ni4"
+        ],
+        "raga_known_limitation": "Mayamalavagowla shares Bhairav's swara set; either may win the tie."
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "scale_malkauns",
+    "notes": "12-TET Malkauns pentatonic \u2014 unique swara combination",
+    "expected_raga": "Malkauns",
+    "acceptable_ragas": [],
+    "expected_shruti": null,
     "raga_known_limitation": null,
     "check_ghana": false,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.659,
-        "duration": 12.0,
-        "frames": 517,
-        "voiced_ratio": 0.9807
+        "time_s": 1.169,
+        "duration": 8.0,
+        "frames": 345,
+        "voiced_ratio": 0.9884
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.033,
-        "frames": 517,
-        "unique_shrutis": 12
+        "time_s": 0.03,
+        "frames": 345,
+        "unique_shrutis": 19
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.074,
-        "is_valid": true,
-        "confidence": 0.615,
-        "repetition": 0.4909,
-        "n_segments": 12,
+        "time_s": 0.032,
+        "is_valid": false,
+        "confidence": 0.4586,
+        "repetition": 0.2857,
+        "n_segments": 8,
         "detected_pattern": [
           "forward",
-          "forward",
-          "forward",
-          "forward",
           "reverse",
           "forward",
           "reverse",
-          "forward",
           "forward",
           "reverse",
           "forward",
@@ -1005,42 +851,289 @@
       "raga_detection": {
         "pass": true,
         "time_s": 0.005,
-        "expected_raga": "Hamsadhwani",
-        "detected_raga": "Hamsadhwani",
-        "detected_confidence": 0.8715,
+        "expected_raga": "Malkauns",
+        "acceptable_ragas": [],
+        "detected_raga": "Malkauns",
+        "detected_confidence": 0.875,
+        "above_threshold": true,
         "top3": [
           {
-            "name": "Hamsadhwani",
-            "conf": 0.8715,
-            "tradition": "Carnatic"
-          },
-          {
-            "name": "Bihag",
-            "conf": 0.8491,
+            "name": "Malkauns",
+            "conf": 0.875,
             "tradition": "Hindustani"
           },
           {
-            "name": "Sindhi Bhairavi",
-            "conf": 0.8466,
+            "name": "Bhairavi",
+            "conf": 0.7273,
+            "tradition": "Hindustani"
+          },
+          {
+            "name": "Todi (Carnatic)",
+            "conf": 0.7273,
+            "tradition": "Carnatic"
+          }
+        ],
+        "is_inconclusive": false,
+        "detected_swaras": [
+          "Sa",
+          "Ga1",
+          "Ga2",
+          "Ma1",
+          "Dha1",
+          "Ni1"
+        ],
+        "raga_known_limitation": null
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "scale_khamaj",
+    "notes": "12-TET Khamaj scale (komal Ni)",
+    "expected_raga": "Khamaj",
+    "acceptable_ragas": [
+      "Khamaj",
+      "Jhinjhoti"
+    ],
+    "expected_shruti": null,
+    "raga_known_limitation": "Jhinjhoti shares Khamaj's swara zones; either may win.",
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 1.591,
+        "duration": 11.2,
+        "frames": 483,
+        "voiced_ratio": 0.9917
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.031,
+        "frames": 483,
+        "unique_shrutis": 20
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.064,
+        "is_valid": false,
+        "confidence": 0.505,
+        "repetition": 0.1778,
+        "n_segments": 11,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse",
+          "reverse",
+          "reverse"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.155,
+        "expected_raga": "Khamaj",
+        "acceptable_ragas": [
+          "Khamaj",
+          "Jhinjhoti"
+        ],
+        "detected_raga": "Khamaj",
+        "detected_confidence": 0.9197,
+        "above_threshold": true,
+        "top3": [
+          {
+            "name": "Khamaj",
+            "conf": 0.9197,
+            "tradition": "Hindustani"
+          },
+          {
+            "name": "Mand",
+            "conf": 0.8513,
+            "tradition": "Rajasthani folk"
+          },
+          {
+            "name": "Bhupali",
+            "conf": 0.7875,
             "tradition": "Hindustani"
           }
         ],
         "is_inconclusive": false,
         "detected_swaras": [
           "Sa",
-          "Re1",
-          "Re2",
-          "Ga1",
-          "Ga2",
+          "Re4",
+          "Ga3",
+          "Ga4",
+          "Ma1",
           "Pa",
-          "Ni2"
+          "Dha4",
+          "Ni1"
         ],
-        "raga_expected_swaras": [
-          0,
-          2,
-          4,
-          10,
-          14
+        "raga_known_limitation": "Jhinjhoti shares Khamaj's swara zones; either may win."
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "scale_bhupali",
+    "notes": "12-TET Bhupali pentatonic (Sa Re Ga Pa Dha)",
+    "expected_raga": "Bhupali",
+    "acceptable_ragas": [
+      "Bhupali"
+    ],
+    "expected_shruti": null,
+    "raga_known_limitation": null,
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 1.126,
+        "duration": 8.0,
+        "frames": 345,
+        "voiced_ratio": 0.9884
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.028,
+        "frames": 345,
+        "unique_shrutis": 17
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.033,
+        "is_valid": false,
+        "confidence": 0.58,
+        "repetition": 0.2857,
+        "n_segments": 8,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "forward",
+          "forward",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.005,
+        "expected_raga": "Bhupali",
+        "acceptable_ragas": [
+          "Bhupali"
+        ],
+        "detected_raga": "Bhupali",
+        "detected_confidence": 0.875,
+        "above_threshold": true,
+        "top3": [
+          {
+            "name": "Bhupali",
+            "conf": 0.875,
+            "tradition": "Hindustani"
+          },
+          {
+            "name": "Mand",
+            "conf": 0.7753,
+            "tradition": "Rajasthani folk"
+          },
+          {
+            "name": "Bilawal",
+            "conf": 0.7045,
+            "tradition": "Hindustani"
+          }
+        ],
+        "is_inconclusive": false,
+        "detected_swaras": [
+          "Sa",
+          "Re4",
+          "Ga3",
+          "Ga4",
+          "Pa",
+          "Dha4"
+        ],
+        "raga_known_limitation": null
+      }
+    },
+    "pipeline_ok": true
+  },
+  {
+    "name": "scale_shankara",
+    "notes": "12-TET Shankara audav scale (Sa Ga Pa Ni)",
+    "expected_raga": "Shankara",
+    "acceptable_ragas": [
+      "Shankara"
+    ],
+    "expected_shruti": null,
+    "raga_known_limitation": null,
+    "check_ghana": false,
+    "tests": {
+      "feature_extraction": {
+        "pass": true,
+        "time_s": 0.925,
+        "duration": 6.4,
+        "frames": 276,
+        "voiced_ratio": 0.9855
+      },
+      "clustering": {
+        "pass": true,
+        "time_s": 0.027,
+        "frames": 276,
+        "unique_shrutis": 14
+      },
+      "ghana_patha": {
+        "pass": true,
+        "time_s": 0.019,
+        "is_valid": true,
+        "confidence": 0.669,
+        "repetition": 0.5,
+        "n_segments": 6,
+        "detected_pattern": [
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse"
+        ]
+      },
+      "raga_detection": {
+        "pass": true,
+        "time_s": 0.004,
+        "expected_raga": "Shankara",
+        "acceptable_ragas": [
+          "Shankara"
+        ],
+        "detected_raga": "Shankara",
+        "detected_confidence": 0.9167,
+        "above_threshold": true,
+        "top3": [
+          {
+            "name": "Shankara",
+            "conf": 0.9167,
+            "tradition": "Hindustani"
+          },
+          {
+            "name": "Hamsadhwani",
+            "conf": 0.75,
+            "tradition": "Carnatic"
+          },
+          {
+            "name": "Shankarabharanam",
+            "conf": 0.6136,
+            "tradition": "Carnatic"
+          }
+        ],
+        "is_inconclusive": false,
+        "detected_swaras": [
+          "Sa",
+          "Ga3",
+          "Ga4",
+          "Pa",
+          "Ni4"
         ],
         "raga_known_limitation": null
       }
@@ -1051,60 +1144,59 @@
     "name": "ghana_sim",
     "notes": "Ghana Patha simulation \u2014 fwd/rev/fwd/rev/fwd pattern",
     "expected_raga": null,
+    "acceptable_ragas": null,
     "expected_shruti": null,
-    "raga_expected_swaras": null,
     "raga_known_limitation": null,
     "check_ghana": true,
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.437,
-        "duration": 10.0,
-        "frames": 431,
+        "time_s": 0.897,
+        "duration": 6.0,
+        "frames": 259,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.031,
-        "frames": 431,
+        "time_s": 0.027,
+        "frames": 259,
         "unique_shrutis": 14
       },
       "ghana_patha": {
-        "pass": false,
-        "time_s": 0.051,
-        "is_valid": false,
-        "confidence": 0.5657,
-        "repetition": 0.2222,
-        "n_segments": 10,
+        "pass": true,
+        "time_s": 0.017,
+        "is_valid": true,
+        "confidence": 0.7743,
+        "repetition": 0.6,
+        "n_segments": 6,
         "detected_pattern": [
           "forward",
-          "forward",
-          "reverse",
           "reverse",
           "forward",
-          "forward",
-          "reverse",
           "reverse",
           "forward",
-          "forward"
+          "reverse"
         ]
       },
       "raga_detection": {
         "pass": true,
         "time_s": 0.004,
         "is_inconclusive": false,
-        "best": "Megh",
+        "best": "Mand",
         "detected_swaras": [
           "Sa",
-          "Re1",
-          "Re2",
-          "Ga1",
+          "Re3",
+          "Re4",
           "Ga2",
+          "Ga3",
+          "Ga4",
           "Ma1",
+          "Ma2",
+          "Ma3",
           "Pa"
         ]
       }
     },
-    "pipeline_ok": false
+    "pipeline_ok": true
   }
 ]

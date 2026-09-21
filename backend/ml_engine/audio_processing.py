@@ -6,7 +6,7 @@ from .shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES
 SR = 22050
 HOP_LENGTH = 512
 N_MFCC = 13
-N_CHROMA = 22
+N_CHROMA = 22  # librosa chroma bands (legacy clustering feature — NOT the PCP width)
 
 # ── PCP constants ────────────────────────────────────────────────────────────
 _N_HARMONICS = 5          # harmonics to accumulate (h = 1..5)
@@ -74,7 +74,9 @@ def extract_f0(y, sr=SR, hop_length=HOP_LENGTH):
 def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
                 f0=None, voiced_flag=None):
     """
-    Compute a Pitch-Class Profile (PCP) over the 22 Shruti bins.
+    Compute a Pitch-Class Profile (PCP) over all 23 Shruti bins
+    (the 22 canonical JI shruti ratios plus the octave Sa', exactly as listed
+    in shruti_mapping.SHRUTI_NAMES).
 
     When ``f0`` and ``voiced_flag`` are provided (from :func:`extract_f0`),
     voiced frames receive a high-confidence F0 boost directly onto the nearest
@@ -83,7 +85,7 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
 
     Returns
     -------
-    pcp : ndarray, shape (22, n_frames), dtype float32
+    pcp : ndarray, shape (n_shruti, n_frames), dtype float32
         Per-frame energy at each Shruti, normalized so each frame sums to 1
         (frames with zero energy are left as zero vectors).
     freqs : ndarray, shape (n_fft // 2 + 1,)
@@ -143,7 +145,7 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
         if len(voiced_indices) > 0:
             f0_voiced = f0_aligned[voiced_indices]    # (n_voiced,)
 
-            # cents distance from each voiced F0 to each of the 22 Shrutis
+            # cents distance from each voiced F0 to each of the 23 Shrutis
             with np.errstate(divide='ignore', invalid='ignore'):
                 cents_f0 = np.abs(
                     1200.0 * np.log2(
@@ -228,7 +230,7 @@ def extract_features(audio_path, progress_cb=None):
         y, sr=SR, hop_length=HOP_LENGTH,
         f0=f0, voiced_flag=voiced_flag,
     )
-    mean_pcp = pcp.mean(axis=1)    # (22,) — recording-level tonal fingerprint
+    mean_pcp = pcp.mean(axis=1)    # (23,) — recording-level tonal fingerprint
     _report(30, 'Building pitch-class profile…')
 
     # Serialise F0 track: NaN → None for clean JSON
@@ -243,8 +245,8 @@ def extract_features(audio_path, progress_cb=None):
         'spectral_centroid': spectral_centroid,
         'spectrogram': spectrogram_db,
         # ── PCP ──────────────────────────────────────────────────────────────
-        'pcp': pcp,                # (22, n_frames)  per-frame Shruti energies
-        'mean_pcp': mean_pcp,      # (22,)           recording-level fingerprint
+        'pcp': pcp,                # (23, n_frames)  per-frame Shruti energies
+        'mean_pcp': mean_pcp,      # (23,)           recording-level fingerprint
         # ── F0 / pYIN ────────────────────────────────────────────────────────
         'f0': f0,                  # ndarray (n_frames,) — raw, NaN for unvoiced
         'f0_track': f0_track,      # list[float|None]   — JSON-ready

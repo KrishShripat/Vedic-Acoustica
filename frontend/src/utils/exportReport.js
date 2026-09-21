@@ -4,7 +4,7 @@ import Plotly from 'plotly.js-dist'
 const CHART_DEFS = [
   { id: 'chart-spectrogram', title: 'Spectrogram' },
   { id: 'chart-clusters', title: 'Shruti Clusters (K=22)' },
-  { id: 'chart-shruti-map', title: '22 Shruti Frequency Map' },
+  { id: 'chart-shruti-map', title: '23 Shruti Frequency Map' },
   { id: 'chart-ghana-path', title: 'Ghana Patha Validation' },
   { id: 'chart-raga-detection', title: 'Raga Detection' },
 ]

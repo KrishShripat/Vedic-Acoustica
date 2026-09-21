@@ -1,4 +1,5 @@
 import logging
+import re
 import numpy as np
 from collections import Counter
 from .shruti_mapping import SHRUTI_NAMES
@@ -17,477 +18,589 @@ except Exception:  # pragma: no cover
 # Anything below this is reported as "Inconclusive" to the client.
 CONFIDENCE_THRESHOLD = 0.40
 
-SWARA_MAP = {
-    'Sa': 0, 'Re1': 1, 'Re2': 2, 'Ga1': 3, 'Ga2': 4, 'Ga3': 5,
-    'Ma1': 6, 'Ma2': 7, 'Ma3': 8, 'Tivra Ma': 9, 'Pa': 10,
-    'Dha1': 11, 'Dha2': 12, 'Ni1': 13, 'Ni2': 14, 'Ni3': 15,
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Swara ↔ Shruti-bin vocabulary
+# ─────────────────────────────────────────────────────────────────────────────
+# Every raga scale is described by *grades* (e.g. 'Re-s' for shuddha Re).  Each
+# grade owns a contiguous zone of 22-shruti bins (see shruti_mapping.py for the
+# ascending bin order).  Scoring works on bins so both the natural-just and
+# Pythagorean variants of a grade match the same raga, and 12-TET renderings
+# land inside the correct zone.
+#
+# Zone scheme (bin ranges):
+#   0 = Sa           [0]
+#   Re komal  [1,2]      Re shuddha [3,4]
+#   Ga komal  [5,6]      Ga shuddha [7,8]
+#   Ma shuddha [9]       Ma tivra [10,11,12]
+#   13 = Pa
+#   Dha komal  [14,15]   Dha shuddha [16,17]
+#   Ni komal  [18,19]    Ni shuddha [20,21]
+#   22 = Sa' (octave, always rendered alongside Sa=0)
+SWARA_ZONES = {
+    'Sa':    [0],
+    'Re-k':  [1, 2],
+    'Re-s':  [3, 4],
+    'Ga-k':  [5, 6],
+    'Ga-s':  [7, 8],
+    'Ma-s':  [9],
+    'Ma-t':  [10, 11, 12],
+    'Pa':    [13],
+    'Dha-k': [14, 15],
+    'Dha-s': [16, 17],
+    'Ni-k':  [18, 19],
+    'Ni-s':  [20, 21],
 }
 
+# Short display names for every Shruti bin, aligned 1:1 with SHRUTI_NAMES
+# (parsed from the parenthesised token so the two can never drift apart).
+_PILL_RE = re.compile(r'\(([^,\)]*)')
+
+
+def _short_swara(full_name):
+    m = _PILL_RE.search(full_name)
+    return m.group(1).strip() if m else full_name
+
+
+SWARA_SHORT_NAMES = [_short_swara(n) for n in SHRUTI_NAMES]
+# 0:'Sa' 1:'Re1' 2:'Re2' 3:'Re3' 4:'Re4' 5:'Ga1' … 8:'Ga4' 9:'Ma1'
+# 10:'Ma2' 11:'Ma3' 12:'Ma4' 13:'Pa' 14:'Dha1' … 17:'Dha4'
+# 18:'Ni1' … 21:'Ni4' 22:"Sa'"
+
+_SHRUTI_INDEX = {name: i for i, name in enumerate(SHRUTI_NAMES)}
+
+
+def _expand_grades(grades):
+    """Flatten a list of swara grades into their zone of Shruti bins."""
+    bins = []
+    for grade in grades:
+        zone = SWARA_ZONES.get(grade)
+        if zone is None:
+            logger.warning('Unknown swara grade %r — skipping', grade)
+            continue
+        bins.extend(zone)
+    return bins
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Raga database
+# ─────────────────────────────────────────────────────────────────────────────
+# Each raga is described once, by grade tokens.  ``vadi``/``samvadi`` hold the
+# dominant (vadi) and sub-dominant (samvadi) notes: ``grade`` selects the bin
+# zone used for scoring, ``name`` is the human-readable swara letter shown in
+# the UI.  ``arohana``/``avarohana`` are the traditional ascent/descent (order
+# matters — some ragas are vakra, some omit notes in one direction).
 RAGA_DATABASE = [
     {
         'name': 'Yaman',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 9, 10, 12, 14],
-        'arohana': [0, 2, 4, 9, 10, 12, 14],
-        'avarohana': [14, 12, 10, 9, 4, 2, 0],
-        'vadi': 4, 'samvadi': 14,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-t', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
         'time': 'Evening (9 PM - Midnight)',
         'mood': 'Devotional, serene, romantic',
     },
     {
         'name': 'Bilawal',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 12, 14],
-        'arohana': [0, 2, 4, 6, 10, 12, 14],
-        'avarohana': [14, 12, 10, 6, 4, 2, 0],
-        'vadi': 0, 'samvadi': 6,
-        'time': 'Morning',
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Dha-s', 'name': 'Dha'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'time': 'Morning (9 AM - Noon)',
         'mood': 'Bright, joyful',
     },
     {
         'name': 'Bhupali',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 10, 12],
-        'arohana': [0, 2, 4, 10, 12, 0],
-        'avarohana': [0, 12, 10, 4, 2, 0],
-        'vadi': 4, 'samvadi': 0,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Pa', 'Dha-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Pa', 'Dha-s'],
+        'avarohana': ['Sa', 'Dha-s', 'Pa', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Dha-s', 'name': 'Dha'},
         'time': 'First prahar of night',
         'mood': 'Devotional, contemplative',
     },
     {
         'name': 'Bhairav',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 4, 6, 10, 11, 13],
-        'arohana': [0, 1, 4, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 4, 1, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Dha-k', 'name': 'Dha'},
+        'samvadi': {'grade': 'Re-k', 'name': 'Re'},
         'time': 'Early morning',
         'mood': 'Solemn, devotional',
     },
     {
         'name': 'Malkauns',
         'tradition': 'Hindustani',
-        'swaras': [0, 3, 6, 8, 11],
-        'arohana': [0, 3, 6, 8, 11, 0],
-        'avarohana': [0, 11, 8, 6, 3, 0],
-        'vadi': 6, 'samvadi': 0,
+        'swaras': ['Sa', 'Ga-k', 'Ma-s', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Ga-k', 'Ma-s', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Ma-s', 'Ga-k', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Midnight',
         'mood': 'Mystical, meditative',
     },
     {
         'name': 'Darbari Kanada',
         'tradition': 'Hindustani',
-        'swaras': [0, 3, 5, 6, 10, 11, 13],
-        'arohana': [0, 3, 5, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 5, 3, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Re-s', 'name': 'Re'},
+        'samvadi': {'grade': 'Pa', 'name': 'Pa'},
         'time': 'Late night',
         'mood': 'Deep, dignified',
     },
     {
         'name': 'Khamaj',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 12, 13],
-        'arohana': [0, 2, 4, 6, 10, 12, 13, 0],
-        'avarohana': [0, 13, 12, 10, 6, 4, 2, 0],
-        'vadi': 6, 'samvadi': 13,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-k', 'name': 'Ni'},
         'time': 'Late evening',
         'mood': 'Light, romantic',
     },
     {
         'name': 'Kafi',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 3, 6, 10, 12, 13],
-        'arohana': [0, 2, 3, 6, 10, 12, 13, 0],
-        'avarohana': [0, 13, 12, 10, 6, 3, 2, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Evening',
         'mood': 'Light, lyrical',
     },
     {
         'name': 'Asavari',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 3, 6, 10, 11, 13],
-        'arohana': [0, 2, 3, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 3, 2, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Dha-k'],      # Ga, Ni omitted in ascent
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Dha-k', 'name': 'Dha'},
+        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
         'time': 'Late morning',
         'mood': 'Devotional, plaintive',
     },
     {
         'name': 'Poorvi',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 4, 6, 10, 11, 14],
-        'arohana': [0, 1, 4, 6, 10, 11, 14, 0],
-        'avarohana': [0, 14, 11, 10, 6, 4, 1, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-t', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
         'time': 'Late evening',
         'mood': 'Serious, dignified',
     },
     {
         'name': 'Todi',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 3, 6, 8, 11, 13],
-        'arohana': [0, 1, 3, 6, 8, 11, 13, 0],
-        'avarohana': [0, 13, 11, 8, 6, 3, 1, 0],
-        'vadi': 8, 'samvadi': 1,
+        'swaras': ['Sa', 'Re-k', 'Ga-k', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Re-k', 'Ga-k', 'Ma-t', 'Dha-k', 'Ni-s'],  # Pa omitted in ascent
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-t', 'Ga-k', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Dha-k', 'name': 'Dha'},
+        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
         'time': 'Morning',
         'mood': 'Deep, meditative',
     },
     {
         'name': 'Puriya',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 4, 6, 10, 11, 14],
-        'arohana': [0, 1, 4, 6, 10, 11, 14, 0],
-        'avarohana': [14, 11, 10, 6, 4, 1, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Dha-s', 'Ni-s'],   # no Pa
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Ma-t', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
         'time': 'Sunset',
         'mood': 'Devotional, yearning',
     },
     {
         'name': 'Marwa',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 4, 6, 10, 11, 14],
-        'arohana': [0, 1, 4, 6, 10, 11, 14, 0],
-        'avarohana': [0, 14, 11, 10, 6, 4, 1, 0],
-        'vadi': 4, 'samvadi': 11,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Dha-s', 'Ni-s'],   # no Pa
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Ma-t', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Re-k', 'name': 'Re'},
+        'samvadi': {'grade': 'Dha-s', 'name': 'Dha'},
         'time': 'Sunset',
         'mood': 'Restless, expectant',
     },
     {
         'name': 'Bhairavi',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 3, 6, 10, 11, 13],
-        'arohana': [0, 1, 3, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 3, 1, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-k', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-k', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Morning',
         'mood': 'Devotional, tender',
     },
     {
         'name': 'Kedar',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 6, 8, 10, 12, 14],
-        'arohana': [0, 2, 6, 8, 10, 12, 14, 0],
-        'avarohana': [0, 14, 12, 10, 8, 6, 2, 0],
-        'vadi': 10, 'samvadi': 6,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],          # Re, Ga omitted in ascent
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-t', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Late evening',
         'mood': 'Devotional, yearning',
     },
     {
         'name': 'Megh',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 12],
-        'arohana': [0, 2, 4, 6, 10, 12, 0],
-        'avarohana': [0, 12, 10, 6, 4, 2, 0],
-        'vadi': 6, 'samvadi': 0,
+        'swaras': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],            # no Ga, no Dha
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Pa', 'Ma-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Sa', 'name': 'Sa'},
+        'samvadi': {'grade': 'Pa', 'name': 'Pa'},
         'time': 'Monsoon season',
         'mood': 'Majestic, rain-bringing',
     },
     {
         'name': 'Jhinjhoti',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 12, 14],
-        'arohana': [0, 2, 4, 6, 10, 12, 14, 0],
-        'avarohana': [14, 12, 10, 6, 4, 2, 0],
-        'vadi': 4, 'samvadi': 12,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Dha-s'],          # Ga, Ni omitted in ascent
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-k', 'name': 'Ni'},
         'time': 'Late night',
         'mood': 'Romantic, pleasant',
     },
     {
         'name': 'Rageshree',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 11, 14],
-        'arohana': [0, 2, 4, 6, 10, 11, 14, 0],
-        'avarohana': [0, 14, 11, 10, 6, 4, 2, 0],
-        'vadi': 4, 'samvadi': 11,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Dha-s', 'Ni-k'],  # no Pa
+        'arohana': ['Sa', 'Ga-s', 'Ma-s', 'Dha-s', 'Ni-k'],         # Re omitted in ascent
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-k', 'name': 'Ni'},
         'time': 'Late night',
         'mood': 'Passionate, intense',
     },
     {
         'name': 'Bihag',
         'tradition': 'Hindustani',
-        'swaras': [0, 2, 4, 6, 10, 14],
-        'arohana': [0, 2, 4, 6, 10, 14, 0],
-        'avarohana': [0, 14, 10, 6, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-t', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
         'time': 'Night',
         'mood': 'Devotional, tender',
     },
     {
         'name': 'Sindhi Bhairavi',
         'tradition': 'Hindustani',
-        'swaras': [0, 1, 2, 3, 4, 6, 10, 11, 12, 13, 14, 15],
-        'arohana': [0, 1, 2, 3, 4, 6, 10, 11, 12, 13, 14, 15, 0],
-        'avarohana': [0, 15, 14, 13, 12, 11, 10, 6, 4, 3, 2, 1, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-k', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Re-k', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Dha-s', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Any time',
         'mood': 'Devotional, pathos',
     },
     {
         'name': 'Shankarabharanam',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 4, 6, 10, 12, 14],
-        'arohana': [0, 2, 4, 6, 10, 12, 14, 0],
-        'avarohana': [0, 14, 12, 10, 6, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa', 'Ni-s', 'Dha-s', 'Pa'],
+        'avarohana': ['Pa', 'Dha-s', 'Ni-s', 'Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Morning',
         'mood': 'Grand, auspicious',
     },
     {
         'name': 'Kharaharapriya',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 3, 6, 10, 12, 13],
-        'arohana': [0, 2, 3, 6, 10, 12, 13, 0],
-        'avarohana': [0, 13, 12, 10, 6, 3, 2, 0],
-        'vadi': 10, 'samvadi': 3,
-        'time': 'Any time',
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
+        'time': 'Afternoon',
         'mood': 'Expressive, deeply emotional',
     },
     {
         'name': 'Mayamalavagowla',
         'tradition': 'Carnatic',
-        'swaras': [0, 1, 4, 6, 10, 11, 13],
-        'arohana': [0, 1, 4, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 4, 1, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Dha-k', 'name': 'Dha'},
+        'samvadi': {'grade': 'Re-k', 'name': 'Re'},
         'time': 'Early morning',
         'mood': 'Peaceful, meditative',
     },
     {
         'name': 'Sri Raga',
         'tradition': 'Carnatic',
-        'swaras': [0, 1, 4, 6, 8, 11, 13],
-        'arohana': [0, 1, 4, 6, 8, 11, 13, 0],
-        'avarohana': [0, 13, 11, 8, 6, 4, 1, 0],
-        'vadi': 6, 'samvadi': 13,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],          # Ga, Dha omitted in ascent
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Ni-k', 'name': 'Ni'},
         'time': 'Evening',
         'mood': 'Devotional, majestic',
     },
     {
         'name': 'Kalyani',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 4, 7, 10, 12, 14],
-        'arohana': [0, 2, 4, 7, 10, 12, 14, 0],
-        'avarohana': [0, 14, 12, 10, 7, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-t', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Any time',
         'mood': 'Joyous, auspicious',
     },
     {
         'name': 'Todi (Carnatic)',
         'tradition': 'Carnatic',
-        'swaras': [0, 1, 3, 6, 8, 11, 13],
-        'arohana': [0, 1, 3, 6, 8, 11, 13, 0],
-        'avarohana': [0, 13, 11, 8, 6, 3, 1, 0],
-        'vadi': 8, 'samvadi': 1,
+        'swaras': ['Sa', 'Re-k', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-k', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Dha-k', 'name': 'Dha'},
+        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
         'time': 'Morning',
         'mood': 'Serene, contemplative',
     },
     {
         'name': 'Bhairavi (Carnatic)',
         'tradition': 'Carnatic',
-        'swaras': [0, 1, 3, 6, 10, 11, 13],
-        'arohana': [0, 1, 3, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 3, 1, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Any time',
         'mood': 'Devotion, pathos',
     },
     {
         'name': 'Kambhoji',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 4, 6, 10, 12, 13],
-        'arohana': [0, 2, 4, 6, 10, 12, 13, 0],
-        'avarohana': [0, 13, 12, 10, 6, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Evening',
         'mood': 'Devotional, romantic',
     },
     {
         'name': 'Abhogi',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 3, 6, 10],
-        'arohana': [0, 2, 3, 6, 10, 0],
-        'avarohana': [0, 10, 6, 3, 2, 0],
-        'vadi': 10, 'samvadi': 3,
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-k'],        # no Pa, no Ni
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-k'],
+        'avarohana': ['Sa', 'Dha-k', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
         'time': 'Any time',
         'mood': 'Introspective, tender',
     },
     {
         'name': 'Hamsadhwani',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 4, 10, 14],
-        'arohana': [0, 2, 4, 10, 14, 0],
-        'avarohana': [0, 14, 10, 4, 2, 0],
-        'vadi': 14, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Pa', 'Ni-s'],           # no Ma, no Dha
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Pa', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Pa', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ni-s', 'name': 'Ni'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Any time',
         'mood': 'Bright, auspicious',
     },
     {
         'name': 'Chakravakam',
         'tradition': 'Carnatic',
-        'swaras': [0, 1, 4, 6, 10, 12, 13],
-        'arohana': [0, 1, 4, 6, 10, 12, 13, 0],
-        'avarohana': [0, 13, 12, 10, 6, 4, 1, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Morning',
         'mood': 'Evocative, pathos',
     },
     {
         'name': 'Kapi',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 3, 6, 8, 11, 13],
-        'arohana': [0, 2, 3, 6, 8, 11, 13, 0],
-        'avarohana': [0, 13, 11, 8, 6, 3, 2, 0],
-        'vadi': 6, 'samvadi': 13,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-t', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Ni-k', 'name': 'Ni'},
         'time': 'Evening',
         'mood': 'Devotional, pathos',
     },
     {
         'name': 'Latangi',
         'tradition': 'Carnatic',
-        'swaras': [0, 1, 4, 7, 10, 11, 14],
-        'arohana': [0, 1, 4, 7, 10, 11, 14, 0],
-        'avarohana': [0, 14, 11, 10, 7, 4, 1, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-t', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Morning',
         'mood': 'Grand, festive',
     },
     {
         'name': 'Mechakalyani',
         'tradition': 'Carnatic',
-        'swaras': [0, 2, 4, 7, 10, 12, 14],
-        'arohana': [0, 2, 4, 7, 10, 12, 14, 0],
-        'avarohana': [0, 14, 12, 10, 7, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-t', 'Pa', 'Dha-s', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-t', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Night',
         'mood': 'Ethereal, deeply moving',
     },
-    # ── 10 new ragas (ML-6) ───────────────────────────────────────────────────
+    # ── 10 ragas (ML-6) ─────────────────────────────────────────────────────
     {
         'name': 'Durga',
         'tradition': 'Hindustani',
-        # Sa Re2 Ma1 Pa Dha2  (pentatonic, no Ga or Ni)
-        'swaras': [0, 2, 6, 10, 12],
-        'arohana': [0, 2, 6, 10, 12, 0],
-        'avarohana': [0, 12, 10, 6, 2, 0],
-        'vadi': 10, 'samvadi': 2,
+        'swaras': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Dha-s'],          # pentatonic — no Ga, no Ni
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Dha-s'],
+        'avarohana': ['Sa', 'Dha-s', 'Pa', 'Ma-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Dha-s', 'name': 'Dha'},
+        'samvadi': {'grade': 'Re-s', 'name': 'Re'},
         'time': 'Late evening',
         'mood': 'Bright, devotional, joyous',
     },
     {
         'name': 'Shankara',
         'tradition': 'Hindustani',
-        # Sa Ga2 Pa Ni2 (audav — omits Re and Ma)
-        'swaras': [0, 4, 10, 14, 15],
-        'arohana': [0, 4, 10, 14, 15, 0],
-        'avarohana': [0, 15, 14, 10, 4, 0],
-        'vadi': 10, 'samvadi': 4,
+        'swaras': ['Sa', 'Ga-s', 'Pa', 'Ni-s'],                   # audav — no Re, no Ma
+        'arohana': ['Sa', 'Ga-s', 'Pa', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Pa', 'Ga-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Night',
         'mood': 'Heroic, devotional, majestic',
     },
     {
         'name': 'Charukeshi',
-        'tradition': 'Hindustani',
-        # Sa Re2 Ga2 Ma1 Pa Dha1 Ni1  (Bilawal + komal Dha & komal Ni)
-        'swaras': [0, 2, 4, 6, 10, 11, 13],
-        'arohana': [0, 2, 4, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'tradition': 'Carnatic',
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Afternoon',
         'mood': 'Serious, dignified, melancholic',
     },
     {
         'name': 'Nata Bhairavi',
-        'tradition': 'Hindustani',
-        # Sa Re2 Ga1 Ma1 Pa Dha1 Ni1 — uses both komal Re (aroh) and shuddha Re (avaroh)
-        'swaras': [0, 2, 3, 6, 10, 11, 13],
-        'arohana': [0, 2, 3, 6, 10, 11, 13, 0],
-        'avarohana': [0, 13, 11, 10, 6, 3, 2, 0],
-        'vadi': 10, 'samvadi': 3,
+        'tradition': 'Carnatic',
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Evening to midnight',
         'mood': 'Plaintive, romantic, yearning',
     },
     {
         'name': 'Mand',
-        'tradition': 'Hindustani',
-        # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 — folk-flavoured Rajasthani raga
-        'swaras': [0, 2, 4, 6, 10, 12, 14],
-        'arohana': [0, 2, 4, 6, 10, 12, 14, 0],
-        'avarohana': [0, 14, 12, 10, 6, 4, 2, 0],
-        'vadi': 10, 'samvadi': 4,
+        'tradition': 'Rajasthani folk',
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Ga-s', 'Pa', 'Dha-s', 'Ma-s', 'Re-s'],
+        'avarohana': ['Sa', 'Dha-s', 'Pa', 'Ga-s', 'Ma-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Re-s', 'name': 'Re'},
         'time': 'Night',
         'mood': 'Folk, festive, lyrical',
     },
     {
         'name': 'Madhyamavati',
         'tradition': 'Carnatic',
-        # Sa Re2 Ma1 Pa Ni2 — pentatonic, very popular Carnatic raga
-        'swaras': [0, 2, 6, 10, 14],
-        'arohana': [0, 2, 6, 10, 14, 0],
-        'avarohana': [0, 14, 10, 6, 2, 0],
-        'vadi': 10, 'samvadi': 2,
+        'swaras': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-s'],           # pentatonic, no Ga, no Dha
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Pa', 'Ma-s', 'Re-s', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Re-s', 'name': 'Re'},
         'time': 'Any time',
         'mood': 'Devotional, melodious, meditative',
     },
     {
         'name': 'Vasanta',
         'tradition': 'Carnatic',
-        # Sa Re1 Ga3 Ma2 Pa Dha1 Ni3 — vakra prayogas in both directions
-        'swaras': [0, 1, 5, 7, 10, 11, 15],
-        'arohana': [0, 5, 1, 10, 7, 15, 11, 0],
-        'avarohana': [0, 15, 11, 10, 7, 5, 1, 0],
-        'vadi': 10, 'samvadi': 5,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Ga-s', 'Re-k', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-t', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
         'time': 'Spring season, any time',
         'mood': 'Joyful, festive, celebratory',
     },
     {
         'name': 'Panthuvarali',
         'tradition': 'Carnatic',
-        # Sa Re1 Ga3 Ma2 Pa Dha1 Ni3 — 51st melakarta (Kamavardhini)
-        'swaras': [0, 1, 5, 7, 10, 11, 15],
-        'arohana': [0, 1, 5, 7, 10, 11, 15, 0],
-        'avarohana': [0, 15, 11, 10, 7, 5, 1, 0],
-        'vadi': 7, 'samvadi': 1,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-t', 'Pa', 'Dha-k', 'Ni-s'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-t', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
         'time': 'Any time',
         'mood': 'Serious, profound, intense',
     },
     {
         'name': 'Saveri',
         'tradition': 'Carnatic',
-        # Sa Re1 Ma1 Pa Dha1 — pentatonic (Suddha Saveri without Ni)
-        'swaras': [0, 1, 6, 10, 11],
-        'arohana': [0, 1, 6, 10, 11, 0],
-        'avarohana': [0, 11, 10, 6, 1, 0],
-        'vadi': 10, 'samvadi': 1,
+        'swaras': ['Sa', 'Re-k', 'Ma-s', 'Pa', 'Dha-k'],          # pentatonic — no Ga, no Ni
+        'arohana': ['Sa', 'Re-k', 'Ma-s', 'Pa', 'Dha-k'],
+        'avarohana': ['Sa', 'Dha-k', 'Pa', 'Ma-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Re-k', 'name': 'Re'},
         'time': 'Morning',
         'mood': 'Serene, devotional, gentle',
     },
     {
         'name': 'Ritigowla',
         'tradition': 'Carnatic',
-        # Sa Re1 Ga3 Ma1 Pa Dha1 Ni2 — vakra arohana, deeply emotive
-        'swaras': [0, 1, 5, 6, 10, 11, 14],
-        'arohana': [0, 1, 5, 6, 10, 11, 14, 0],
-        'avarohana': [0, 14, 11, 10, 6, 5, 1, 0],
-        'vadi': 10, 'samvadi': 5,
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'arohana': ['Sa', 'Ga-s', 'Re-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'vadi': {'grade': 'Pa', 'name': 'Pa'},
+        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Any time',
         'mood': 'Devotional, tender, deeply moving',
     },
 ]
 
+# ── Derived bin representations (computed once at import) ────────────────────
+# Scoring and the API operate on concrete Shruti bins (0..22); the grade tokens
+# above are the single source of truth.  ``arohana_bins``/``avarohana_bins``
+# preserve phrase order (used for the vakra direction checks and the UI strip).
+for _raga in RAGA_DATABASE:
+    _raga['swaras_bins'] = list(dict.fromkeys(_expand_grades(_raga['swaras'])))
+    _raga['arohana_bins'] = _expand_grades(_raga['arohana'])
+    _raga['avarohana_bins'] = _expand_grades(_raga['avarohana'])
+    _raga['vadi_bins'] = _expand_grades([_raga['vadi']['grade']])
+    _raga['samvadi_bins'] = _expand_grades([_raga['samvadi']['grade']])
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pakad (characteristic phrase) database — Stage 4b
 # ─────────────────────────────────────────────────────────────────────────────
-# Each entry is a list of (n_frames, 22) idealised PCP keyframe sequences that
-# represent the raga's pakad (signature melodic phrase).  DTW is used to
-# search for the best-matching subsequence in the audio's PCP matrix.
+# Each entry is a list of (n_frames, 23) idealised PCP keyframe sequences that
+# represent the raga's pakad (signature melodic phrase).  DTW is used to search
+# for the best-matching subsequence in the audio's PCP matrix.
 #
-# Shruti→PCP index (0-based, same as SWARA_MAP above):
-#   0=Sa 1=Re1 2=Re2 3=Ga1 4=Ga2 5=Ga3 6=Ma1 7=Ma2 8=Ma3 9=TivraMa
-#   10=Pa 11=Dha1 12=Dha2 13=Ni1 14=Ni2 15=Ni3
+# Shruti→PCP index (0-based, matches shruti_mapping.py ascending order):
+#   0=Sa 1=Re1 2=Re2 3=Re3 4=Re4 5=Ga1 6=Ga2 7=Ga3 8=Ga4
+#   9=Ma1 10=Ma2 11=Ma3 12=Ma4 13=Pa 14=Dha1 15=Dha2 16=Dha3 17=Dha4
+#   18=Ni1 19=Ni2 20=Ni3 21=Ni4 22=Sa'
 #
 # These templates encode *order* and *emphasis*, not just presence — allowing
 # the system to distinguish ragas that share the same swara set.
@@ -507,111 +620,111 @@ def _pakad_template(frames_shruti_lists):
 
 
 PAKAD_DATABASE = {
-    # ── Ambiguous group 1: {0,2,4,6,10,12,14} ────────────────────────────────
-    # Yaman:    N Re Ga — Ga Ma (tivra) Pa — characteristic ni-re-ga opening
+    # ── Yaman: Ni Re Ga — Ga TivraMa Pa — ni-re-ga opening ──────────────────
+    # Ni-s(21) Re-s(4) Ga-s(8) → Ga-s + TivraMa(11) → Pa(13)
     'Yaman': _pakad_template([
-        [14],           # Ni2 (strong opening note)
-        [2],            # Re2
-        [4],            # Ga2
-        [14, 2],        # Ni–Re oscillation
-        [4, 9],         # Ga–TivraMa (the diagnostic interval)
-        [10],           # Pa
+        [21],            # Ni-s (strong opening note)
+        [4],             # Re-s
+        [8],             # Ga-s
+        [21, 4],         # Ni–Re oscillation
+        [8, 11],         # Ga–TivraMa (the diagnostic interval)
+        [13],            # Pa
     ]),
 
-    # Bilawal:  Sa Re Ga Ma — Pa Dha — Ni Sa' — emphasis on Sa and Pa
+    # Bilawal: Sa Re Ga Ma — Pa Dha — Ni Sa' — emphasis on Sa and Pa
     'Bilawal': _pakad_template([
-        [0],            # Sa (strong start)
-        [2, 4],         # Re–Ga
-        [6],            # Ma1 (shuddha Ma)
-        [10],           # Pa
-        [12],           # Dha2
-        [0],            # Sa (return — vakra)
+        [0],             # Sa (strong start)
+        [3, 4, 7, 8],    # Re–Ga region
+        [9],             # Ma (shuddha)
+        [13],            # Pa
+        [16, 17],        # Dha region
+        [22],            # Sa' (return — vakra)
     ]),
 
     # Jhinjhoti: Sa Re Ga Ma Pa — Ni Dha Pa — Ga Re Sa — komal Ni in descent
     'Jhinjhoti': _pakad_template([
-        [0, 2],         # Sa–Re
-        [4],            # Ga2
-        [10],           # Pa
-        [13],           # Ni1 (komal — diagnostic!)
-        [12],           # Dha2
-        [10],           # Pa
-        [4, 2, 0],      # Ga–Re–Sa
+        [0, 3, 4],       # Sa–Re
+        [8],             # Ga-s
+        [13],            # Pa
+        [18],            # Ni1 (komal — diagnostic!)
+        [16, 17],        # Dha region
+        [13],            # Pa
+        [8, 4, 0],       # Ga–Re–Sa
     ]),
 
-    # Shankarabharanam: Pa Ma Ga Re Sa — Ni Dha Pa (Carnatic major scale, starts Pa)
+    # Shankarabharanam: Pa Ma Ga Re Sa — Ni Dha Pa (Carnatic major, starts Pa)
     'Shankarabharanam': _pakad_template([
-        [10],           # Pa (characteristic opening from Pa)
-        [6],            # Ma1
-        [4],            # Ga2
-        [2],            # Re2
-        [0],            # Sa
-        [14],           # Ni2
-        [12],           # Dha2
-        [10],           # Pa
+        [13],            # Pa (characteristic opening from Pa)
+        [9],             # Ma
+        [8],             # Ga-s
+        [4],             # Re-s
+        [0],             # Sa
+        [21],            # Ni-s
+        [17],            # Dha-s
+        [13],            # Pa
     ]),
 
-    # Mand:     Sa Ga Pa Dha — Ma Ga Re Sa — Rajasthani folk curve
+    # Mand: Sa Ga Pa Dha — Ma Ga Re Sa — Rajasthani folk curve
     'Mand': _pakad_template([
-        [0],            # Sa
-        [4],            # Ga2
-        [10],           # Pa
-        [12],           # Dha2
-        [6, 4, 2, 0],   # Ma–Ga–Re–Sa (folk descending)
+        [0],             # Sa
+        [8],             # Ga-s
+        [13],            # Pa
+        [17],            # Dha-s
+        [9, 8, 4, 0],    # Ma–Ga–Re–Sa (folk descending)
     ]),
 
-    # ── Ambiguous group 2: Bhairav region {0,1,4,6,10,11,13} ─────────────────
-    # Bhairav:        Sa Re1 — Ga Pa — Dha1 Ni1 Sa'
+    # ── Bhairav region ──────────────────────────────────────────────────────
+    # Bhairav: Sa Re1 — Ga Ma — Pa Dha1 Ni1 Sa'
     'Bhairav': _pakad_template([
-        [0],            # Sa
-        [1],            # Re1 (komal)
-        [4, 6],         # Ga–Ma
-        [10],           # Pa
-        [11],           # Dha1 (komal)
-        [13],           # Ni1 (komal)
-        [0],            # Sa'
+        [0],             # Sa
+        [1],             # Re1 (komal)
+        [8, 9],          # Ga–Ma
+        [13],            # Pa
+        [14],            # Dha1 (komal)
+        [18],            # Ni1 (komal)
+        [22],            # Sa'
     ]),
 
-    # Mayamalavagowla:  Sa Re1 Ga2 — Pa Dha1 Ni1 — distinctive jump Re1→Ga2
+    # Mayamalavagowla: Sa Re1 Ga2 — Pa Dha1 Ni1 — distinctive jump Re1→Ga2
     'Mayamalavagowla': _pakad_template([
-        [0],            # Sa
-        [1],            # Re1
-        [4],            # Ga2 (shuddha — jumps over Ga1)
-        [10],           # Pa
-        [11],           # Dha1 (komal)
-        [13, 0],        # Ni1→Sa
+        [0],             # Sa
+        [1],             # Re1 (komal)
+        [8],             # Ga2 (shuddha — jumps over Ga1)
+        [13],            # Pa
+        [14],            # Dha1 (komal)
+        [18, 22],        # Ni1→Sa'
     ]),
 
-    # ── Ambiguous group 3: Kafi/Khamaj region ────────────────────────────────
-    # Kafi:   Sa Re Ga1 Ma Pa Dha — komal Ga and komal Ni
+    # ── Kafi/Khamaj region ──────────────────────────────────────────────────
+    # Kafi: Sa Re Ga1 Ma Pa Dha — komal Ga and komal Ni
     'Kafi': _pakad_template([
-        [0],            # Sa
-        [2],            # Re2
-        [3],            # Ga1 (komal — diagnostic)
-        [6, 10],        # Ma–Pa
-        [12],           # Dha2
-        [13],           # Ni1 (komal)
-        [0],            # Sa
+        [0],             # Sa
+        [4],             # Re-s
+        [5],             # Ga1 (komal — diagnostic)
+        [9, 13],         # Ma–Pa
+        [17],            # Dha-s
+        [18],            # Ni1 (komal)
+        [0],             # Sa
     ]),
 
     # Khamaj: Pa Ni Dha Pa — Ga Ma Pa — Ni in descent only
     'Khamaj': _pakad_template([
-        [10],           # Pa (characteristic start)
-        [13],           # Ni1 (komal in descent)
-        [12],           # Dha2
-        [10],           # Pa
-        [4, 6, 10],     # Ga–Ma–Pa ascending
+        [13],            # Pa (characteristic start)
+        [18],            # Ni1 (komal in descent)
+        [17],            # Dha-s
+        [13],            # Pa
+        [8, 9, 13],      # Ga–Ma–Pa ascending
     ]),
 
-    # ── Ambiguous group 4: Todi variants ─────────────────────────────────────
-    # Todi (Hindustani): Re1 Ga1 Ma2 — Pa Dha1 Ni1 — all komal + tivra Ma
+    # ── Todi variants ───────────────────────────────────────────────────────
+    # Todi (Hindustani): Re1 Ga1 Ma2 — Pa Dha1 Ni1 — komal + tivra Ma
     'Todi': _pakad_template([
-        [1],            # Re1 (komal)
-        [3],            # Ga1 (komal)
-        [8],            # Ma3/Tivra region
-        [10],           # Pa (avoided in avaroh)
-        [11],           # Dha1
-        [13, 1, 0],     # Ni1–Re1–Sa
+        [1],             # Re1 (komal)
+        [5],             # Ga1 (komal)
+        [11],            # Ma3/tivra region
+        [13],            # Pa (avoided in avaroh)
+        [14],            # Dha1 (komal)
+        [18, 1, 0],      # Ni1–Re1–Sa
     ]),
 }
 
@@ -639,12 +752,12 @@ def apply_pakad_tiebreak(matches, features, top_n=3):
     """
     if not _PAKAD_DTW_AVAILABLE:
         return matches
-    pcp = features.get('pcp')  # (22, n_frames)
+    pcp = features.get('pcp')  # (23, n_frames)
     if pcp is None or pcp.shape[1] < 5:
         return matches
 
     n_frames = pcp.shape[1]
-    pcp_T = pcp.T.astype(np.float32)  # (n_frames, 22) — row=frame, col=shruti
+    pcp_T = pcp.T.astype(np.float32)  # (n_frames, 23) — row=frame, col=shruti
 
     PAKAD_TIEBREAK_MARGIN = 0.05   # only fire when top-2 are within 5%
     if len(matches) < 2:
@@ -667,7 +780,7 @@ def apply_pakad_tiebreak(matches, features, top_n=3):
         # Sliding-window search: find the minimum DTW distance over all windows
         best_sim = 0.0
         for start in range(0, n_frames - T_tpl + 1, max(T_tpl // 2, 1)):
-            window = pcp_T[start: start + T_tpl]   # (T_tpl, 22)
+            window = pcp_T[start: start + T_tpl]   # (T_tpl, 23)
             dist, _ = _dtw_distance(window, template)
             sim = 1.0 - dist
             if sim > best_sim:
@@ -691,53 +804,37 @@ def apply_pakad_tiebreak(matches, features, top_n=3):
 
 
 def _extract_detected_swaras(freq_assignments):
-    """Legacy path: build swara hits from per-frame string assignments."""
+    """Legacy path: build swara (bin) hits from per-frame string assignments."""
     swara_hits = Counter()
     for assignment in freq_assignments:
         if assignment is None:
             continue
-        for shruti_name, swara_idx in SWARA_MAP.items():
-            if shruti_name in assignment:
-                swara_hits[swara_idx] += 1
-                break
+        idx = _SHRUTI_INDEX.get(assignment)
+        if idx is not None:
+            swara_hits[idx] += 1
     return swara_hits
 
 
 def _extract_detected_swaras_from_pcp(mean_pcp, energy_threshold=0.02):
     """
-    Build a swara energy map from the 22-element mean PCP vector.
+    Build a swara (bin) energy map from the 23-element mean PCP vector.
 
-    mean_pcp : list or array of 22 floats in [0, 1]
+    mean_pcp : list or array of 23 floats in [0, 1]
         Recording-level Shruti energy fingerprint from compute_pcp().
     energy_threshold : float
         Shrutis with mean energy below this fraction of the max are ignored.
 
-    Returns a dict {swara_index: energy_float} for the first 15 Shrutis
-    (indices 0-14) that map to the classical SWARA_MAP.
+    Returns a dict {bin_index: energy_float} over all 23 Shruti bins.
     """
-    import numpy as np
     pcp = np.asarray(mean_pcp, dtype=np.float64)
     max_energy = pcp.max()
     if max_energy == 0:
         return {}
-
-    # Build a fast lookup: short swara name -> PCP index
-    # SHRUTI_NAMES entries look like 'Shruti 1 (Sa)', 'Shruti 2 (Re1)', etc.
-    shruti_idx_map = {}
-    for idx, full_name in enumerate(SHRUTI_NAMES):
-        for short in SWARA_MAP:
-            if short in full_name and short not in shruti_idx_map:
-                shruti_idx_map[short] = idx
-
-    swara_energy = {}
-    for shruti_name, swara_idx in SWARA_MAP.items():
-        if shruti_name not in shruti_idx_map:
-            continue
-        energy = float(pcp[shruti_idx_map[shruti_name]])
-        if energy >= energy_threshold * max_energy:
-            swara_energy[swara_idx] = swara_energy.get(swara_idx, 0.0) + energy
-
-    return swara_energy
+    return {
+        int(i): float(pcp[i])
+        for i in range(len(pcp))
+        if pcp[i] >= energy_threshold * max_energy
+    }
 
 
 # A swara is only counted as "present" when it is the dominant pitch class for
@@ -760,12 +857,12 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
     A swara counts as "present" only when it is the nearest Shruti to the pYIN
     F0 for at least ``presence_threshold`` of the total voiced frames.  Using
     the F0 track (rather than raw PCP argmax) avoids the tanpura-drone/harmonic
-    bleed that falsely lights up 15 swaras, and the duration gate removes
+    bleed that falsely lights up many swaras, and the duration gate removes
     transient vocal glides that never settle on a sustained note.
 
     Parameters
     ----------
-    pcp : ndarray (22, n_frames) — per-frame Shruti energies
+    pcp : ndarray (23, n_frames) — per-frame Shruti energies
     voiced_flag : ndarray (n_frames,) bool — True for voiced frames
     f0 : ndarray (n_frames,) optional — pYIN fundamental frequency (NaN unvoiced)
     presence_threshold : float — min fraction of voiced frames a swara must be
@@ -773,11 +870,10 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
 
     Returns
     -------
-    dict {swara_index: salience} for the classical 15 swaras (PCP bins 0-14)
-    whose occupancy is >= presence_threshold.  The value is the occupancy
-    fraction, used as the swara's salience weight in scoring.
+    dict {bin_index: salience} over all 23 Shruti bins whose occupancy is
+    >= presence_threshold.  The value is the occupancy fraction, used as the
+    swara's salience weight in scoring.
     """
-    import numpy as np
     from .ml_engine import _nearest_shruti_from_f0
 
     pcp = np.asarray(pcp, dtype=np.float64)
@@ -797,17 +893,14 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
 
     # Dominant shruti bin per voiced frame, preferring pYIN F0 (clean melodic
     # pitch) and falling back to PCP argmax for voiced frames where F0 is
-    # unavailable or out of range.  Counting only voiced frames (never the
-    # drone-heavy unvoiced frames) keeps the tanpura bleed out while retaining
-    # the ornamented notes that never settle on a single F0.
-    shruti_idx = _nearest_shruti_from_f0
+    # unavailable or out of range.
     counts = np.zeros(pcp.shape[0], dtype=np.int64)
     for i in range(n_frames):
         if not voiced[i]:
             continue
         assigned = None
         if f0_arr is not None and i < len(f0_arr) and not np.isnan(f0_arr[i]):
-            assigned = shruti_idx(f0_arr[i])
+            assigned = _nearest_shruti_from_f0(f0_arr[i])
         if assigned is None:
             assigned = int(pcp[:, i].argmax())
         if 0 <= assigned < pcp.shape[0]:
@@ -816,42 +909,47 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
     occupancy = counts / total_voiced
     return {
         int(i): float(occupancy[i])
-        for i in range(min(16, pcp.shape[0]))
+        for i in range(pcp.shape[0])
         if occupancy[i] >= presence_threshold
     }
 
 
 def _extract_directional_swaras(pcp, f0, voiced_flag,
-                                energy_threshold=0.02,
-                                smoothing_frames=3):
+                                presence_threshold=SWARA_PRESENCE_THRESHOLD):
     """
-    Split PCP energy into arohana (rising F0) and avarohana (falling F0) dicts.
+    Split F0-dominant Shruti occupancy into arohana (rising F0) and avarohana
+    (falling F0) maps, using the same salience gating as the overall detector.
 
-    Uses the frame-by-frame F0 gradient to classify each voiced frame as
-    rising or falling, then accumulates PCP energy into two separate
-    {swara_idx: energy} maps.
+    Each voiced frame is assigned its dominant Shruti bin (pYIN F0 nearest
+    shruti, falling back to PCP argmax) and classified as rising or falling
+    from the smoothed F0 gradient.  A bin only enters a direction's map when it
+    held the dominant pitch for at least ``presence_threshold`` of the voiced
+    frames *in that direction*, so harmonic bleed and drone energy never
+    saturate the arohana/avarohana coverage terms used in scoring.
 
     Parameters
     ----------
-    pcp : ndarray (22, n_frames)
+    pcp : ndarray (23, n_frames)
     f0  : ndarray (n_frames,) — NaN for unvoiced
     voiced_flag : ndarray bool (n_frames,)
-    energy_threshold : float — min fraction of per-direction max to count
-    smoothing_frames : int — frames to smooth gradient over (reduces jitter)
+    presence_threshold : float — min fraction of voiced frames for a bin to
+                                 count as present in a direction
 
     Returns
     -------
-    arohana_swaras   : dict {swara_idx: energy}
-    avarohana_swaras : dict {swara_idx: energy}
+    arohana_swaras   : dict {bin_index: occupancy}
+    avarohana_swaras : dict {bin_index: occupancy}
     """
-    n_frames = pcp.shape[1]
-    align = min(len(f0), n_frames)
-    f0_a = np.array(f0[:align], dtype=np.float64)
-    vf_a = np.array(voiced_flag[:align], dtype=bool)
+    from .ml_engine import _nearest_shruti_from_f0
 
-    # Smooth F0 (replace NaN with 0 for gradient, then mask)
+    n_frames = pcp.shape[1]
+    align = min(len(f0), n_frames, len(voiced_flag))
+    f0_a = np.asarray(f0[:align], dtype=np.float64)
+    vf_a = np.asarray(voiced_flag[:align], dtype=bool)
+
+    # Smoothed F0 gradient for rising/falling classification
     f0_filled = np.where(np.isnan(f0_a), 0.0, f0_a)
-    # Gradient via centered diff, smoothed over a short window
+    smoothing_frames = 3
     if align > 2 * smoothing_frames:
         kernel = np.ones(smoothing_frames) / smoothing_frames
         f0_smooth = np.convolve(f0_filled, kernel, mode='same')
@@ -859,43 +957,38 @@ def _extract_directional_swaras(pcp, f0, voiced_flag,
         f0_smooth = f0_filled
     gradient = np.gradient(f0_smooth)
 
-    # Build a lookup: shruti_name (short) → shruti PCP index (0-21)
-    shruti_idx_map = {}
-    for idx, full_name in enumerate(SHRUTI_NAMES):
-        for short in SWARA_MAP:
-            if short in full_name and short not in shruti_idx_map:
-                shruti_idx_map[short] = idx
-
-    aro_energy = {}    # rising (arohana) frames
-    ava_energy = {}    # falling (avarohana) frames
-
-    for frame_idx in range(align):
-        if not vf_a[frame_idx]:
+    aro_counts = np.zeros(pcp.shape[0], dtype=np.int64)
+    ava_counts = np.zeros(pcp.shape[0], dtype=np.int64)
+    for i in range(align):
+        if not vf_a[i]:
             continue
-        frame_pcp = pcp[:, frame_idx]  # (22,)
-        bucket = aro_energy if gradient[frame_idx] >= 0 else ava_energy
-        for short, swara_idx in SWARA_MAP.items():
-            if short not in shruti_idx_map:
-                continue
-            e = float(frame_pcp[shruti_idx_map[short]])
-            if e > 0:
-                bucket[swara_idx] = bucket.get(swara_idx, 0.0) + e
+        assigned = None
+        if not np.isnan(f0_a[i]):
+            assigned = _nearest_shruti_from_f0(f0_a[i])
+        if assigned is None:
+            assigned = int(pcp[:, i].argmax())
+        if not (0 <= assigned < len(aro_counts)):
+            continue
+        if gradient[i] >= 0:
+            aro_counts[assigned] += 1
+        else:
+            ava_counts[assigned] += 1
 
-    # Apply energy threshold per direction
-    def _threshold(d):
-        if not d:
+    def _gate(counts):
+        if counts.sum() == 0:
             return {}
-        mx = max(d.values())
-        return {k: v for k, v in d.items() if v >= energy_threshold * mx}
+        occ = counts / counts.sum()
+        return {int(i): float(occ[i]) for i in range(pcp.shape[0])
+                if occ[i] >= presence_threshold}
 
-    return _threshold(aro_energy), _threshold(ava_energy)
+    return _gate(aro_counts), _gate(ava_counts)
 
 
 def _score_raga(detected_swaras, raga,
-               arohana_swaras=None, avarohana_swaras=None,
-               total_frames=None):
+                arohana_swaras=None, avarohana_swaras=None,
+                total_frames=None):
     """
-    Score a raga against detected swara energies with directional weighting.
+    Score a raga against detected swara (bin) energies with directional weighting.
 
     When ``arohana_swaras`` / ``avarohana_swaras`` are supplied (split by F0
     gradient direction), the scorer checks ascending and descending swara
@@ -911,11 +1004,16 @@ def _score_raga(detected_swaras, raga,
                                 in falling phrases
     direction_penalty (0.10)  — penalise swaras used in the wrong direction
     vadi/samvadi bonus (0.15) — dominant note prominence
+
+    Note: ``detected_swaras`` keys are Shruti bin indices (0..22).  Raga
+    ``swaras_bins``/``arohana_bins``/``avarohana_bins`` are zone-expanded bin
+    lists, so the same zone of just/pythagorean microtones (and 12-TET notes
+    rendered into it) all count as the grade present.
     """
     if not detected_swaras:
         return 0.0, {}
 
-    raga_swaras = set(raga['swaras'])
+    raga_swaras = set(raga['swaras_bins'])
     detected_set = set(detected_swaras.keys())
     intersection = raga_swaras & detected_set
     union = raga_swaras | detected_set
@@ -926,8 +1024,7 @@ def _score_raga(detected_swaras, raga,
 
     # ── Extraneous swara penalty ──────────────────────────────────────────────
     # Notes present in the audio but *completely forbidden* in the raga (i.e.
-    # not part of its scale at all) undermine the match: a real Bhimpalasi
-    # alap never sits on an out-of-scale pitch for long.  The more of the
+    # not part of its scale at all) undermine the match.  The more of the
     # detected set lies outside the raga's scale, the more we subtract.
     extraneous = detected_set - raga_swaras
     extraneous_penalty = 0.0
@@ -936,22 +1033,23 @@ def _score_raga(detected_swaras, raga,
             0.20 * (len(extraneous) / len(detected_set)), 4
         )
 
-    vadi = raga['vadi']
-    samvadi = raga['samvadi']
+    vadi_set = set(raga['vadi_bins'])
+    samvadi_set = set(raga['samvadi_bins'])
     total_weight = sum(detected_swaras.values()) or 1.0
 
     vadi_bonus = 0.0
-    if vadi in detected_swaras:
-        vadi_bonus = 0.10 * min(detected_swaras[vadi] / (total_weight * 0.1), 1.0)
+    if vadi_set & detected_set:
+        vadi_energy = sum(detected_swaras.get(b, 0.0) for b in vadi_set)
+        vadi_bonus = 0.10 * min(vadi_energy / (total_weight * 0.1), 1.0)
 
     samvadi_bonus = 0.0
-    if samvadi in detected_swaras:
-        samvadi_bonus = 0.05 * min(detected_swaras[samvadi] / (total_weight * 0.05), 1.0)
+    if samvadi_set & detected_set:
+        samvadi_energy = sum(detected_swaras.get(b, 0.0) for b in samvadi_set)
+        samvadi_bonus = 0.05 * min(samvadi_energy / (total_weight * 0.05), 1.0)
 
     # ── Directional coverage ──────────────────────────────────────────────────
-    # arohana: ordered list of unique swara indices (Sa=0 direction, ascending)
-    raga_aro_set = set(raga['arohana'])
-    raga_ava_set = set(raga['avarohana'])
+    raga_aro_set = set(raga['arohana_bins'])
+    raga_ava_set = set(raga['avarohana_bins'])
 
     if arohana_swaras and avarohana_swaras:
         aro_detected = set(arohana_swaras.keys())
@@ -1002,8 +1100,8 @@ def _score_raga(detected_swaras, raga,
         'direction_penalty': round(direction_penalty, 4) if directional else None,
         'extraneous_penalty': extraneous_penalty,
         'extraneous_swaras': sorted(extraneous),
-        'vadi_detected': vadi in detected_swaras,
-        'samvadi_detected': samvadi in detected_swaras,
+        'vadi_detected': bool(vadi_set & detected_set),
+        'samvadi_detected': bool(samvadi_set & detected_set),
         'directional_scoring': directional,
     }
 
@@ -1021,9 +1119,6 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
     freq_assignments = clustering_results.get('freq_assignments', [])
 
     # ── Near-silence / noise guard ─────────────────────────────────────────────
-    # pYIN marks broadband-noise frames as voiced and their PCP argmax lands on
-    # arbitrary Shruti bins, so silent clips can be scored as a confident raga.
-    # Reject recording-level RMS at or below room-noise floor first.
     if features is not None and features.get('rms', 1.0) < 0.01:
         reason = 'Audio is essentially silent or pure noise'
         logger.warning(
@@ -1046,7 +1141,7 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
         }
 
     # Prefer duration/salience-gated detection from frame-level PCP (it rejects
-    # tanpura drone bleed / slides that falsely light up 15 swaras).  Fall back
+    # tanpura drone bleed / slides that falsely light up many swaras).  Fall back
     # to the recording-level mean PCP when frame data is unavailable.
     if (features is not None
             and features.get('pcp') is not None
@@ -1095,7 +1190,7 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
             and features.get('pcp') is not None
             and features.get('f0') is not None
             and features.get('voiced_flag') is not None):
-        pcp = features['pcp']             # (22, n_frames)
+        pcp = features['pcp']             # (23, n_frames)
         f0 = features['f0']               # ndarray
         voiced_flag = features['voiced_flag']  # ndarray bool
         n_voiced = int(voiced_flag.sum())
@@ -1110,11 +1205,7 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
             )
 
     total_frames = len(freq_assignments)
-    swara_names = {
-        0: 'Sa', 1: 'Re1', 2: 'Re2', 3: 'Ga1', 4: 'Ga2', 5: 'Ga3',
-        6: 'Ma1', 7: 'Ma2', 8: 'Ma3', 9: 'Tivra Ma', 10: 'Pa',
-        11: 'Dha1', 12: 'Dha2', 13: 'Ni1', 14: 'Ni2', 15: 'Ni3',
-    }
+    swara_names = SWARA_SHORT_NAMES
 
     matches = []
     for raga in RAGA_DATABASE:
@@ -1129,10 +1220,10 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
                 'tradition': raga['tradition'],
                 'confidence': score,
                 'details': details,
-                'arohana': raga['arohana'],
-                'avarohana': raga['avarohana'],
-                'vadi': swara_names.get(raga['vadi'], str(raga['vadi'])),
-                'samvadi': swara_names.get(raga['samvadi'], str(raga['samvadi'])),
+                'arohana': raga['arohana_bins'],
+                'avarohana': raga['avarohana_bins'],
+                'vadi': raga['vadi']['name'],
+                'samvadi': raga['samvadi']['name'],
                 'time': raga['time'],
                 'mood': raga['mood'],
             })
@@ -1140,17 +1231,14 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
     matches.sort(key=lambda m: m['confidence'], reverse=True)
 
     # ── Stage 4b: Pakad (phrase-level) tiebreak ───────────────────────────────
-    # When the top candidates are within 5% of each other, perform a sliding-
-    # window DTW search against the Pakad templates to differentiate ragas that
-    # share the same swara set (e.g. Yaman vs Bilawal vs Jhinjhoti vs Mand).
     if features is not None and matches:
         matches = apply_pakad_tiebreak(matches, features)
 
     # Build directional swara summary for the API response
     def _fmt(d):
         return [
-            {'swara': swara_names.get(s, str(s)), 'index': s, 'energy': round(e, 4)}
-            for s, e in sorted(d.items())
+            {'swara': swara_names[s], 'index': s, 'energy': round(e, 4)}
+            for s, e in sorted(d.items()) if 0 <= s < len(swara_names)
         ] if d else []
 
     best_match = matches[0] if matches else None
@@ -1176,9 +1264,10 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
 
     return {
         'detected_swaras': [
-            {'swara': swara_names.get(s, str(s)), 'index': s,
-             'weight': round(float(w), 4)}
+            {'swara': swara_names[s] if s < len(swara_names) else str(s),
+             'index': s, 'weight': round(float(w), 4)}
             for s, w in sorted(detected_swaras.items())
+            if s < len(swara_names)
         ],
         'arohana_swaras': _fmt(arohana_swaras),
         'avarohana_swaras': _fmt(avarohana_swaras),

@@ -701,3 +701,58 @@ history rewrite was declined; the untracked blobs linger in history.
 > Note: `test_ml_pipeline.py` (end-to-end harness generating vibrato/gamaka/breath-gap
 > clips + ghana sim) is extremely slow locally and was aborted twice during verification;
 > the same 4 stages are covered by `test_ml_quick.py` and `test_ml_audit.py`, both green.
+
+---
+
+## 23-Bin Shruti & Raga Database Correction (2026-09-21)
+
+Closes the remaining correctness gaps from F1 (naming sub-bug) and the follow-on raga
+detection quality work.  All findings below verified by fresh test runs.
+
+### What was wrong
+
+1. **SHRUTI_NAMES[9:16] were displaced and out of order.**  Bins 9–15 were Tivra Ma/Pa/Dha
+   mislabelled off-by-one, and bins 19–21 (Ni³/Ni⁴/Ni⁵) sat out of ascending pitch order.
+   The table was not a valid octave scale, so any raga using Pa/Dha/Ni pointed at the wrong
+   frequency.
+2. **Raga database was warped.**  Raga scales/arohana/avarohana were expressed in the broken
+   indices, several had wrong swara limbs (e.g. Bhairav carried komal Ni; Asavari duplicated
+   the Bhairavi limb), and vadi/samvadi were wrong — e.g. Kalyani declared Ma (shuddha) as
+   vadi and Sa as samvadi; Bhupali (has no shuddha Ma) declared samvadi Sa; Bilawal's vadi
+   was recorded as Sa instead of Dha; Mayamalavagowla labelled Carnatic while Bhairav's data
+   leaked into it.  Sindhi Bhairavi dominated every Jaccard match because it was defined with
+   12 of 15 swaras.
+3. **Tests were circular.**  Synthetic raga scales were generated from the *same* JI table the
+   detector uses, so a passing test only proved self-consistency.
+
+### What was changed
+
+| File | Change |
+|---|---|
+| `ml_engine/shruti_mapping.py` | 23-bin ascending canonical table (Sa…Sa'): 22 JI ratios in strict pitch order, names like `Shruti 2 (Re1, komal)`; identical naming format preserved for the API. |
+| `ml_engine/raga_mapping.py` | Rewritten: `SWARA_ZONES` grade→bin scheme; **44 ragas** at authentic pitches, grade-token swaras + vadi/samvadi as `{grade,name}`; derived bin sets; 10 rebuilt pakad templates in new bins; 23-bin salience + directional extractors (F0-dominance gated); zone-aware `_score_raga` with extraneous-swaras penalty and directional coverage. |
+| `ml_engine/ghana_patha.py` | Forward/reverse Ghana templates + PCP-width comments reindexed to the 23-bin table. |
+| `ml_engine/audio_processing.py`, `ml_engine/ml_engine.py` | Stale 22→23 width comments corrected (PCP width auto-derives). |
+| `test_ml_audit.py` | Rebuilt: §1 pitch tones at the canonical frequencies (octave-folding checked); §2 **independent 12-TET scales** (non-circular) with `acceptable_ragas` lists for genuinely identical-scale families (ties are honesty, not failure); §3 ghana simulation aligned to the 1 s segment grid. |
+| `test_ml_pipeline.py`, `test_ml_quick.py` | Generators rebuilt around the correct bin indices; honest 12-TET raga scales; quick suite writes `pipeline_results_quick.json` (no longer clobbers the full suite). |
+| `frontend` | `ShrutiMap.jsx` + `RagaViz.jsx` label arrays align 1:1 with the 23 bins; "22 Shruti" chart captions → 23. |
+| `scripts/fix_shruti_shift.py` | Marked **OBSOLETE** (references the removed `SWARA_MAP`; the 23-bin rewrite supersedes it). |
+
+### Verification (fresh venv, all suites)
+
+| Suite | Result |
+|---|---|
+| `manage.py check` | ✅ 0 issues |
+| `test_ml_audit.py` | ✅ **15/15** — pitch 7/7, raga 7/7 (incl. Malkauns, Shankara, Bhupali exact; major/Lydian/Bhairav/Khamaj families on acceptable lists), ghana sim valid |
+| `test_ml_quick.py` | ✅ 15/15 clips, 4/4 stages, 0 errors |
+| `test_ml_pipeline.py` | ✅ 19/19 clips, 4/4 stages, 0 errors |
+
+### Honest-testing notes
+
+- A plain 12-TET *major* scale genuinely lives in several heptatonic ragas (Bilawal, Mand,
+  Shankarabharanam, Kambhoji); the detector picks one family member — that is correct
+  behaviour, not a defect.
+- 12-TET Lydian is simultaneously Kalyani/Mechakalyani (Carnatic) and Yaman (Hindustani).
+  Yaman can win the tie because only it has a pakad template — documented in the test.
+- 12-TET renders map into the correct 22-shruti zones (all within the 25 ¢ nearest-shruti
+  tolerance), which is what makes the non-circular tests meaningful.

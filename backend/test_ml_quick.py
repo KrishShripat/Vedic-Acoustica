@@ -42,14 +42,16 @@ def make_synthetic():
     tests = [
         ("sa_261", tone(261.63, 5.0), "Sa pure tone 261.63 Hz"),
         ("pa_392", tone(392.44, 5.0), "Pa pure tone 392.44 Hz"),
-        ("ni2_436", tone(436.05, 5.0), "Ni2 pure tone 436.05 Hz"),
-        ("dha__697", tone(697.66, 5.0), "Dha_ high shruti 697.66 Hz"),
-        ("ascending", scale([0,2,4,6,9,11,13,15], 0.5), "Ascending Sa->Sa' 8 notes"),
-        ("descending", scale([15,13,11,9,6,4,2,0], 0.5), "Descending Sa'->Sa 8 notes"),
-        ("bilawal_3x", scale([0,2,4,6,9,11,13,15]*3, 0.4), "Bilawal major scale x3"),
-        ("kalyani_3x", scale([0,2,4,7,9,11,13,15]*3, 0.4), "Kalyani Lydian scale x3"),
-        ("bhairav_3x", scale([0,1,4,6,9,10,12,15]*3, 0.4), "Bhairav scale x3"),
-        ("malkauns_3x", scale([0,3,6,8,10]*3, 0.4), "Malkauns pentatonic x3"),
+        ("re2_279", tone(279.07, 5.0), "Re2 pure tone 279.07 Hz"),
+        ("ga4_331", tone(331.14, 5.0), "Ga4 pure tone 331.14 Hz"),
+        ("dha3_436", tone(436.04, 5.0), "Dha3 pure tone 436.04 Hz"),
+        ("ma1_oct_698", tone(697.66, 5.0), "697.66 Hz (2x Ma1) folds to Ma1 bin"),
+        ("ascending", scale([0,4,8,9,13,17,21,22], 0.5), "Ascending shuddha major Sa->Sa' 8 notes"),
+        ("descending", scale([22,21,17,13,9,8,4,0], 0.5), "Descending Sa'->Sa 8 notes"),
+        ("bilawal_3x", scale([0,4,8,9,13,17,21,22]*3, 0.4), "Bilawal major scale x3"),
+        ("kalyani_3x", scale([0,4,8,11,13,17,21,22]*3, 0.4), "Kalyani Lydian scale x3 (tivra Ma)"),
+        ("bhairav_3x", scale([0,1,8,9,13,14,21,22]*3, 0.4), "Bhairav scale x3 (komal Re/Dha)"),
+        ("malkauns_3x", scale([0,5,9,14,18]*3, 0.4), "Malkauns pentatonic x3"),
     ]
     files = []
     for name, audio, desc in tests:
@@ -175,8 +177,8 @@ def main():
         ok = sum(1 for s in r["stages"].values() if s.get("ok",False))
         print(f"  {ok}/4 stages OK | {r.get('total_time_s','?')}s | errors={len(r['errors'])}")
 
-    # Save
-    out = OUTPUT_DIR / "pipeline_results.json"
+    # Save (separate file so it never clobbers the full pipeline suite's output)
+    out = OUTPUT_DIR / "pipeline_results_quick.json"
     with open(out, "w") as fh:
         json.dump(results, fh, indent=2, default=str)
 

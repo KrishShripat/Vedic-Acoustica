@@ -1,9 +1,15 @@
 import Plot from 'react-plotly.js'
 
+// 1:1 with backend shruti_mapping.SHRUTI_NAMES (23 ascending bins).
+// Matches: arohana/avarohana are bin-index lists, matched_swaras are bin ints.
 const SWARA_NAMES = [
-  'Sa', 'Re1', 'Re2', 'Ga1', 'Ga2', 'Ga3',
-  'Ma1', 'Ma2', 'Ma3', 'Tivra Ma', 'Pa', 'Dha1',
-  'Dha2', 'Ni1', 'Ni2', 'Ni3',
+  'Sa', 'Re1', 'Re2', 'Re3', 'Re4',
+  'Ga1', 'Ga2', 'Ga3', 'Ga4',
+  'Ma1', 'Ma2', 'Ma3', 'Ma4',
+  'Pa',
+  'Dha1', 'Dha2', 'Dha3', 'Dha4',
+  'Ni1', 'Ni2', 'Ni3', 'Ni4',
+  'Sa’',
 ]
 
 const THRESHOLD_PCT = 40   // kept in sync with backend CONFIDENCE_THRESHOLD * 100

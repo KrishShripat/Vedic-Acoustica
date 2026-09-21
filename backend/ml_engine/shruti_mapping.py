@@ -2,55 +2,63 @@ REFERENCE_FREQ = 261.626
 
 SHRUTI_FREQUENCIES = {}
 
+# The 22 Vedic Shruti frequencies (plus the octave Sa') arranged in strictly
+# ascending pitch order.  Bins 1..22 are the 22-shruti division of the octave
+# as given by the Jyotirvidābharaṇam ratio list; 0 is Sa and 22 is the octave
+# Sa'.  Kept ascending so that bin index == ascending pitch, and so that each
+# swara grade (Re/Ga/Ma/Dha/Ni, komal or shuddha/tivra) owns a contiguous zone
+# of natural-just or Pythagorean bins.
+#
+# Cents are computed from 1200 * log2(ratio).
 SHRUTI_RATIOS = [
-    1.0,          # S1  Sa          — 261.63 Hz  (1/1)
-    256 / 243,    # S2  Re1         — 275.65 Hz  (256/243)
-    16 / 15,      # S3  Re2         — 278.44 Hz  (16/15)
-    10 / 9,       # S4  Ga1         — 290.69 Hz  (10/9)
-    9 / 8,        # S5  Ga2         — 294.33 Hz  (9/8)
-    32 / 27,      # S6  Ga3         — 310.07 Hz  (32/27)
-    5 / 4,        # S7  Ma1         — 327.03 Hz  (5/4)
-    81 / 64,      # S8  Ma2         — 331.12 Hz  (81/64)
-    4 / 3,        # S9  Ma3         — 348.83 Hz  (4/3)
-    729 / 512,    # S10 Tivra Ma    — 372.51 Hz  (729/512)
-    3 / 2,        # S11 Pa          — 392.44 Hz  (3/2)
-    128 / 81,     # S12 Dha1        — 413.43 Hz  (128/81)
-    8 / 5,        # S13 Dha2        — 418.60 Hz  (8/5)
-    5 / 3,        # S14 Ni1         — 436.05 Hz  (5/3)
-    27 / 16,      # S15 Ni2         — 441.49 Hz  (27/16)
-    16 / 9,       # S16 Ni3         — 465.11 Hz  (16/9)
-    9 / 5,        # S17 Ni4         — 470.93 Hz  (9/5)    — Daniélou canonical
-    15 / 8,       # S18 Ni5         — 490.55 Hz  (15/8)   — Daniélou canonical
-    243 / 128,    # S19 Ni6         — 496.68 Hz  (243/128)— Daniélou canonical
-    6 / 5,        # S20 Ga-Komal    — 313.95 Hz  (6/5)    — replaces 2/1 (octave Sa’)
-    27 / 20,      # S21 Ma-Komal    — 353.20 Hz  (27/20)  — replaces 8/3 (above octave)
-    45 / 32,      # S22 Tivra Ma2   — 367.79 Hz  (45/32)  — replaces 3   (above octave)
-    2 / 1,        # S23 Sa’         — 523.25 Hz  (2/1)    — octave Sa’ (NEW)
+    1.0,          # S1  Sa           — 261.63 Hz  (1/1)        0.0 ¢
+    256 / 243,    # S2  Re1  komal   — 275.65 Hz  (256/243)    90.2 ¢
+    16 / 15,      # S3  Re2  komal   — 279.07 Hz  (16/15)      111.7 ¢
+    10 / 9,       # S4  Re3  shuddha — 290.70 Hz  (10/9)       182.4 ¢
+    9 / 8,        # S5  Re4  shuddha — 294.33 Hz  (9/8)        203.9 ¢
+    32 / 27,      # S6  Ga1  komal   — 310.07 Hz  (32/27)      294.1 ¢
+    6 / 5,        # S7  Ga2  komal   — 313.95 Hz  (6/5)        315.6 ¢
+    5 / 4,        # S8  Ga3  shuddha — 327.03 Hz  (5/4)        386.3 ¢
+    81 / 64,      # S9  Ga4  shuddha — 331.14 Hz  (81/64)      407.8 ¢
+    4 / 3,        # S10 Ma1  shuddha — 348.84 Hz  (4/3)        498.0 ¢
+    27 / 20,      # S11 Ma2  tivra   — 353.20 Hz  (27/20 1.35) 519.6 ¢   — thick (large) tivra Ma
+    45 / 32,      # S12 Ma3  tivra   — 367.91 Hz  (45/32)      590.2 ¢   — tritone, ~12-TET Ma♯
+    729 / 512,    # S13 Ma4  tivra   — 372.51 Hz  (729/512)    611.7 ¢   — Pythagorean tritone
+    3 / 2,        # S14 Pa           — 392.44 Hz  (3/2)        702.0 ¢
+    128 / 81,     # S15 Dha1 komal   — 413.43 Hz  (128/81)     792.2 ¢
+    8 / 5,        # S16 Dha2 komal   — 418.60 Hz  (8/5)        813.7 ¢
+    5 / 3,        # S17 Dha3 shuddha — 436.04 Hz  (5/3)        884.4 ¢
+    27 / 16,      # S18 Dha4 shuddha — 441.49 Hz  (27/16)      905.9 ¢
+    16 / 9,       # S19 Ni1 komal    — 465.11 Hz  (16/9)       996.1 ¢
+    9 / 5,        # S20 Ni2 komal    — 470.93 Hz  (9/5)        1017.6 ¢
+    15 / 8,       # S21 Ni3 shuddha  — 490.55 Hz  (15/8)       1088.3 ¢
+    243 / 128,    # S22 Ni4 shuddha  — 496.68 Hz  (243/128)    1109.8 ¢   — ~12-TET major 7th
+    2 / 1,        # S23 Sa’ octave   — 523.25 Hz  (2/1)        1200.0 ¢
 ]
 
 SHRUTI_NAMES = [
     'Shruti 1 (Sa)',
-    'Shruti 2 (Re1)',
-    'Shruti 3 (Re2)',
-    'Shruti 4 (Ga1)',
-    'Shruti 5 (Ga2)',
-    'Shruti 6 (Ga3)',
-    'Shruti 7 (Ma1)',
-    'Shruti 8 (Ma2)',
-    'Shruti 9 (Ma3)',
-    'Shruti 10 (Tivra Ma)',
-    'Shruti 11 (Pa)',
-    'Shruti 12 (Dha1)',
-    'Shruti 13 (Dha2)',
-    'Shruti 14 (Ni1)',
-    'Shruti 15 (Ni2)',
-    'Shruti 16 (Ni3)',
-    'Shruti 17 (Ni4)',
-    'Shruti 18 (Ni5)',
-    'Shruti 19 (Ni6)',
-    'Shruti 20 (Ga-Komal)',
-    'Shruti 21 (Ma-Komal)',
-    'Shruti 22 (Tivra Ma2)',
+    'Shruti 2 (Re1, komal)',
+    'Shruti 3 (Re2, komal)',
+    'Shruti 4 (Re3, shuddha)',
+    'Shruti 5 (Re4, shuddha)',
+    'Shruti 6 (Ga1, komal)',
+    'Shruti 7 (Ga2, komal)',
+    'Shruti 8 (Ga3, shuddha)',
+    'Shruti 9 (Ga4, shuddha)',
+    'Shruti 10 (Ma1, shuddha)',
+    'Shruti 11 (Ma2, tivra)',
+    'Shruti 12 (Ma3, tivra)',
+    'Shruti 13 (Ma4, tivra)',
+    'Shruti 14 (Pa)',
+    'Shruti 15 (Dha1, komal)',
+    'Shruti 16 (Dha2, komal)',
+    'Shruti 17 (Dha3, shuddha)',
+    'Shruti 18 (Dha4, shuddha)',
+    'Shruti 19 (Ni1, komal)',
+    'Shruti 20 (Ni2, komal)',
+    'Shruti 21 (Ni3, shuddha)',
+    'Shruti 22 (Ni4, shuddha)',
     'Shruti 23 (Sa’)',
 ]
 
@@ -64,10 +72,10 @@ def assign_shruti(centroid, features, cluster_frames=None):
     portion of the K-Means cluster centroid.
 
     The centroid vector is laid out as [13 MFCC coefficients | 22 chroma bins]
-    so ``centroid[13:]`` is the 22-element PCP sub-vector.  The argmax of that
-    sub-vector is the dominant Shruti bin — a direct, musically meaningful
-    assignment that replaces the previous invalid formula which treated MFCC-1
-    as a semitone offset from C4.
+    so ``centroid[13:]`` is the 22-element sub-vector carrying the pitch info.
+    The argmax of that sub-vector is the dominant Shruti bin — a direct,
+    musically meaningful assignment that replaces the previous invalid formula
+    which treated MFCC-1 as a semitone offset from C4.
     """
     import numpy as np
     from .audio_processing import _SHRUTI_FREQS_ARR, _THRESHOLD_CENTS

@@ -1,11 +1,14 @@
 import { useState, useMemo } from 'react'
 import Plot from 'react-plotly.js'
 
+// 1:1 with backend ml_engine/shruti_mapping.py::SHRUTI_NAMES (23 ascending bins)
 const SHRUTI_NAMES = [
-  'Sa', 'Re¹', 'Re²', 'Ga¹', 'Ga²', 'Ga³',
-  'Ma¹', 'Ma²', 'Ma³', 'Tivra Ma', 'Pa', 'Dha¹',
-  'Dha²', 'Ni¹', 'Ni²', 'Ni³', 'Ni⁴', 'Ni⁵',
-  'Ni⁶', 'Ga-Komal', 'Ma-Komal', 'Tivra Ma²',
+  'Sa', 'Re¹', 'Re²', 'Re³', 'Re⁴',
+  'Ga¹', 'Ga²', 'Ga³', 'Ga⁴',
+  'Ma¹', 'Ma²', 'Ma³', 'Ma⁴',
+  'Pa',
+  'Dha¹', 'Dha²', 'Dha³', 'Dha⁴',
+  'Ni¹', 'Ni²', 'Ni³', 'Ni⁴',
   'Sa’',
 ]
 

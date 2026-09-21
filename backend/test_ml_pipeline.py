@@ -54,9 +54,9 @@ def generate_sine_tone(freq_hz, duration=5.0, sr=SR):
 
 
 def generate_ascending_scale(sr=SR):
-    """Generate an ascending scale: Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa' (12s)."""
-    # Correct SHRUTI_NAMES indices: Pa=10, Dha2=12, Ni2=14, Sa'=22
-    shruti_indices = [0, 2, 4, 6, 10, 12, 14, 22]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
+    """Generate an ascending shuddha major scale: Sa Re Ga Ma Pa Dha Ni Sa' (12s)."""
+    # New 23-bin indices: Sa=0 Re=4 Ga=8 Ma=9 Pa=13 Dha=17 Ni=21 Sa'=22
+    shruti_indices = [0, 4, 8, 9, 13, 17, 21, 22]
     note_dur = 1.5
     waves = []
     for idx in shruti_indices:
@@ -66,8 +66,8 @@ def generate_ascending_scale(sr=SR):
 
 
 def generate_descending_scale(sr=SR):
-    """Generate a descending scale: Sa' Ni2 Dha2 Pa Ma1 Ga2 Re2 Sa (12s)."""
-    shruti_indices = [22, 14, 12, 10, 6, 4, 2, 0]  # Sa'=22 Ni2=14 Dha2=12 Pa=10 Ma1 Ga2 Re2 Sa
+    """Generate a descending shuddha major scale: Sa' Ni Dha Pa Ma Ga Re Sa (12s)."""
+    shruti_indices = [22, 21, 17, 13, 9, 8, 4, 0]
     note_dur = 1.5
     waves = []
     for idx in shruti_indices:
@@ -78,12 +78,12 @@ def generate_descending_scale(sr=SR):
 
 def generate_ghana_pattern(sr=SR):
     """
-    Simulate Ghana Patha: forward-reverse-forward-reverse-forward (20s).
-    Uses ascending/descending sine sequences with pitch glides.
+    Simulate Ghana Patha: forward-reverse-forward-reverse-forward (each with 0.4s notes).
+    Uses the shuddha Sa-Re-Ga-Ma-Pa limb of the 23-bin table.
     """
     cycle_parts = ['fwd', 'rev', 'fwd', 'rev', 'fwd']
-    ascending = [0, 2, 4, 6, 10]     # Sa Re2 Ga2 Ma1 Pa (Pa=10)
-    descending = [10, 6, 4, 2, 0]    # Pa Ma1 Ga2 Re2 Sa (Pa=10)
+    ascending = [0, 4, 8, 9, 13]     # Sa Re Ga Ma Pa
+    descending = [13, 9, 8, 4, 0]    # Pa Ma Ga Re Sa
 
     all_waves = []
     for part in cycle_parts:
@@ -97,11 +97,10 @@ def generate_ghana_pattern(sr=SR):
 
 def generate_bilawal_scale(sr=SR):
     """
-    Bilawal-like pattern (major scale): Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'
-    with repeated phrases — 15s.
-    Pa=10, Dha2=12, Ni2=14, Sa'=22
+    Bilawal-like pattern (major scale): Sa Re Ga Ma Pa Dha Ni Sa'
+    with repeated phrases — 15s.  New 23-bin: Re=4 Ga=8 Ma=9 Pa=13 Dha=17 Ni=21.
     """
-    notes = [0, 2, 4, 6, 10, 12, 14, 22]
+    notes = [0, 4, 8, 9, 13, 17, 21, 22]
     waves = []
     for _ in range(3):  # repeat 3 times
         for idx in notes:
@@ -112,10 +111,10 @@ def generate_bilawal_scale(sr=SR):
 
 def generate_kalyani_scale(sr=SR):
     """
-    Kalyani-like pattern (Carnatic Lydian): Sa Re2 Ga2 Ma2 Pa Dha2 Ni2 Sa'
-    RAGA_DATABASE Kalyani swaras: [0,2,4,7,10,12,14] — Ma2=7, Pa=10, Dha2=12, Ni2=14, Sa'=22
+    Kalyani-like pattern (Carnatic Lydian): Sa Re Ga Ma-t Pa Dha Ni Sa'
+    New 23-bin: Re=4 Ga=8 Ma-t=11 (45/32) Pa=13 Dha=17 Ni=21 Sa'=22.
     """
-    notes = [0, 2, 4, 7, 10, 12, 14, 22]
+    notes = [0, 4, 8, 11, 13, 17, 21, 22]
     waves = []
     for _ in range(3):
         for idx in notes:
@@ -126,10 +125,10 @@ def generate_kalyani_scale(sr=SR):
 
 def generate_bhairav_scale(sr=SR):
     """
-    Bhairav-like: Sa Re1 Ga2 Ma1 Pa Dha1 Ni1 Sa'
-    RAGA_DATABASE Bhairav swaras: [0,1,4,6,10,11,13] — Pa=10, Dha1=11, Ni1=13, Sa'=22
+    Bhairav-like: Sa Re-k Ga Ma Pa Dha-k Ni
+    New 23-bin: Re-k=1 (256/243) Ga=8 Ma=9 Pa=13 Dha-k=14 (128/81) Ni=21 Sa'=22.
     """
-    notes = [0, 1, 4, 6, 10, 11, 13, 22]
+    notes = [0, 1, 8, 9, 13, 14, 21, 22]
     waves = []
     for _ in range(3):
         for idx in notes:
@@ -181,7 +180,7 @@ def generate_vibrato_scale(sr=SR):
     Bilawal-like scale where every note is delivered with 6.5 Hz vibrato.
     Tests that pYIN still assigns the correct Shruti despite continuous FM.
     """
-    notes = [0, 2, 4, 6, 10, 12, 14, 22]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
+    notes = [0, 4, 8, 9, 13, 17, 21, 22]  # Sa Re Ga Ma Pa Dha Ni Sa' (shuddha major)
     waves = []
     for idx in notes:
         freq = SHRUTI_FREQUENCIES[SHRUTI_NAMES[idx]]
@@ -218,7 +217,7 @@ def generate_gamaka_scale(sr=SR):
     producing continuous pitch trajectories instead of discrete steps.
     Exercises the segmentation logic and pYIN’s ability to track glides.
     """
-    note_indices = [0, 2, 4, 6, 10, 12, 14, 22]  # Sa Re2 Ga2 Ma1 Pa Dha2 Ni2 Sa'  (Pa=10)
+    note_indices = [0, 4, 8, 9, 13, 17, 21, 22]  # Sa Re Ga Ma Pa Dha Ni Sa'
     hold_dur = 0.8
     slide_dur = 0.3
     waves = []
@@ -241,8 +240,8 @@ def generate_breath_gap_scale(sr=SR,
     where the singer breathes.  These unvoiced frames should be correctly
     marked by pYIN as NaN and not misidentified as spurious Shrutis.
     """
-    # Ascending then descending: Pa=10, Dha2=12, Ni2=14, Sa'=22
-    note_indices = [0, 2, 4, 6, 10, 12, 14, 22, 14, 12, 10, 6, 4, 2, 0]
+    # Ascending then descending shuddha major: Sa Re Ga Ma Pa Dha Ni Sa' | rev
+    note_indices = [0, 4, 8, 9, 13, 17, 21, 22, 21, 17, 13, 9, 8, 4, 0]
     waves = []
     for idx in note_indices:
         freq = SHRUTI_FREQUENCIES[SHRUTI_NAMES[idx]]
@@ -260,11 +259,13 @@ def generate_all_synthetic():
     tests = [
         ("sa_pure_261hz", generate_sine_tone(261.63, 5.0), "Sa (261.63 Hz) — pitch ground truth"),
         ("pa_pure_392hz", generate_sine_tone(392.44, 5.0), "Pa (392.44 Hz) — pitch ground truth"),
-        ("dha1_pure_413hz", generate_sine_tone(413.43, 5.0), "Dha1 (413.43 Hz) — test Dha1 detection"),
-        ("high_ni_697hz", generate_sine_tone(697.66, 5.0), "Dha_ (697.66 Hz) — high Shruti"),
-        ("ascending_scale", generate_ascending_scale(), "8-note ascending scale — Sa→Sa'"),
-        ("descending_scale", generate_descending_scale(), "8-note descending scale — Sa'→Sa"),
-        ("ghana_pattern_sim", generate_ghana_pattern(), "Ghana Patha simulation (20s)"),
+        ("re2_pure_279hz", generate_sine_tone(279.07, 5.0), "Re2 (279.07 Hz) — komal Re limb"),
+        ("ga4_pure_331hz", generate_sine_tone(331.14, 5.0), "Ga4 (331.14 Hz) — shuddha Ga limb"),
+        ("dha1_pure_413hz", generate_sine_tone(413.43, 5.0), "Dha1 (413.43 Hz) — komal Dha limb"),
+        ("ma1_oct_698hz", generate_sine_tone(697.66, 5.0), "697.66 Hz (2×Ma1) — folds to Ma1 bin via octave-invariant PCP"),
+        ("ascending_scale", generate_ascending_scale(), "8-note ascending shuddha major scale — Sa→Sa'"),
+        ("descending_scale", generate_descending_scale(), "8-note descending shuddha major scale — Sa'→Sa"),
+        ("ghana_pattern_sim", generate_ghana_pattern(), "Ghana Patha simulation (12s)"),
         ("bilawal_scale", generate_bilawal_scale(), "Bilawal-like major scale ×3"),
         ("kalyani_scale", generate_kalyani_scale(), "Kalyani-like Lydian scale ×3"),
         ("bhairav_scale", generate_bhairav_scale(), "Bhairav-like scale ×3"),

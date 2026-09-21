@@ -173,7 +173,9 @@ Because real labelled Vedic recordings don't exist publicly, we **generate audio
 | `breath_gap_scale.wav`, `silence_5s.wav` | silence / gaps mixed in | unvoiced handling + near-silence rejection works |
 | `vibrato_scale.wav`, `gamaka_scale.wav` | ornaments (pitch oscillation) | robustness against real vocal ornaments |
 
-Automated suites in the repo: `test_ml_quick.py` (13 clips × 4 stages), `test_ml_pipeline.py` (vibrato/gamaka/breath-gap), `test_ml_audit.py` — all run in CI (`Backend (Django + ML)` job).
+Automated suites in the repo: `test_ml_quick.py` (15 synthetic clips + real audio × 4 stages),
+`test_ml_pipeline.py` (vibrato/gamaka/breath-gap), `test_ml_audit.py` (15/15, non-circular
+12-TET ground truth) — all run in CI (`Backend (Django + ML)` job).
 
 ### Layer 3 — Deliberate thresholds keep garbage out
 | Guard | Value | Effect |

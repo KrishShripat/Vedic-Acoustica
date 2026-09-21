@@ -355,7 +355,7 @@ function App() {
           </div>
           <div className="grid">
             <div className="card" id="chart-shruti-map">
-              <h2>22 Shruti Frequency Map</h2>
+              <h2>23 Shruti Frequency Map</h2>
               <ShrutiMap data={analysis} onReady={markChartReady} />
             </div>
             <div className="card" id="chart-ghana-path">
