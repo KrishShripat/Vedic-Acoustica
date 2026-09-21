@@ -37,7 +37,7 @@ const MICROTONE_DEMOS = [
     centsGap: '21.5¢ Pramana Shruti',
     first: 'Re¹',
     second: 'Re²',
-    desc: 'Audition the 21.5¢ gap between Re¹ (275.65 Hz) and Re² (279.07 Hz). Standard 12-TET locks this into an artificial 100¢ semitone, missing the precise Vedic intonation.',
+    desc: 'Audition the 21.5¢ gap between Re¹ (275.65 Hz) and Re² (279.07 Hz). Standard 12-TET locks this into an artificial 100¢ semitone, completely missing the precise Vedic intonation.',
   },
   {
     id: 'ga',
@@ -45,7 +45,7 @@ const MICROTONE_DEMOS = [
     centsGap: '21.5¢ Microtone Gap',
     first: 'Ga³',
     second: 'Ga⁴',
-    desc: 'Compare Antara Gandhar (327.03 Hz, 5/4 ratio) with Chyuta Madhyam (331.14 Hz, 81/64 ratio). Notice the subtle brightening of the harmonic overtone.',
+    desc: 'Compare Antara Gandhar (327.03 Hz, 5/4 ratio) with Chyuta Madhyam (331.14 Hz, 81/64 ratio). Notice how natural Just Intonation creates harmonic purity over equal temperament.',
   },
   {
     id: 'ma',
@@ -58,6 +58,9 @@ const MICROTONE_DEMOS = [
 ]
 
 export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
+  // Page mode: 'explorer' (default public landing & lab) or 'auth' (dedicated login/register view)
+  const [viewMode, setViewMode] = useState('explorer')
+
   // Auth Form State
   const [tab, setTab] = useState('login') // 'login' | 'register'
   const [username, setUsername] = useState('')
@@ -157,7 +160,7 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
       const height = canvas.height
       ctx.clearRect(0, 0, width, height)
 
-      // Center baseline
+      // Center baseline & subtle grid
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -226,16 +229,16 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
     }
   }, [])
 
-  // ── Swara Category Grouping ────────────────────────────────────────────────
+  // ── Swara Category Grouping (8 Octave Columns) ────────────────────────────
   const swaraGroups = useMemo(() => [
-    { key: 'Sa', label: 'Sa', color: '#e94560', notes: SHRUTIS.filter(s => s.swara === 'Sa' && s.name === 'Sa') },
-    { key: 'Re', label: 'Re', color: '#ff8c42', notes: SHRUTIS.filter(s => s.swara === 'Re') },
-    { key: 'Ga', label: 'Ga', color: '#ffd166', notes: SHRUTIS.filter(s => s.swara === 'Ga') },
-    { key: 'Ma', label: 'Ma', color: '#06d6a0', notes: SHRUTIS.filter(s => s.swara === 'Ma') },
-    { key: 'Pa', label: 'Pa', color: '#118ab2', notes: SHRUTIS.filter(s => s.swara === 'Pa') },
-    { key: 'Dha', label: 'Dha', color: '#8338ec', notes: SHRUTIS.filter(s => s.swara === 'Dha') },
-    { key: 'Ni', label: 'Ni', color: '#ff006e', notes: SHRUTIS.filter(s => s.swara === 'Ni') },
-    { key: 'Sa’', label: "Sa’", color: '#e94560', notes: SHRUTIS.filter(s => s.name === "Sa’") },
+    { key: 'Sa', label: 'Sa (Tonic)', color: '#e94560', notes: SHRUTIS.filter(s => s.swara === 'Sa' && s.name === 'Sa') },
+    { key: 'Re', label: 'Re (Rishabh)', color: '#ff8c42', notes: SHRUTIS.filter(s => s.swara === 'Re') },
+    { key: 'Ga', label: 'Ga (Gandhar)', color: '#ffd166', notes: SHRUTIS.filter(s => s.swara === 'Ga') },
+    { key: 'Ma', label: 'Ma (Madhyam)', color: '#06d6a0', notes: SHRUTIS.filter(s => s.swara === 'Ma') },
+    { key: 'Pa', label: 'Pa (Pancham)', color: '#118ab2', notes: SHRUTIS.filter(s => s.swara === 'Pa') },
+    { key: 'Dha', label: 'Dha (Dhaivat)', color: '#8338ec', notes: SHRUTIS.filter(s => s.swara === 'Dha') },
+    { key: 'Ni', label: 'Ni (Nishad)', color: '#ff006e', notes: SHRUTIS.filter(s => s.swara === 'Ni') },
+    { key: 'Sa’', label: "Sa’ (Octave)", color: '#e94560', notes: SHRUTIS.filter(s => s.name === "Sa’") },
   ], [])
 
   // ── Auth Form Handlers ─────────────────────────────────────────────────────
@@ -272,130 +275,224 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
     }
   }
 
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id)
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
-    <div className="auth-page">
-      {/* Top Application Header matching inside layout exactly */}
-      <div className="auth-header">
-        <h1>Vedic Acoustica</h1>
-        <p className="subtitle">
-          Microtonal Voice Analysis &middot; 22 Shrutis &middot; Raga Detection &middot; Ghana Patha Validation
-        </p>
-
-        <div className="status-bar">
-          <span className="dot"></span>
-          {window.location.hostname === 'localhost' ? 'Backend: localhost:8000 (Connected)' : '● Backend Connected'}
-          <span className="auth-portal-badge">Research Portal v2.0 &middot; Microtonal Acoustic Gateway</span>
+    <div className="auth-portal-root">
+      {/* ── Top Navigation Bar ────────────────────────────────────────────── */}
+      <header className="portal-navbar">
+        <div className="portal-nav-brand">
+          <div className="portal-logo-symbol">🕉️</div>
+          <div>
+            <h1 className="portal-nav-title">Vedic Acoustica</h1>
+            <span className="portal-nav-tagline">Microtonal Voice Intelligence</span>
+          </div>
         </div>
-      </div>
 
-      {/* Main Expanded 2-Column Desktop Grid */}
-      <div className="auth-grid">
-        {/* ── LEFT COLUMN: Interactive Acoustic Lab & 22-Shruti Synthesizer ── */}
-        <div className="auth-col-left">
-          <div className="card acoustic-lab-card">
-            <div className="lab-header">
-              <h2>22-Shruti Microtonal Acoustic Explorer</h2>
-              <span className="live-badge">⚡ Real-time Web Audio</span>
+        <nav className="portal-nav-links" aria-label="Portal Navigation">
+          {viewMode === 'explorer' ? (
+            <>
+              <button type="button" className="nav-link-btn" onClick={() => scrollToSection('shruti-studio')}>
+                🔬 22-Shruti Lab
+              </button>
+              <button type="button" className="nav-link-btn" onClick={() => scrollToSection('methodology')}>
+                📊 Acoustic Engine
+              </button>
+              <button type="button" className="nav-guest-btn" onClick={onGuest}>
+                ⚡ Explore Live Demo
+              </button>
+              <button type="button" className="btn btn-secondary nav-signin-btn" onClick={() => setViewMode('auth')}>
+                🔐 Sign In
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="nav-link-btn" onClick={() => setViewMode('explorer')}>
+                &larr; Back to Interactive Explorer
+              </button>
+              <button type="button" className="nav-guest-btn" onClick={onGuest}>
+                ⚡ Instant Guest Demo
+              </button>
+            </>
+          )}
+        </nav>
+      </header>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          VIEW 1: Full-Width Acoustic Research Explorer (Default Landing Page)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {viewMode === 'explorer' && (
+        <main className="explorer-view">
+          {/* Hero Section */}
+          <section className="hero-section">
+            <div className="hero-badge-row">
+              <span className="hero-status-pill">
+                <span className="dot" />
+                {window.location.hostname === 'localhost' ? 'Local Engine Connected (localhost:8000)' : 'Live Backend Connected'}
+              </span>
+              <span className="hero-meta-badge">Computational Musicology &middot; Rigveda &amp; Samaveda</span>
             </div>
-            <p className="lab-desc">
-              Vedic chanting relies on natural harmonic Just Intonation ratios rather than Western 12-TET equal temperament.
-              Tap any Swara below to play its exact frequency and inspect its acoustic sinusoidal waveform.
+
+            <h2 className="hero-headline">
+              Scientific Microtonal Audio Intelligence <br />
+              <span className="hero-gradient-text">for Vedic Chant Recitation</span>
+            </h2>
+
+            <p className="hero-subtext">
+              Vedic chanting relies on natural harmonic Just Intonation intervals (22 Shrutis) rather than Western 12-TET equal temperament.
+              Vedic Acoustica continuously extracts fundamental frequencies (pYIN F0), constructs 23-bin pitch class profiles, and mathematically validates chanting permutation invariance using Dynamic Time Warping.
             </p>
 
-            {/* Live Tuner & Oscilloscope Card */}
-            <div className="tuner-monitor" style={{ borderColor: activeShruti?.color }}>
-              <div className="tuner-top-row">
-                <div className="tuner-note-info">
-                  <span className="tuner-swara-tag" style={{ background: activeShruti?.color }}>
+            <div className="hero-cta-row">
+              <button type="button" className="btn hero-primary-cta" onClick={onGuest}>
+                <span>⚡ Launch Live Research Dashboard (Instant Demo)</span>
+              </button>
+              <button type="button" className="btn btn-secondary hero-secondary-cta" onClick={() => scrollToSection('shruti-studio')}>
+                <span>🎹 Audition 22 Shrutis Live</span>
+              </button>
+              <button type="button" className="nav-link-subtle" onClick={() => setViewMode('auth')}>
+                Researcher Sign In &rarr;
+              </button>
+            </div>
+
+            <div className="hero-tech-pills">
+              <span>Python 3.12</span>
+              <span className="pill-dot">&bull;</span>
+              <span>Librosa pYIN F0</span>
+              <span className="pill-dot">&bull;</span>
+              <span>22-Shruti Just Intonation</span>
+              <span className="pill-dot">&bull;</span>
+              <span>Ghana Patha DTW</span>
+              <span className="pill-dot">&bull;</span>
+              <span>44-Raga Classifier</span>
+            </div>
+          </section>
+
+          {/* Full-Width Interactive 22-Shruti Acoustic Studio */}
+          <section id="shruti-studio" className="card studio-section">
+            <div className="studio-header">
+              <div>
+                <span className="section-eyebrow">Interactive Acoustic Sandbox</span>
+                <h3 className="section-title">22-Shruti Microtonal Synthesizer &amp; Oscilloscope</h3>
+              </div>
+              <span className="live-pill">⚡ Web Audio Synthesis (No Pop/Click ADSR)</span>
+            </div>
+
+            <p className="studio-desc">
+              Tap any Swara in the octave keyboard below to generate its pure harmonic tone at reference C4 tonic (261.63 Hz) and inspect its real-time sinusoidal waveform.
+            </p>
+
+            {/* Tuner Monitor & Real-Time Oscilloscope */}
+            <div className="studio-tuner-card" style={{ borderColor: activeShruti?.color }}>
+              <div className="studio-tuner-metrics">
+                <div className="active-swara-box">
+                  <div className="swara-big-badge" style={{ background: activeShruti?.color }}>
                     {activeShruti?.name}
-                  </span>
-                  <div>
-                    <h3 className="tuner-title">{activeShruti?.title}</h3>
-                    <span className="tuner-ratio-pill">Ratio: {activeShruti?.ratio}</span>
+                  </div>
+                  <div className="swara-text-details">
+                    <h4 className="swara-full-name">{activeShruti?.title}</h4>
+                    <div className="swara-spec-row">
+                      <span className="spec-tag">Ratio: <strong>{activeShruti?.ratio}</strong></span>
+                      <span className="spec-tag">Category: <strong>{activeShruti?.swara}</strong></span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="tuner-readout-metrics">
-                  <div className="metric-box">
-                    <span className="metric-lbl">Frequency</span>
-                    <span className="metric-num">{activeShruti?.freq.toFixed(2)} <span className="metric-unit">Hz</span></span>
+                <div className="tuner-readout-deck">
+                  <div className="deck-metric">
+                    <span className="deck-metric-lbl">Frequency</span>
+                    <span className="deck-metric-val">{activeShruti?.freq.toFixed(2)} <span className="deck-unit">Hz</span></span>
                   </div>
-                  <div className="metric-box">
-                    <span className="metric-lbl">Microtone Cents</span>
-                    <span className="metric-num">{activeShruti?.cents.toFixed(1)} <span className="metric-unit">&cent;</span></span>
+                  <div className="deck-metric">
+                    <span className="deck-metric-lbl">Deviation (Cents)</span>
+                    <span className="deck-metric-val">{activeShruti?.cents.toFixed(1)} <span className="deck-unit">&cent;</span></span>
+                  </div>
+                  <div className="deck-metric">
+                    <span className="deck-metric-lbl">Equal Temperament Gap</span>
+                    <span className="deck-metric-val">
+                      {(activeShruti?.cents - Math.round(activeShruti?.cents / 100) * 100).toFixed(1)} <span className="deck-unit">&cent;</span>
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Real-time Oscilloscope Display */}
-              <div className="oscilloscope-wrap">
-                <canvas ref={canvasRef} width={500} height={70} className="oscilloscope-canvas" />
-                <span className="oscilloscope-label">
-                  {isPlaying ? '● Audio Active (Sine Wave)' : 'Ambient Standby'}
-                </span>
+              <div className="studio-oscilloscope">
+                <canvas ref={canvasRef} width={800} height={80} className="studio-canvas" />
+                <div className="oscilloscope-statusbar">
+                  <span className="osc-indicator" style={{ color: activeShruti?.color }}>
+                    {isPlaying ? '● Live Acoustic Sine Wave Generating' : 'Standby Sine Baseline'}
+                  </span>
+                  <span className="osc-sr">Sampling Rate: 44.1 kHz &middot; FFT Size: 1024</span>
+                </div>
               </div>
             </div>
 
-            {/* Microtone Comparison Quick-Audition Bar */}
-            <div className="microtone-audition-section">
-              <div className="audition-header">
-                <span className="audition-title">🔬 Microtone Audition Tests (Hear the Vedic Difference):</span>
+            {/* Microtone Audition Testing Deck */}
+            <div className="audition-deck-card">
+              <div className="deck-header">
+                <span className="deck-title">🔬 Microtone Audition Deck &mdash; Listen to the Vedic Difference:</span>
               </div>
-              <div className="audition-buttons">
+              <div className="deck-buttons-row">
                 {MICROTONE_DEMOS.map(demo => {
                   const isSelected = activeDemo?.id === demo.id
                   return (
                     <button
                       key={demo.id}
                       type="button"
-                      className={`audition-btn ${isSelected ? 'active' : ''}`}
+                      className={`deck-audition-btn ${isSelected ? 'active' : ''}`}
                       onClick={() => handleAuditionDemo(demo)}
                     >
-                      <span className="audition-btn-icon">▶</span>
-                      <span className="audition-btn-name">{demo.label}</span>
-                      <span className="audition-btn-gap">({demo.centsGap})</span>
+                      <span className="deck-play-icon">▶</span>
+                      <span className="deck-btn-label">{demo.label}</span>
+                      <span className="deck-btn-gap">({demo.centsGap})</span>
                     </button>
                   )
                 })}
               </div>
               {activeDemo && (
-                <div className="audition-insight-box">
-                  <p className="audition-insight-text">
+                <div className="deck-explanation">
+                  <p>
                     <strong>{activeDemo.label} ({activeDemo.centsGap}):</strong> {activeDemo.desc}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* 22-Shruti Swara Groups Keyboard */}
-            <div className="swara-groups-container">
-              <div className="swara-groups-header">
-                <span className="swara-groups-title">Canonical 23-Bin Shruti Keyboard (C4 Tonic = 261.63 Hz):</span>
+            {/* Full-Width 8-Column Octave Keyboard */}
+            <div className="full-keyboard-container">
+              <div className="keyboard-header-row">
+                <span className="keyboard-title">Full 23-Bin Octave Scale (C4 to C5):</span>
+                <span className="keyboard-hint">Click any note to play tone</span>
               </div>
 
-              <div className="swara-groups-grid">
+              <div className="octave-columns-grid">
                 {swaraGroups.map(group => (
-                  <div key={group.key} className="swara-group-col">
-                    <span className="swara-group-tag" style={{ color: group.color, borderColor: group.color }}>
+                  <div key={group.key} className="octave-column">
+                    <div className="octave-col-header" style={{ color: group.color, borderBottomColor: group.color }}>
                       {group.label}
-                    </span>
-                    <div className="swara-buttons-stack">
+                    </div>
+                    <div className="octave-col-buttons">
                       {group.notes.map(s => {
                         const isCurrent = activeShruti?.name === s.name
                         return (
                           <button
                             key={s.name}
                             type="button"
-                            className={`shruti-btn ${isCurrent ? 'active' : ''}`}
+                            className={`keyboard-key-btn ${isCurrent ? 'active' : ''}`}
                             style={{
-                              '--shruti-col': s.color,
+                              '--key-col': s.color,
                               borderColor: isCurrent ? s.color : 'rgba(255,255,255,0.12)',
                             }}
                             onClick={() => handleSelectShruti(s)}
                             title={`${s.name} (${s.title}): ${s.freq} Hz, ${s.ratio}, ${s.cents}¢`}
                           >
-                            <span className="shruti-btn-name">{s.name}</span>
-                            <span className="shruti-btn-freq">{Math.round(s.freq)} Hz</span>
+                            <span className="key-swara-name">{s.name}</span>
+                            <span className="key-swara-freq">{s.freq.toFixed(1)} Hz</span>
+                            <span className="key-swara-ratio">{s.ratio}</span>
                           </button>
                         )
                       })}
@@ -404,78 +501,104 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
                 ))}
               </div>
             </div>
+          </section>
 
-            {/* Research Architecture Highlights Preview */}
-            <div className="pipeline-preview-row">
-              <div className="pipeline-pill">
-                <span className="pipeline-icon">🎙️</span>
-                <div>
-                  <strong>pYIN Pitch Tracking</strong>
-                  <p>Probabilistic YIN F0 extraction with sub-semitone pitch estimation</p>
-                </div>
-              </div>
-              <div className="pipeline-pill">
-                <span className="pipeline-icon">📊</span>
-                <div>
-                  <strong>22-Shruti PCP</strong>
-                  <p>Harmonic energy mapped into 23 non-linear Just Intonation bins</p>
-                </div>
-              </div>
-              <div className="pipeline-pill">
-                <span className="pipeline-icon">⚡</span>
-                <div>
-                  <strong>Ghana Patha DTW</strong>
-                  <p>Dynamic Time Warping for Vedic chant permutation validation</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── RIGHT COLUMN: Access Gateway & Authentication ── */}
-        <div className="auth-col-right">
-          {/* Prominent Instant Guest Pass Card */}
-          <div className="card guest-access-card">
-            <div className="guest-badge-row">
-              <span className="guest-pass-tag">⚡ Immediate Evaluator Pass</span>
-              <span className="guest-badge-free">No Credentials Needed</span>
+          {/* Computational Acoustic Methodology (3 Pillars) */}
+          <section id="methodology" className="methodology-section">
+            <div className="methodology-header">
+              <span className="section-eyebrow">Scientific Foundation</span>
+              <h3 className="section-title">The Three Algorithmic Pillars of Vedic Acoustica</h3>
+              <p className="section-subtitle">
+                How our pipeline transforms continuous voice recordings into quantifiable acoustic invariants.
+              </p>
             </div>
 
-            <h2 className="guest-card-title">Explore Live Research Dashboard</h2>
-            <p className="guest-card-desc">
-              Jump straight into the platform with 3 pre-loaded Vedic chant recordings and pre-computed analytical models:
-            </p>
+            <div className="pillars-grid">
+              <div className="card pillar-card">
+                <div className="pillar-icon-badge">🎙️</div>
+                <h4 className="pillar-title">1. pYIN Continuous Pitch Tracking</h4>
+                <p className="pillar-desc">
+                  Uses probabilistic YIN with a hidden Markov model and Viterbi decoding to trace precise fundamental frequency (F0) contours through human vocal tremors and vibrato.
+                </p>
+                <div className="pillar-metric-tag">Sub-semitone precision (&plusmn;5 cents)</div>
+              </div>
 
-            <ul className="guest-perks-list">
-              <li>
-                <span className="perk-check">✓</span>
-                <span>Interactive <strong>Time-Frequency Spectrogram</strong> with live F0 tracking</span>
-              </li>
-              <li>
-                <span className="perk-check">✓</span>
-                <span><strong>22-Shruti Thermal Heatmap</strong> & Cent deviation histogram</span>
-              </li>
-              <li>
-                <span className="perk-check">✓</span>
-                <span><strong>44-Raga Classifier</strong> with multi-scale probability ranks</span>
-              </li>
-              <li>
-                <span className="perk-check">✓</span>
-                <span><strong>Ghana Patha Permutation DTW</strong> alignment matrix</span>
-              </li>
-            </ul>
+              <div className="card pillar-card">
+                <div className="pillar-icon-badge">📊</div>
+                <h4 className="pillar-title">2. 22-Shruti Pitch Class Profile</h4>
+                <p className="pillar-desc">
+                  Filters STFT spectral energy into 23 non-linear Just Intonation bins. Produces thermal heatmaps and centroid distributions that reveal precise intonation patterns.
+                </p>
+                <div className="pillar-metric-tag">23 Non-linear bins (Sa to Sa&rsquo;)</div>
+              </div>
 
-            <button
-              type="button"
-              className="btn guest-primary-btn"
-              onClick={onGuest}
-            >
-              <span>Explore as Guest (Instant Access) &rarr;</span>
-            </button>
-          </div>
+              <div className="card pillar-card">
+                <div className="pillar-icon-badge">⚡</div>
+                <h4 className="pillar-title">3. Ghana Patha Permutation DTW</h4>
+                <p className="pillar-desc">
+                  Validates the sacred recitation order (1-2 2-1 1-2-3 3-2-1 1-2-3) using Dynamic Time Warping cost matrices to detect syllable transposition and cadence errors.
+                </p>
+                <div className="pillar-metric-tag">Dynamic Time Warping alignment</div>
+              </div>
+            </div>
+          </section>
 
-          {/* Regular Researcher Sign In / Register Card */}
-          <div className="card researcher-auth-card">
+          {/* Bottom Launchpad Banner */}
+          <section className="launchpad-card card">
+            <div className="launchpad-content">
+              <div>
+                <h3 className="launchpad-title">Ready to Analyze Vedic Chanting?</h3>
+                <p className="launchpad-desc">
+                  Access 3 pre-analyzed recordings immediately or sign in to upload your own WAV/MP3 files for complete spectrogram and DTW analysis.
+                </p>
+              </div>
+              <div className="launchpad-actions">
+                <button type="button" className="btn hero-primary-cta" onClick={onGuest}>
+                  <span>⚡ Launch Live Dashboard (Guest Pass)</span>
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setViewMode('auth')}>
+                  <span>🔐 Researcher Sign In / Register</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </main>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          VIEW 2: Dedicated Researcher Authentication View
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {viewMode === 'auth' && (
+        <main className="auth-view-container">
+          <div className="dedicated-auth-card card">
+            <div className="auth-back-row">
+              <button type="button" className="back-link-btn" onClick={() => setViewMode('explorer')}>
+                &larr; Return to Interactive Explorer
+              </button>
+            </div>
+
+            <div className="dedicated-auth-header">
+              <div className="auth-logo-center">🕉️</div>
+              <h2 className="auth-view-title">Researcher Authentication</h2>
+              <p className="auth-view-subtitle">Access your audio dataset, spectrogram reports, and model exports</p>
+            </div>
+
+            {/* Quick Guest Pass Option */}
+            <div className="auth-guest-callout">
+              <div className="callout-text">
+                <strong>Just evaluating the project?</strong>
+                <p>You can skip login and view all 3 pre-analyzed Vedic chants immediately.</p>
+              </div>
+              <button type="button" className="btn guest-inline-btn" onClick={onGuest}>
+                Instant Guest Pass &rarr;
+              </button>
+            </div>
+
+            <div className="auth-divider">
+              <span>OR LOG IN WITH CREDENTIALS</span>
+            </div>
+
+            {/* Tabs */}
             <div className="auth-tabs">
               <button
                 type="button"
@@ -567,8 +690,8 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
               <span>Stack: Python 3.12 &middot; Django 5.1 &middot; PyTorch &middot; Librosa &middot; React</span>
             </div>
           </div>
-        </div>
-      </div>
+        </main>
+      )}
     </div>
   )
 }
