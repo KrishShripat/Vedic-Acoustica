@@ -1,0 +1,814 @@
+[
+  {
+    "name": "vib_re1_10c",
+    "kind": "pitch",
+    "notes": "Re1 275.65 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Re1",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 2.627,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 2 (Re1, komal)",
+        "detected": "Shruti 2 (Re1, komal)",
+        "top3": [
+          [
+            "Shruti 2 (Re1, komal)",
+            0.553652
+          ],
+          [
+            "Shruti 3 (Re2, komal)",
+            0.259488
+          ],
+          [
+            "Shruti 15 (Dha1, komal)",
+            0.081628
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "vib_re2_10c",
+    "kind": "pitch",
+    "notes": "Re2 279.07 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Re2",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.749,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 3 (Re2, komal)",
+        "detected": "Shruti 3 (Re2, komal)",
+        "top3": [
+          [
+            "Shruti 3 (Re2, komal)",
+            0.492387
+          ],
+          [
+            "Shruti 2 (Re1, komal)",
+            0.315536
+          ],
+          [
+            "Shruti 16 (Dha2, komal)",
+            0.083163
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "vib_ga3_10c",
+    "kind": "pitch",
+    "notes": "Ga3 327.03 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Ga3",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.75,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 8 (Ga3, shuddha)",
+        "detected": "Shruti 8 (Ga3, shuddha)",
+        "top3": [
+          [
+            "Shruti 8 (Ga3, shuddha)",
+            0.635742
+          ],
+          [
+            "Shruti 9 (Ga4, shuddha)",
+            0.150773
+          ],
+          [
+            "Shruti 21 (Ni3, shuddha)",
+            0.079153
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "vib_pa_10c",
+    "kind": "pitch",
+    "notes": "Pa 392.44 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Pa",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.759,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 14 (Pa)",
+        "detected": "Shruti 14 (Pa)",
+        "top3": [
+          [
+            "Shruti 14 (Pa)",
+            0.738257
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.127922
+          ],
+          [
+            "Shruti 5 (Re4, shuddha)",
+            0.043756
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "vib_ni4_10c",
+    "kind": "pitch",
+    "notes": "Ni4 496.68 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Ni4",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.762,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 22 (Ni4, shuddha)",
+        "detected": "Shruti 22 (Ni4, shuddha)",
+        "top3": [
+          [
+            "Shruti 22 (Ni4, shuddha)",
+            0.571293
+          ],
+          [
+            "Shruti 21 (Ni3, shuddha)",
+            0.198501
+          ],
+          [
+            "Shruti 9 (Ga4, shuddha)",
+            0.090919
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "vib_re1_20c_bound",
+    "kind": "report",
+    "notes": "Re1 @ \u00b120\u00a2 spends real time inside Re2's zone \u2014 boundary probe",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.741,
+        "duration": 5.0,
+        "frames": 216,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.046,
+        "frames": 216,
+        "unique_shrutis": 2,
+        "top5": {
+          "Shruti 2 (Re1, komal)": 201,
+          "Shruti 3 (Re2, komal)": 15
+        }
+      },
+      "ghana": {
+        "time_s": 0.019,
+        "is_valid": true,
+        "confidence": 0.7009,
+        "repetition": 1.0,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse",
+          "reverse"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "REPORT"
+  },
+  {
+    "name": "nearcents_re1_re2",
+    "kind": "nearcents",
+    "notes": "Alternating Re1/Re2 (21.5\u00a2 apart) stays two distinct bins",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.721,
+        "duration": 4.8,
+        "frames": 207,
+        "voiced_ratio": 1.0,
+        "rms": 0.4271
+      },
+      "clustering": {
+        "time_s": 0.027,
+        "frames": 207,
+        "unique_shrutis": 2,
+        "top5": {
+          "Shruti 3 (Re2, komal)": 107,
+          "Shruti 2 (Re1, komal)": 100
+        }
+      },
+      "nearcents": {
+        "re1_frames": 100,
+        "re2_frames": 107,
+        "total_frames": 207
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "oct2_sa",
+    "kind": "pitch",
+    "notes": "2\u00d7Sa (523.25 Hz) folds onto the octave Sa' bin",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.482,
+        "duration": 3.0,
+        "frames": 130,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 23 (Sa\u2019)",
+        "detected": "Shruti 23 (Sa\u2019)",
+        "top3": [
+          [
+            "Shruti 23 (Sa\u2019)",
+            0.576876
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.260532
+          ],
+          [
+            "Shruti 10 (Ma1, shuddha)",
+            0.078
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "oct2_pa",
+    "kind": "pitch",
+    "notes": "2\u00d7Pa (784.88 Hz) folds back to Pa via harmonic division",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.498,
+        "duration": 3.0,
+        "frames": 130,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 14 (Pa)",
+        "detected": "Shruti 14 (Pa)",
+        "top3": [
+          [
+            "Shruti 14 (Pa)",
+            0.466301
+          ],
+          [
+            "Shruti 1 (Sa)",
+            0.237107
+          ],
+          [
+            "Shruti 23 (Sa\u2019)",
+            0.148423
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "oct2_ni4",
+    "kind": "pitch",
+    "notes": "2\u00d7Ni4 (993.36 Hz) folds back to Ni4",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.493,
+        "duration": 3.0,
+        "frames": 130,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "pitch": {
+        "expected": "Shruti 22 (Ni4, shuddha)",
+        "detected": "Shruti 22 (Ni4, shuddha)",
+        "top3": [
+          [
+            "Shruti 22 (Ni4, shuddha)",
+            0.552358
+          ],
+          [
+            "Shruti 9 (Ga4, shuddha)",
+            0.27913
+          ],
+          [
+            "Shruti 14 (Pa)",
+            0.078566
+          ]
+        ]
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "noise_20db",
+    "kind": "raga",
+    "notes": "Bilawal scale + 20 dB noise keeps raga family",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 1.261,
+        "duration": 8.4,
+        "frames": 362,
+        "voiced_ratio": 0.9945,
+        "rms": 0.4291
+      },
+      "clustering": {
+        "time_s": 0.035,
+        "frames": 362,
+        "unique_shrutis": 22,
+        "top5": {
+          "Shruti 1 (Sa)": 51,
+          "Shruti 10 (Ma1, shuddha)": 49,
+          "Shruti 14 (Pa)": 48,
+          "Shruti 18 (Dha4, shuddha)": 47,
+          "Shruti 22 (Ni4, shuddha)": 47
+        }
+      },
+      "ghana": {
+        "time_s": 0.043,
+        "is_valid": false,
+        "confidence": 0.4931,
+        "repetition": 0.1429,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse",
+          "reverse"
+        ],
+        "n_segments": 8
+      },
+      "raga": {
+        "time_s": 0.135,
+        "best": "Mand",
+        "confidence": 0.9122,
+        "is_inconclusive": false
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "noise_10db",
+    "kind": "raga",
+    "notes": "Bilawal scale + 10 dB noise (stress) keeps raga family",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 1.262,
+        "duration": 8.4,
+        "frames": 362,
+        "voiced_ratio": 0.9945,
+        "rms": 0.4471
+      },
+      "clustering": {
+        "time_s": 0.034,
+        "frames": 362,
+        "unique_shrutis": 22,
+        "top5": {
+          "Shruti 1 (Sa)": 50,
+          "Shruti 14 (Pa)": 48,
+          "Shruti 22 (Ni4, shuddha)": 47,
+          "Shruti 10 (Ma1, shuddha)": 46,
+          "Shruti 5 (Re4, shuddha)": 45
+        }
+      },
+      "ghana": {
+        "time_s": 0.042,
+        "is_valid": false,
+        "confidence": 0.471,
+        "repetition": 0.0952,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse",
+          "reverse"
+        ],
+        "n_segments": 8
+      },
+      "raga": {
+        "time_s": 0.128,
+        "best": "Shankarabharanam",
+        "confidence": 0.8509,
+        "is_inconclusive": false
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "mic_tilt",
+    "kind": "raga",
+    "notes": "1-pole spectral tilt must not break raga detection",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 1.268,
+        "duration": 8.4,
+        "frames": 362,
+        "voiced_ratio": 0.9945,
+        "rms": 0.0784
+      },
+      "clustering": {
+        "time_s": 0.032,
+        "frames": 362,
+        "unique_shrutis": 22,
+        "top5": {
+          "Shruti 1 (Sa)": 50,
+          "Shruti 10 (Ma1, shuddha)": 49,
+          "Shruti 14 (Pa)": 49,
+          "Shruti 22 (Ni4, shuddha)": 48,
+          "Shruti 9 (Ga4, shuddha)": 45
+        }
+      },
+      "ghana": {
+        "time_s": 0.041,
+        "is_valid": false,
+        "confidence": 0.4898,
+        "repetition": 0.1429,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "forward",
+          "reverse",
+          "reverse",
+          "reverse"
+        ],
+        "n_segments": 8
+      },
+      "raga": {
+        "time_s": 0.129,
+        "best": "Shankarabharanam",
+        "confidence": 0.8886,
+        "is_inconclusive": false
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "ghana_pos",
+    "kind": "ghana_true",
+    "notes": "Canonical Ghana cycle fwd/rev/fwd/rev/fwd accepted",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.958,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.027,
+        "frames": 259,
+        "unique_shrutis": 14,
+        "top5": {
+          "Shruti 14 (Pa)": 51,
+          "Shruti 1 (Sa)": 49,
+          "Shruti 10 (Ma1, shuddha)": 43,
+          "Shruti 5 (Re4, shuddha)": 40,
+          "Shruti 9 (Ga4, shuddha)": 39
+        }
+      },
+      "ghana": {
+        "time_s": 0.022,
+        "is_valid": true,
+        "confidence": 0.7743,
+        "repetition": 0.6,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "reverse",
+          "forward",
+          "reverse",
+          "forward",
+          "reverse"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "ghana_rot",
+    "kind": "ghana_true",
+    "notes": "Phase-rotated cycle (rev-lead) accepted \u2014 same cycle",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.919,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.029,
+        "frames": 259,
+        "unique_shrutis": 14,
+        "top5": {
+          "Shruti 14 (Pa)": 52,
+          "Shruti 1 (Sa)": 50,
+          "Shruti 10 (Ma1, shuddha)": 43,
+          "Shruti 9 (Ga4, shuddha)": 39,
+          "Shruti 5 (Re4, shuddha)": 38
+        }
+      },
+      "ghana": {
+        "time_s": 0.022,
+        "is_valid": true,
+        "confidence": 0.7745,
+        "repetition": 0.6,
+        "reason": null,
+        "detected_pattern": [
+          "reverse",
+          "forward",
+          "reverse",
+          "forward",
+          "reverse",
+          "forward"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "ghana_silence",
+    "kind": "ghana_false",
+    "notes": "Silence rejected (RMS guard)",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.9,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 0.0,
+        "rms": 0.0
+      },
+      "clustering": {
+        "time_s": 0.025,
+        "frames": 259,
+        "unique_shrutis": 1,
+        "top5": {
+          "Shruti 1 (Sa)": 259
+        }
+      },
+      "ghana": {
+        "time_s": 0.0,
+        "is_valid": false,
+        "confidence": 0.0,
+        "repetition": 0.0,
+        "reason": "Audio is essentially silent or pure noise",
+        "detected_pattern": null,
+        "n_segments": 0
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "ghana_noise",
+    "kind": "ghana_false",
+    "notes": "Broadband noise rejected (spectral-flatness guard)",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.948,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 0.39,
+        "rms": 0.0499
+      },
+      "clustering": {
+        "time_s": 0.03,
+        "frames": 259,
+        "unique_shrutis": 8,
+        "top5": {
+          "Shruti 23 (Sa\u2019)": 234,
+          "Shruti 20 (Ni2, komal)": 7,
+          "Shruti 14 (Pa)": 6,
+          "Shruti 21 (Ni3, shuddha)": 6,
+          "Shruti 22 (Ni4, shuddha)": 2
+        }
+      },
+      "ghana": {
+        "time_s": 0.005,
+        "is_valid": false,
+        "confidence": 0.0,
+        "repetition": 0.0,
+        "reason": "Noise-dominated audio (spectral flatness=0.561) \u2014 not a tonal recitation",
+        "detected_pattern": null,
+        "n_segments": 0
+      }
+    },
+    "status": "PASS"
+  },
+  {
+    "name": "ghana_mono_fwd",
+    "kind": "report",
+    "notes": "Monotone ascending run \u2014 anti-pattern probe",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.914,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 0.9614,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.031,
+        "frames": 259,
+        "unique_shrutis": 13,
+        "top5": {
+          "Shruti 14 (Pa)": 54,
+          "Shruti 1 (Sa)": 50,
+          "Shruti 9 (Ga4, shuddha)": 42,
+          "Shruti 10 (Ma1, shuddha)": 40,
+          "Shruti 5 (Re4, shuddha)": 36
+        }
+      },
+      "ghana": {
+        "time_s": 0.023,
+        "is_valid": true,
+        "confidence": 0.8982,
+        "repetition": 1.0,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "forward",
+          "forward",
+          "forward",
+          "forward"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "REPORT"
+  },
+  {
+    "name": "ghana_mono_rev",
+    "kind": "report",
+    "notes": "Monotone descending run \u2014 anti-pattern probe",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.877,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 0.9614,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.027,
+        "frames": 259,
+        "unique_shrutis": 13,
+        "top5": {
+          "Shruti 14 (Pa)": 49,
+          "Shruti 1 (Sa)": 49,
+          "Shruti 10 (Ma1, shuddha)": 46,
+          "Shruti 5 (Re4, shuddha)": 42,
+          "Shruti 9 (Ga4, shuddha)": 36
+        }
+      },
+      "ghana": {
+        "time_s": 0.022,
+        "is_valid": true,
+        "confidence": 0.8782,
+        "repetition": 1.0,
+        "reason": null,
+        "detected_pattern": [
+          "reverse",
+          "reverse",
+          "reverse",
+          "reverse",
+          "reverse",
+          "reverse"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "REPORT"
+  },
+  {
+    "name": "ghana_jumbled",
+    "kind": "report",
+    "notes": "Out-of-order forward/reverse alternation probe",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.908,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 0.9846,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.034,
+        "frames": 259,
+        "unique_shrutis": 14,
+        "top5": {
+          "Shruti 14 (Pa)": 51,
+          "Shruti 1 (Sa)": 50,
+          "Shruti 10 (Ma1, shuddha)": 44,
+          "Shruti 5 (Re4, shuddha)": 39,
+          "Shruti 9 (Ga4, shuddha)": 39
+        }
+      },
+      "ghana": {
+        "time_s": 0.027,
+        "is_valid": true,
+        "confidence": 0.6835,
+        "repetition": 0.4,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "reverse",
+          "reverse",
+          "forward",
+          "reverse"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "REPORT"
+  },
+  {
+    "name": "ghana_random_walk",
+    "kind": "report",
+    "notes": "Atonal random pitch walk \u2014 must NOT read as Ghana",
+    "detail": {
+      "feature_extraction": {
+        "time_s": 0.898,
+        "duration": 6.0,
+        "frames": 259,
+        "voiced_ratio": 1.0,
+        "rms": 0.4272
+      },
+      "clustering": {
+        "time_s": 0.031,
+        "frames": 259,
+        "unique_shrutis": 8,
+        "top5": {
+          "Shruti 19 (Ni1, komal)": 52,
+          "Shruti 17 (Dha3, shuddha)": 48,
+          "Shruti 16 (Dha2, komal)": 48,
+          "Shruti 18 (Dha4, shuddha)": 44,
+          "Shruti 15 (Dha1, komal)": 27
+        }
+      },
+      "ghana": {
+        "time_s": 0.023,
+        "is_valid": true,
+        "confidence": 0.4399,
+        "repetition": 0.4,
+        "reason": null,
+        "detected_pattern": [
+          "forward",
+          "forward",
+          "forward",
+          "reverse",
+          "forward",
+          "forward"
+        ],
+        "n_segments": 6
+      }
+    },
+    "status": "REPORT"
+  }
+]

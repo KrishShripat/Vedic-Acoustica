@@ -21,6 +21,11 @@ class AudioRecording(models.Model):
     # ── New slim storage ──────────────────────────────────────────────────────
     # Scalar metrics, scores, and detection metadata only — no matrices here.
     analysis_metadata = models.JSONField(null=True, blank=True)
+    # Corpus provenance (source dataset, license, attribution, pinned URL).
+    # Deliberately separate from analysis_metadata: the 4-stage pipeline
+    # overwrites analysis_metadata wholesale on re-analysis, but provenance
+    # must survive any number of re-runs.
+    corpus_metadata = models.JSONField(null=True, blank=True)
     # Path (relative to MEDIA_ROOT) to the compressed .npz file holding heavy
     # arrays: spectrogram, mfcc, chroma, pcp, f0_track.
     matrices_file = models.CharField(max_length=512, null=True, blank=True)

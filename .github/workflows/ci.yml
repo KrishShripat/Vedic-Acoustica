@@ -45,6 +45,16 @@ jobs:
         env:
           DJANGO_DEBUG: "True"
 
+      - name: ML audit (ground-truth regression gate)
+        run: python test_ml_audit.py
+        env:
+          DJANGO_DEBUG: "True"
+
+      - name: ML robustness battery (negative controls + stress gates)
+        run: python test_ml_robustness.py
+        env:
+          DJANGO_DEBUG: "True"
+
   frontend:
     name: Frontend (React + Vite)
     runs-on: ubuntu-latest

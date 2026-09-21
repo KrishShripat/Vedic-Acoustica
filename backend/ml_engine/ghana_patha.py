@@ -50,6 +50,11 @@ logger = logging.getLogger(__name__)
 # PCP row count — mirrors the 23 Shruti bins (incl. octave Sa') in shruti_mapping.
 _PCP_WIDTH = len(SHRUTI_NAMES)
 
+# Spectral flatness above this value ⇒ the audio is noise-dominated, not a
+# tonal recitation. Measured separation: ~0.56 for white/pink noise vs ~0.00
+# for harmonic tonal audio (2× probe). 0.35 sits far from both.
+NOISE_FLATNESS_THRESHOLD = 0.35
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Ghana pattern templates
 # ─────────────────────────────────────────────────────────────────────────────
@@ -337,6 +342,28 @@ def compute_repetition_score(pcp, sr, hop_length, n_segments):
 # Top-level validation entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _spectral_flatness(spec_db):
+    """
+    Mean per-frame spectral flatness of a dB spectrogram.
+
+    Geometric mean / arithmetic mean of the power spectrum per frame; ~1.0 for
+    broadband white/pink noise, ~0.0 for harmonic (tonal) audio, NaN/None when
+    the spectrogram is unavailable.
+    """
+    if spec_db is None:
+        return None
+    power = np.maximum(
+        np.power(10.0, np.asarray(spec_db, dtype=np.float64) / 10.0), 1e-12
+    )
+    geo = np.exp(np.mean(np.log(power), axis=0))
+    arith = np.mean(power, axis=0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        per_frame = np.divide(
+            geo, arith, out=np.full_like(geo, np.nan), where=arith > 0
+        )
+    return float(np.nanmean(per_frame))
+
+
 def validate_ghana_patha(features):
     """
     Validate whether the audio conforms to Ghana Patha recitation structure.
@@ -371,6 +398,26 @@ def validate_ghana_patha(features):
             'is_valid': False,
             'confidence': 0.0,
             'reason': 'Audio is essentially silent or pure noise',
+            'segments': [],
+            'repetition_score': 0.0,
+            'self_similarity': 0.0,
+            'n_segments': 0,
+        }
+
+    # ── Broadband-noise guard (spectral flatness) ─────────────────────────────
+    # The RMS check above only catches *silence*. Broadband noise with RMS well
+    # above 0.01 still collapses the PCP onto a few bins and "repeats" frame to
+    # frame, producing a false-positive Ghana verdict. Reject spectrally flat
+    # (noise-dominated) audio before the DTW stage.
+    flatness = _spectral_flatness(features.get('spectrogram'))
+    if flatness is not None and flatness > NOISE_FLATNESS_THRESHOLD:
+        return {
+            'is_valid': False,
+            'confidence': 0.0,
+            'reason': (
+                f'Noise-dominated audio (spectral flatness={flatness:.3f}) — '
+                f'not a tonal recitation'
+            ),
             'segments': [],
             'repetition_score': 0.0,
             'self_similarity': 0.0,

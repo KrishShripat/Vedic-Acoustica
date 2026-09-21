@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "description": "Curated Vedic/Sanskrit recitation ingest manifest for Vedic Acoustica. License allowlist enforced at ingest time.",
+  "allowlist": ["CC-BY-4.0", "Apache-2.0"],
+  "max_clips_mb": 40,
+  "clips": [
+    {
+      "id": "vaagdhenu-style_a-mangala__mangala_1",
+      "title": "Vāgdhenu : maṅgala 1",
+      "source": "vaagdhenu",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://huggingface.co/datasets/prathoshap/vagdhenu-data/resolve/main/style_a/audio/mangala__mangala_1.wav",
+      "homepage": "https://huggingface.co/datasets/prathoshap/vagdhenu-data",
+      "text": "लक्ष्मीर्यस्य परिग्रहः कमलभूः सूनुर्गरुत्मान् रथः पौत्रश्चंद्रविभूषणः सुरगुरु शेषश्च शय्या पुनः ब्रह्मांडं वरमंदिरं सुरगणाः यस्य प्रभोः सेवकाः स त्रैलोक्यकुटुंबपालनपरः कुर्याद्धरिर्मंगलम्",
+      "transliteration": "lakṣmīryasya parigrahaḥ kamalabhūḥ sūnurgarutmān rathaḥ pautraścandravibhūṣaṇaḥ suraguru śeṣaśca śayyā punaḥ brahmāṇḍaṃ varamandiraṃ suragaṇāḥ yasya prabhoḥ sevakāḥ sa trailokyakuṭuṃbapālanaparaḥ kuryāddharirmaṅgalam",
+      "duration_s": 23.266,
+      "attribution": "Vāgdhenu Sanskrit Chant Corpus (prathoshap/vagdhenu-data), reciter: corpus author (single speaker), license CC-BY-4.0"
+    },
+    {
+      "id": "vaagdhenu-style_a-mbtn1__00ec844d",
+      "title": "Vāgdhenu : Mahābhārata Tatparya Nirṇaya",
+      "source": "vaagdhenu",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://huggingface.co/datasets/prathoshap/vagdhenu-data/resolve/main/style_a/audio/mbtn1__00ec844d.wav",
+      "homepage": "https://huggingface.co/datasets/prathoshap/vagdhenu-data",
+      "text": "यो वेद निहितं गुहायां परमे व्योमन् सोऽश्नुते सर्वान् कामान् सह ब्रह्मणा विपश्चिता",
+      "transliteration": "yo veda nihitaṃ guhāyāṃ parame vyoman so'shnute sarvān kāmān saha brahmaṇā vipaścitā",
+      "duration_s": 9.989,
+      "attribution": "Vāgdhenu Sanskrit Chant Corpus (prathoshap/vagdhenu-data), reciter: corpus author (single speaker), license CC-BY-4.0"
+    },
+    {
+      "id": "vaagdhenu-style_b-ds__01b739a1",
+      "title": "Vāgdhenu : Sumadhvavijaya (śloka)",
+      "source": "vaagdhenu",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://huggingface.co/datasets/prathoshap/vagdhenu-data/resolve/main/style_b/audio/ds__01b739a1.wav",
+      "homepage": "https://huggingface.co/datasets/prathoshap/vagdhenu-data",
+      "text": "अजाय जनयित्रेस्य विजिताखिलदानव अजादिपूज्यपादाय नमस्ते गरुडध्वज",
+      "transliteration": "ajāya janayitre'sya vijitākhiladānava ajādipūjyapādāya namaste garuḍadhvaja",
+      "duration_s": 8.289,
+      "attribution": "Vāgdhenu Sanskrit Chant Corpus (prathoshap/vagdhenu-data), reciter: corpus author (single speaker), license CC-BY-4.0"
+    },
+    {
+      "id": "vaagdhenu-style_b-ds__0fa167cb",
+      "title": "Vāgdhenu : Sumadhvavijaya (stuti)",
+      "source": "vaagdhenu",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://huggingface.co/datasets/prathoshap/vagdhenu-data/resolve/main/style_b/audio/ds__0fa167cb.wav",
+      "homepage": "https://huggingface.co/datasets/prathoshap/vagdhenu-data",
+      "text": "विप्रमुख्यैः सदा वेदवादोन्मुखैः सुप्रतापैः क्षितीशेश्वरैश्चार्चितम् अप्रतर्क्योरुसंविद्गुणं निर्मलं सुप्रकाशाजरानन्दरूपं परम् प्रीणयामो वासुदेवं देवतामण्डलाखण्डमण्डनम्",
+      "transliteration": "vipramukhyaiḥ sadā vedavādonmukhaiḥ supratāpaiḥ kṣitīśeśvaraiścārcitam apratarkyourusaṃvidguṇaṃ nirmalaṃ suprakāśājarānandarūpaṃ param prīṇayāmo vāsudevaṃ devatāmaṇḍalākhaṇḍamaṇḍanam",
+      "duration_s": 22.565,
+      "attribution": "Vāgdhenu Sanskrit Chant Corpus (prathoshap/vagdhenu-data), reciter: corpus author (single speaker), license CC-BY-4.0"
+    },
+    {
+      "id": "vedavani-atharvaveda_kanda_10_0001",
+      "title": "Vedavani : Atharvaveda Kanda 10.1",
+      "source": "vedavani",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "url": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset/resolve/main/AudioFiles/batch_1/Atharvaveda_Kanda_10_0001.wav",
+      "homepage": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset",
+      "text": "यां कल्पयन्ति वहतौ वधूमिव विश्वरूपां हस्तकृतां चिकित्सवः",
+      "transliteration": "yāṃ kalpayanti vahatau vadhūmiva viśvarūpāṃ hastakṛtāṃ cikitsavaḥ",
+      "duration_s": 7.996,
+      "attribution": "Vedavani: A Benchmark Corpus for ASR on Vedic Sanskrit Poetry (ACL 2025, arXiv:2506.00145), transcribed from the Rig Veda and Atharva Veda, license Apache-2.0"
+    },
+    {
+      "id": "vedavani-atharvaveda_kanda_10_0003",
+      "title": "Vedavani : Atharvaveda Kanda 10.3",
+      "source": "vedavani",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "url": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset/resolve/main/AudioFiles/batch_1/Atharvaveda_Kanda_10_0003.wav",
+      "homepage": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset",
+      "text": "शीर्षण्वती नस्वती कर्णिणी कृत्याकृता संभृता विश्वरूपा",
+      "transliteration": "śīrṣaṇvatī nasvatī karṇiṇī kṛtyākṛtā saṃbhṛtā viśvarūpā",
+      "duration_s": 7.703,
+      "attribution": "Vedavani: A Benchmark Corpus for ASR on Vedic Sanskrit Poetry (ACL 2025, arXiv:2506.00145), transcribed from the Rig Veda and Atharva Veda, license Apache-2.0"
+    },
+    {
+      "id": "vedavani-rigveda_47_0259",
+      "title": "Vedavani : Rigveda 47.259",
+      "source": "vedavani",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "url": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset/resolve/main/AudioFiles/batch_3/RigVeda_47_0259.wav",
+      "homepage": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset",
+      "text": "सो चिन्नु सख्या नर्य इन स्तुतश्चर्कृत्य इन्द्रो मावते नरे",
+      "transliteration": "so cinna sakhyā narya ina stutaścarkṛtya indro māvate nare",
+      "duration_s": 6.893,
+      "attribution": "Vedavani: A Benchmark Corpus for ASR on Vedic Sanskrit Poetry (ACL 2025, arXiv:2506.00145), transcribed from the Rig Veda and Atharva Veda, license Apache-2.0"
+    },
+    {
+      "id": "vedavani-rigvedha_004_0229",
+      "title": "Vedavani : Rigveda 4.229",
+      "source": "vedavani",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "url": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset/resolve/main/AudioFiles/batch_4/Rigvedha_004_0229.wav",
+      "homepage": "https://huggingface.co/datasets/sanganaka/Vedavani-Dataset",
+      "text": "अर्वद्भिरग्ने अर्वतो नृभिर्नॄन्वीरैर्वीरान्वनुयामा त्वोताः",
+      "transliteration": "arvadbhiragne arvato nṛbhirnṝnvīrairvīrānvanuyāmā tvo'tāḥ",
+      "duration_s": 8.953,
+      "attribution": "Vedavani: A Benchmark Corpus for ASR on Vedic Sanskrit Poetry (ACL 2025, arXiv:2506.00145), transcribed from the Rig Veda and Atharva Veda, license Apache-2.0"
+    }
+  ]
+}
