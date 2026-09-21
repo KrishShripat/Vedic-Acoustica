@@ -320,7 +320,7 @@ export default function AuthScreen({ apiBase, onAuthed, onGuest }) {
         return
       }
 
-      setAuth(data.token, data.user)
+      setAuth({ token: data.token, user: data.user })
       onAuthed(data.user)
     } catch (err) {
       setAuthError(`Connection error: ${err.message}`)
