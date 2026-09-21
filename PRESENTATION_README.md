@@ -61,30 +61,30 @@ Full table from `backend/ml_engine/shruti_mapping.py` (reference tonic = **261.6
 | # | Name | Ratio | Cents | Frequency (Hz) | Notes |
 |---|---|---|---|---|---|
 | 1 | Sa | 1/1 | 0.00 | 261.63 | tonic |
-| 2 | Re1 | 256/243 | 90.22 | 275.65 | *Pythagorean limma* — gap to Re2 is only 21.5¢ |
-| 3 | Re2 | 16/15 | 111.73 | 278.44 | |
-| 4 | Ga1 | 10/9 | 182.40 | 290.69 | |
-| 5 | Ga2 | 9/8 | 203.91 | 294.33 | |
-| 6 | Ga3 | 32/27 | 294.13 | 310.07 | |
-| 7 | Ma1 | 5/4 | 386.31 | 327.03 | |
-| 8 | Ma2 | 81/64 | 407.82 | 331.12 | |
-| 9 | Ma3 | 4/3 | 498.04 | 348.83 | perfect fourth |
-| 10 | Tivra Ma | 729/512 | 611.73 | 372.51 | |
-| 11 | Pa | 3/2 | 701.96 | 392.44 | perfect fifth |
-| 12 | Dha1 | 128/81 | 792.18 | 413.43 | |
-| 13 | Dha2 | 8/5 | 813.69 | 418.60 | |
-| 14 | Ni1 | 5/3 | 884.36 | 436.05 | |
-| 15 | Ni2 | 27/16 | 905.87 | 441.49 | |
-| 16 | Ni3 | 16/9 | 996.09 | 465.11 | |
-| 17 | Ni4 | 9/5 | 1017.60 | 470.93 | Daniélou canonical |
-| 18 | Ni5 | 15/8 | 1088.27 | 490.55 | Daniélou canonical |
-| 19 | Ni6 | 243/128 | 1109.78 | 496.68 | Daniélou canonical |
-| 20 | Ga-Komal | 6/5 | 315.64 | 313.95 | *replaces the octave Sa' slot* |
-| 21 | Ma-Komal | 27/20 | 519.55 | 353.20 | *above-octave slot reused* |
-| 22 | Tivra Ma2 | 45/32 | 590.22 | 367.79 | *above-octave slot reused* |
-| 23 | Sa' | 2/1 | 1200.00 | 523.25 | the octave (added to complete the span) |
+| 2 | Re1 (komal) | 256/243 | 90.22 | 275.65 | *Pythagorean limma* — gap to Re2 is only 21.5¢ |
+| 3 | Re2 (komal) | 16/15 | 111.73 | 279.07 | |
+| 4 | Re3 (shuddha) | 10/9 | 182.40 | 290.70 | |
+| 5 | Re4 (shuddha) | 9/8 | 203.91 | 294.33 | |
+| 6 | Ga1 (komal) | 32/27 | 294.13 | 310.07 | |
+| 7 | Ga2 (komal) | 6/5 | 315.64 | 313.95 | |
+| 8 | Ga3 (shuddha) | 5/4 | 386.31 | 327.03 | natural major third |
+| 9 | Ga4 (shuddha) | 81/64 | 407.82 | 331.14 | Pythagorean major third |
+| 10 | Ma1 (shuddha) | 4/3 | 498.04 | 348.84 | perfect fourth |
+| 11 | Ma2 (tivra) | 27/20 | 519.55 | 353.20 | *thick (large) tivra Ma* |
+| 12 | Ma3 (tivra) | 45/32 | 590.22 | 367.91 | ~12-TET Ma♯ |
+| 13 | Ma4 (tivra) | 729/512 | 611.73 | 372.51 | Pythagorean tritone |
+| 14 | Pa | 3/2 | 701.96 | 392.44 | perfect fifth |
+| 15 | Dha1 (komal) | 128/81 | 792.18 | 413.43 | |
+| 16 | Dha2 (komal) | 8/5 | 813.69 | 418.60 | |
+| 17 | Dha3 (shuddha) | 5/3 | 884.36 | 436.04 | |
+| 18 | Dha4 (shuddha) | 27/16 | 905.87 | 441.49 | |
+| 19 | Ni1 (komal) | 16/9 | 996.09 | 465.11 | |
+| 20 | Ni2 (komal) | 9/5 | 1017.60 | 470.93 | Daniélou canonical |
+| 21 | Ni3 (shuddha) | 15/8 | 1088.27 | 490.55 | Daniélou canonical |
+| 22 | Ni4 (shuddha) | 243/128 | 1109.78 | 496.68 | Daniélou canonical; ~12-TET major 7th |
+| 23 | Sa' | 2/1 | 1200.00 | 523.25 | the octave (closes the span) |
 
-**Why 23 rows when it's called "22 Shrutis"?** The canon is 22 positions within one octave. Bins 20–22 reuse the above-octave frequency slots for extra named variants, and **Sa' (2/1) was added as bin 23** so the Pitch-Class Profile covers the *entire* octave span — nothing silently falls off the top of the chart.
+**Why 23 rows when it's called "22 Shrutis"?** The canon is 22 positions within one octave. The list above arranges them in **strictly ascending pitch** (four variants each for Re, Ga, Ma, Dha, and Ni — covering the komal/shuddha/tivra grades), and **Sa' (2/1) is bin 23** so the Pitch-Class Profile covers the *entire* octave span — nothing silently falls off the top of the chart.
 
 **The killer detail to mention if pushed:** *"The two closest Shrutis, Re1 and Re2, are separated by only 21.5 cents. That spacing is the design tension — our matching tolerance of ±25 cents is deliberately narrower than half of that gap* (actually wider than the gap — that's why we also median-filter the pitch track), *so a note can't wobble between two labels frame to frame."*
 
