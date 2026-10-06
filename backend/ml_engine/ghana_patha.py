@@ -252,6 +252,12 @@ def match_segments_dtw(segments):
     # ── Score label sequence against Ghana cycle ──────────────────────────────
     cycle_score = _score_against_ghana_cycle(segment_labels)
 
+    # ── Direction alternation (R4) ────────────────────────────────────────────
+    # A monotone run of like-direction segments self-repeats and fools the
+    # repetition gate, but never alternates forward/reverse, so it is not
+    # Ghana. Captured here and used to gate the final verdict below.
+    alternation = _direction_alternation(segment_labels)
+
     # Overall confidence: blend mean segment similarity with cycle alignment
     mean_seg_score = float(np.mean(segment_scores)) if segment_scores else 0.0
     confidence = round(0.6 * mean_seg_score + 0.4 * cycle_score, 4)
@@ -261,6 +267,7 @@ def match_segments_dtw(segments):
         'segment_labels': segment_labels,
         'segment_scores': segment_scores,
         'cycle_score': round(float(cycle_score), 4),
+        'direction_alternation': round(float(alternation), 4),
         'dtw_costs': dtw_costs,
     }
 
@@ -298,6 +305,22 @@ def _score_against_ghana_cycle(labels):
                 best = score
 
     return best
+
+
+def _direction_alternation(labels):
+    """
+    Fraction of adjacent segment pairs whose phrase direction flips.
+
+    Ghana Patha is defined by its forward↔reverse alternation — a *monotone*
+    run of segments that are all 'forward' (or all 'reverse') scores perfectly
+    on repetition (a monotone arpeggio trivially self-repeats) yet is not
+    Ghana at all (audit finding R4).  Canonical [fwd, rev, fwd, rev, fwd]
+    yields 1.0; a flat run yields 0.0.
+    """
+    if len(labels) < 2:
+        return 0.0
+    flips = sum(1 for a, b in zip(labels, labels[1:]) if a != b)
+    return flips / (len(labels) - 1)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -381,7 +404,7 @@ def validate_ghana_patha(features):
     -------
     dict with keys:
         is_valid, confidence, reason, segments, repetition_score,
-        self_similarity, n_segments, dtw_details
+        self_similarity, n_segments, dtw_details, direction_alternation
     """
     pcp = features.get('pcp')
     sr = features['sr']
@@ -472,11 +495,21 @@ def validate_ghana_patha(features):
     self_similarity = dtw_result['cycle_score']   # proxy; real recurrence TBD
 
     # ── Final verdict ─────────────────────────────────────────────────────────
+    # R4: direction alternation is now a hard gate — a monotone run can blow
+    # up the repetition score but is not Ghana Patha (no fwd↔rev cycling).
     ghana_confidence = dtw_result['confidence']
+    alternation = dtw_result['direction_alternation']
     combined_confidence = round(
-        0.45 * repetition_score + 0.55 * ghana_confidence, 4
+        0.40 * repetition_score
+        + 0.40 * ghana_confidence
+        + 0.20 * alternation,
+        4,
     )
-    is_valid = repetition_score > 0.35 and ghana_confidence > 0.25
+    is_valid = (
+        repetition_score > 0.35
+        and ghana_confidence > 0.25
+        and alternation >= 0.4
+    )
 
     # Build per-segment output list
     seg_out = []
@@ -499,8 +532,10 @@ def validate_ghana_patha(features):
         'repetition_score': round(repetition_score, 4),
         'self_similarity': round(self_similarity, 4),
         'n_segments': n_segs_actual,
+        'direction_alternation': alternation,
         'dtw_details': {
             'cycle_score': dtw_result['cycle_score'],
+            'direction_alternation': alternation,
             'mean_segment_similarity': round(
                 float(np.mean(dtw_result['segment_scores'])), 4
             ),

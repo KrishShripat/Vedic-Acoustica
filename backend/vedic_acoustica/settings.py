@@ -14,11 +14,23 @@ def _env_bool(name: str, default: bool = False) -> bool:
 
 DEBUG = _env_bool('DJANGO_DEBUG')
 
+# Publicly-known placeholder keys must never become the live signing key in a
+# production deploy.  The HF Space launcher (app.py) no longer injects a
+# fallback, so an unset key here fails closed with a clear message instead of
+# silently serving with a key anyone can guess from source (audit finding R2).
+_KNOWN_INSECURE_SECRET_KEYS = {
+    'django-insecure-dev-key-replace-in-production',
+    'django-insecure-hf-fallback-key-for-spaces',
+    'django-insecure-build-placeholder',
+}
+
 _secret_key = os.environ.get('DJANGO_SECRET_KEY', '')
-if not _secret_key:
+if not _secret_key or _secret_key in _KNOWN_INSECURE_SECRET_KEYS:
     if not DEBUG:
         raise ImproperlyConfigured(
-            "SECRET_KEY must be set via the DJANGO_SECRET_KEY environment variable in production."
+            "SECRET_KEY must be set to a strong random value via the "
+            "DJANGO_SECRET_KEY environment variable in production "
+            "(a known-insecure placeholder was provided)."
         )
     _secret_key = 'django-insecure-dev-key-replace-in-production'
 SECRET_KEY = _secret_key

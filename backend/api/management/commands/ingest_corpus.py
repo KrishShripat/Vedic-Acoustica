@@ -47,8 +47,15 @@ from api.tasks import process_audio_task
 # ── Hard allowlist: clips with any other license are refused outright. ──────
 _TRUSTED_LICENSES = {"CC-BY-4.0", "Apache-2.0"}
 
-# ingest_corpus.py → api/management/commands → project root (parents[4])
-_PROJECT_ROOT = Path(__file__).resolve().parents[4]
+# Locate the repo root dynamically (see seed_samples.py for why hardcoded
+# ancestor counts break when the repo IS the Django root, as on the HF Space).
+def _find_project_root(start: Path) -> Path:
+    for parent in [start, *start.parents]:
+        if (parent / "manage.py").exists():
+            return parent
+    return start.parent
+
+_PROJECT_ROOT = _find_project_root(Path(__file__).resolve())
 DEFAULT_MANIFEST = str(_PROJECT_ROOT / "test_audio" / "manifest.json")
 
 _USER_AGENT = "VedicAcoustica-ingest/1.0"

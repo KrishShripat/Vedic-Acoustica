@@ -28,7 +28,7 @@ Vedic Acoustica is a **website that analyses audio recordings of Indian classica
 2. **Whether the recitation pattern is correct** — specifically the **Ghana Patha**, a 3,500-year-old oral error-correction technique.
 3. **Which raga the melody follows** — the melodic framework, from a database of 44 ragas.
 
-**The core insight:** this music is *older than writing* and is more precise than Western music. Western music splits an octave into **12 evenly-spaced notes**. Indian theory recognises **22 finer positions** (some only ~22 cents apart — about a fifth of a Western semitone). Precisely because of that, **no existing western music library can analyse it** — so the project built the signal-processing + ML math from scratch.
+**The core insight:** this music is *older than writing* and is more precise than Western music. Western music splits an octave into **12 evenly-spaced notes**. Indian theory recognises **22 finer positions** (some only ~22 cents apart — about a fifth of a Western semitone). Precisely because of that, **no existing Western music library can analyse it** — so every music-theory stage (the 23-bin Shruti Pitch-Class Profile, F0→Shruti fusion, the DTW Ghana validator, and the directional raga scorer) is custom code we wrote. Underneath we use standard, well-tested ingredients — librosa's pYIN for raw pitch tracking, scikit-learn's KMeans for clustering, SciPy/NumPy for the numerics — and wrap them in our own Indian-music-theory core.
 
 **The one-line pitch:** *"We replace subjective human grading of an ancient oral tradition with objective, reproducible, machine-verifiable analysis."*
 
@@ -134,7 +134,13 @@ This produces a **22 × frames** matrix and a **mean_pcp** (22 values) — the r
   - **reverse**: Pa → Ma/Pa → Ga/Ma → Re/Ga → Sa
 - Cost between two frames = `1 − cosine_similarity`; DTW finds the minimum-cost alignment, and we score similarity.
 - The canonical Ghana cycle is `forward → reverse → forward → reverse → forward` (`GHANA_CYCLE`). We slide over every rotation of the phrase so the score doesn't depend on where the chant happens to start.
-- **Verdict formula** (exact): `is_valid = repetition_score > 0.35 AND ghana_confidence > 0.25`, where `ghana_confidence = 0.45 × repetition + 0.55 × dtw_score`. Length < 2.0 s or near-silence (rms < 0.01) → automatically invalid.
+- **Verdict formula** (exact, current): `is_valid` requires **all three** gates —
+  `repetition_score > 0.35`, `ghana_confidence > 0.25`, **and `direction_alternation ≥ 0.4`**
+  (the alternation gate was added on 2026-09-22, R4, so a monotone run that merely
+  self-repeats can no longer be called Ghana). Where
+  `ghana_confidence = 0.6 × mean_segment_similarity + 0.4 × cycle_score`, and the
+  reported overall `confidence = 0.4 × repetition + 0.4 × ghana_confidence + 0.2 × direction_alternation`.
+  Length < 2.0 s or near-silence (rms < 0.01) → automatically invalid.
 
 ### Step 5 — Raga detection (directional scoring + phrase tiebreak)
 - Convert detected pitches into swara presence using the `SWARA_MAP` (Sa=0 … Ni3=15 over the PCP bins).
@@ -176,8 +182,10 @@ Because real labelled Vedic recordings don't exist publicly, we **generate audio
 Automated suites in the repo: `test_ml_quick.py` (15 synthetic clips + real audio × 4 stages),
 `test_ml_pipeline.py` (vibrato/gamaka/breath-gap), `test_ml_audit.py` (15/15, non-circular
 12-TET ground truth), and — the newest, hardest layer — `test_ml_robustness.py`
-(21 probes, **16 hard assertions**, 5 characterised reports) — all run in CI
-(`Backend (Django + ML)` job).
+(21 probes, **18 hard assertions**, 3 characterised reports) — all run in CI
+(`Backend (Django + ML)` job). *(After the 2026-09-22 R4 fix the two
+`ghana_mono_*` probes were promoted from "characterised report" to **asserted
+negatives**, taking the hard-assertion count from 16 → 18.)*
 
 ### Layer 2.5 — The robustness battery (negative controls the judges can probe)
 `test_ml_robustness.py` went looking for ways the pipeline could lie, using the *Limits* section
@@ -192,8 +200,9 @@ negatives). Summary of what it asserts, with measured numbers:
 | `oct2_sa/pa/ni4` | notes an octave up fold down | 2×Sa→Sa'(bin 23), 2×Pa→Pa(bin 14), 2×Ni4→Ni4(bin 22) |
 | `noise_20db / noise_10db` | 12-TET scale buried in white noise | raga preserved at 20 dB (Mand 0.912) and 10 dB (Shankarabharanam 0.851) |
 | `mic_tilt` | 1-pole spectral tilt (mic coloration) | raga preserved (Shankarabharanam 0.889) |
-| `ghana_pos / ghana_rot` | canonical Ghana cycle + its phase rotation | both valid (conf ≈ 0.77) — DTW is tempo/rotation-invariant |
+| `ghana_pos / ghana_rot` | canonical Ghana cycle + its phase rotation | both valid (conf ≈ 0.81) — DTW is tempo/rotation-invariant |
 | `ghana_silence / ghana_noise` | **must be rejected** | silence rejected (RMS gate); **pure white noise rejected (spectral-flatness gate)** |
+| `ghana_mono_fwd / ghana_mono_rev` | monotone runs that trivially self-repeat (rep = 1.0) | **rejected** (is_valid=False, conf ≈ 0.71–0.73, `direction_alternation = 0.0`) — direction-alternation gate, added 2026-09-22 (R4) |
 
 The `ghana_noise` row is the honest money story: the battery *found a false positive* —
 pure broadband noise sailed through the old DTW checks as "valid Ghana" (conf 0.77)
@@ -211,6 +220,7 @@ couldn't, and we shipped the fix with the test that caught it.")*
 | Matching tolerance | ±25 cents | a note must be *near* a Shruti to claim it |
 | Near-silence gate | rms < 0.01 | silent recordings can't fake results |
 | Spectral-flatness gate | > 0.35 ⇒ reject | broadband noise can't pass Ghana validation (added after the robustness battery caught a false positive) |
+| Direction-alternation gate | `direction_alternation` ≥ 0.4 | monotone fwd/rev runs can't pass Ghana despite perfect self-repetition (added 2026-09-22, R4) |
 | Min. duration | 2.0 s, ≥5 segments | a 1-second clip can't be pattern-validated |
 | Raga confidence | best < 40% ⇒ **Inconclusive** | refuses to guess |
 | Lowness threshold | voiced_ratio ≈ <30% reported | self-flags noisy recordings |
@@ -306,12 +316,18 @@ Public Vedic/Sanskrit recitation data is sparse, so we curate a small,
 
 **The HF "trojan horse":** Hugging Face's free **ZeroGPU** tier requires the app to declare a GPU function via `@spaces.GPU`. Our ML is CPU-based (librosa + scikit-learn), so `hf-deploy/app.py`:
 1. starts `redis-server`,
-2. runs Django migrations,
+2. runs Django migrations, then seeds the landing-page sample (`seed_samples`, idempotent — synthesizes `recordings/test_10s.wav` from the app's own Shruti model, so `/media/recordings/test_10s.wav` never 404s after a Space volume wipe),
 3. starts the Celery worker,
 4. builds a throwaway Gradio UI containing a `@spaces.GPU` function that is **registered but never called** (satisfies the scan, consumes zero GPU minutes),
 5. **mounts real Django** inside Gradio's FastAPI server (Starlette `Mount`) so `/api`, `/admin`, `/media`, `/metrics` all answer on port 7860.
 
 One subtlety we debugged: Gradio rewrote request paths so Django saw `/analyze/5/` instead of `/api/analyze/5/`. The fix re-prepends the `/api` prefix and **resets `root_path=""`** so Django resolves full paths. That fix is exactly the kind of story judges love.
+
+**Boot is fail-closed on security (R2, 2026-09-22):** the launcher no longer injects a
+publicly-known fallback `DJANGO_SECRET_KEY`; `settings.py` refuses to boot in production
+with any known-insecure key. The real key is stored as a Space **secret**
+(Settings → Variables → `DJANGO_SECRET_KEY`), and a fresh strong key was rotated in on
+2026-09-22.
 
 ---
 

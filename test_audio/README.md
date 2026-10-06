@@ -28,8 +28,10 @@ this checklist keeps recordings inside.
       and never mid-pāda.
 - [ ] If capturing a Ghana-style sequence, use the **canonical cycle**
       (`forward, reverse, forward, reverse, forward`) — the DTW validator
-      accepts the cycle and its phase rotation; random walks and monotone runs
-      are rejected/characterised as corrupt in the robustness report.
+      accepts the cycle and its phase rotation; **monotone forward/reverse runs
+      are rejected** (direction-alternation gate, R4) and random
+      walks/jumbled alternations are characterised as corrupt in the
+      robustness report.
 - [ ] Keep takes **≤ 60 s** (pipeline and queue are tuned for ≤ 60 s clips;
       longer takes hit the greedy segmentation budget).
 

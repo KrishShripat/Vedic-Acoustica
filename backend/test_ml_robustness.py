@@ -237,13 +237,15 @@ TESTS = [
      "gen": lambda: white_noise(6.0),
      "notes": "Broadband noise rejected (spectral-flatness guard)"},
 
-    # ── Ghana Patha: structured-wrong (characterised, never fails) ───────────
-    {"name": "ghana_mono_fwd", "kind": "report",
+    # ── Ghana Patha: structured-wrong (direction-alternation gate, R4) ───────
+    # A monotone run self-repeats (rep = 1.0) but never alternates fwd/rev, so
+    # the alternation gate must reject it — these are now ASSERTED negatives.
+    {"name": "ghana_mono_fwd", "kind": "ghana_false",
      "gen": lambda: ghana_pattern(['a'] * 6),
-     "notes": "Monotone ascending run — anti-pattern probe"},
-    {"name": "ghana_mono_rev", "kind": "report",
+     "notes": "Monotone ascending run rejected (no fwd/rev alternation)"},
+    {"name": "ghana_mono_rev", "kind": "ghana_false",
      "gen": lambda: ghana_pattern(['d'] * 6),
-     "notes": "Monotone descending run — anti-pattern probe"},
+     "notes": "Monotone descending run rejected (no fwd/rev alternation)"},
     {"name": "ghana_jumbled", "kind": "report",
      "gen": lambda: ghana_pattern(['a', 'a', 'd', 'd', 'a', 'd']),
      "notes": "Out-of-order forward/reverse alternation probe"},
@@ -384,6 +386,7 @@ def main():
                 "is_valid": gh["is_valid"],
                 "confidence": round(gh.get("confidence", 0.0), 4),
                 "repetition": round(gh.get("repetition_score", 0.0), 4),
+                "alternation": round(gh.get("direction_alternation", 0.0), 4),
                 "reason": gh.get("reason"),
                 "detected_pattern": gh.get("detected_pattern"),
                 "n_segments": gh.get("n_segments"),
@@ -411,7 +414,9 @@ def main():
             rec["status"] = "REPORT"
             print(f"[{i:2d}/{len(TESTS)}] {t['kind']:8s} {t['name']:20s} "
                   f"valid={gh['is_valid']} conf={gh.get('confidence', 0.0):.4f} "
-                  f"rep={gh.get('repetition_score', 0):.4f} pattern={gh.get('detected_pattern')}")
+                  f"rep={gh.get('repetition_score', 0):.4f} "
+                  f"alt={gh.get('direction_alternation', 0):.4f} "
+                  f"pattern={gh.get('detected_pattern')}")
             results.append(rec)
             continue
 

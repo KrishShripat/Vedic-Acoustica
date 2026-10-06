@@ -274,6 +274,21 @@ _QUEUED_SNAPSHOT = {
 }
 
 
+def _progress_is_fresh(pk: int, max_age_seconds: float = 60.0) -> bool:
+    """True if a progress file for ``pk`` was written within the last N seconds.
+
+    A live re-analysis keeps overwriting its snapshot every few seconds, so a
+    fresh file means an in-flight task is genuinely working.  An *old* file is
+    suspect: a worker can die mid-task (or two racing tasks for the same
+    recording can cross-write) and leave a `running` snapshot behind, which
+    previously shadowed the DB state forever.
+    """
+    try:
+        return (time.time() - os.path.getmtime(_progress_path(pk))) <= max_age_seconds
+    except OSError:
+        return False
+
+
 def _progress_snapshot(pk: int) -> dict:
     """Current progress state for ``pk``.
 
@@ -282,12 +297,25 @@ def _progress_snapshot(pk: int) -> dict:
     back to the recording's persisted state: an already-analysed recording
     reports ``done`` rather than a never-resolving ``Queued``.  This is what
     keeps SSE reconnects and pollers from spinning forever at 0 %.
+
+    Stale-file guard: a progress file in state ``running`` is only trusted
+    while it is still being written (fresh mtime).  If the recording is already
+    marked analysed but an orphaned/racing task left an old ``running`` file
+    behind, the authoritative DB flag wins and we report ``done`` — otherwise
+    the progress bar would stay frozen at 20 % forever (observed on the live
+    HF Space: recording 16).  A re-analysis overwrites the file at queue time,
+    so an actually in-flight run still reports live percentages.
     """
     prog = _get_progress(pk)
+    analyzed = (AudioRecording.objects
+                .filter(pk=pk)
+                .values_list('is_analyzed', flat=True)
+                .first())
     if prog is not None:
+        if analyzed is True and not _progress_is_fresh(pk):
+            return dict(_DONE_SNAPSHOT)
         return prog
-    rec = AudioRecording.objects.filter(pk=pk).values_list('is_analyzed', flat=True).first()
-    if rec is True:
+    if analyzed is True:
         return dict(_DONE_SNAPSHOT)
     return dict(_QUEUED_SNAPSHOT)
 

@@ -10,7 +10,7 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 2.671,
+        "time_s": 2.534,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
@@ -51,7 +51,7 @@
         "pass": true,
         "time_s": 0.019,
         "is_valid": true,
-        "confidence": 0.9323,
+        "confidence": 0.8708,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -86,14 +86,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.75,
+        "time_s": 0.742,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.025,
+        "time_s": 0.024,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -126,8 +126,8 @@
       "ghana_patha": {
         "pass": true,
         "time_s": 0.02,
-        "is_valid": true,
-        "confidence": 0.9127,
+        "is_valid": false,
+        "confidence": 0.7765,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -162,14 +162,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.777,
+        "time_s": 0.739,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.026,
+        "time_s": 0.024,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -201,9 +201,9 @@
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.02,
+        "time_s": 0.019,
         "is_valid": true,
-        "confidence": 0.676,
+        "confidence": 0.6844,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -217,7 +217,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.004,
+        "time_s": 0.003,
         "is_inconclusive": true,
         "best": "Marwa",
         "detected_swaras": [
@@ -238,14 +238,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.779,
+        "time_s": 0.758,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.028,
+        "time_s": 0.027,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -277,9 +277,9 @@
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.022,
+        "time_s": 0.02,
         "is_valid": true,
-        "confidence": 0.6746,
+        "confidence": 0.6833,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -314,14 +314,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.768,
+        "time_s": 0.744,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.027,
+        "time_s": 0.025,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -355,7 +355,7 @@
         "pass": true,
         "time_s": 0.019,
         "is_valid": true,
-        "confidence": 0.9582,
+        "confidence": 0.8896,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -390,14 +390,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.802,
+        "time_s": 0.74,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.027,
+        "time_s": 0.024,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -429,9 +429,9 @@
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.021,
+        "time_s": 0.02,
         "is_valid": true,
-        "confidence": 0.6742,
+        "confidence": 0.683,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -445,7 +445,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.053,
+        "time_s": 0.052,
         "is_inconclusive": true,
         "best": "Mayamalavagowla",
         "detected_swaras": [
@@ -466,14 +466,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.78,
+        "time_s": 0.744,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.026,
+        "time_s": 0.024,
         "frames": 216,
         "unique_shrutis": 1
       },
@@ -506,8 +506,8 @@
       "ghana_patha": {
         "pass": true,
         "time_s": 0.019,
-        "is_valid": true,
-        "confidence": 0.8605,
+        "is_valid": false,
+        "confidence": 0.7386,
         "repetition": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -547,7 +547,7 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.689,
+        "time_s": 1.606,
         "duration": 11.2,
         "frames": 483,
         "voiced_ratio": 0.9917
@@ -562,7 +562,7 @@
         "pass": true,
         "time_s": 0.077,
         "is_valid": false,
-        "confidence": 0.508,
+        "confidence": 0.4824,
         "repetition": 0.1778,
         "n_segments": 11,
         "detected_pattern": [
@@ -581,7 +581,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.178,
+        "time_s": 0.183,
         "expected_raga": "Bilawal",
         "acceptable_ragas": [
           "Bilawal",
@@ -640,22 +640,22 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.666,
+        "time_s": 1.575,
         "duration": 11.2,
         "frames": 483,
         "voiced_ratio": 0.9917
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.032,
+        "time_s": 0.033,
         "frames": 483,
         "unique_shrutis": 22
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.077,
+        "time_s": 0.073,
         "is_valid": false,
-        "confidence": 0.4843,
+        "confidence": 0.4651,
         "repetition": 0.1778,
         "n_segments": 11,
         "detected_pattern": [
@@ -732,7 +732,7 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.67,
+        "time_s": 1.596,
         "duration": 11.2,
         "frames": 483,
         "voiced_ratio": 0.9917
@@ -745,9 +745,9 @@
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.077,
+        "time_s": 0.078,
         "is_valid": false,
-        "confidence": 0.4704,
+        "confidence": 0.4951,
         "repetition": 0.1778,
         "n_segments": 11,
         "detected_pattern": [
@@ -766,7 +766,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.114,
+        "time_s": 0.115,
         "expected_raga": "Bhairav",
         "acceptable_ragas": [
           "Bhairav",
@@ -819,22 +819,22 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.193,
+        "time_s": 1.165,
         "duration": 8.0,
         "frames": 345,
         "voiced_ratio": 0.9884
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.03,
+        "time_s": 0.032,
         "frames": 345,
         "unique_shrutis": 19
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.038,
+        "time_s": 0.04,
         "is_valid": false,
-        "confidence": 0.4586,
+        "confidence": 0.5543,
         "repetition": 0.2857,
         "n_segments": 8,
         "detected_pattern": [
@@ -850,7 +850,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.005,
+        "time_s": 0.004,
         "expected_raga": "Malkauns",
         "acceptable_ragas": [],
         "detected_raga": "Malkauns",
@@ -901,22 +901,22 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.628,
+        "time_s": 1.631,
         "duration": 11.2,
         "frames": 483,
         "voiced_ratio": 0.9917
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.034,
+        "time_s": 0.035,
         "frames": 483,
         "unique_shrutis": 20
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.072,
+        "time_s": 0.075,
         "is_valid": false,
-        "confidence": 0.505,
+        "confidence": 0.4402,
         "repetition": 0.1778,
         "n_segments": 11,
         "detected_pattern": [
@@ -935,7 +935,7 @@
       },
       "raga_detection": {
         "pass": true,
-        "time_s": 0.152,
+        "time_s": 0.163,
         "expected_raga": "Khamaj",
         "acceptable_ragas": [
           "Khamaj",
@@ -990,7 +990,7 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.156,
+        "time_s": 1.2,
         "duration": 8.0,
         "frames": 345,
         "voiced_ratio": 0.9884
@@ -1003,9 +1003,9 @@
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.038,
+        "time_s": 0.039,
         "is_valid": false,
-        "confidence": 0.58,
+        "confidence": 0.4712,
         "repetition": 0.2857,
         "n_segments": 8,
         "detected_pattern": [
@@ -1073,14 +1073,14 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 1.024,
+        "time_s": 0.97,
         "duration": 6.4,
         "frames": 276,
         "voiced_ratio": 0.9855
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.032,
+        "time_s": 0.03,
         "frames": 276,
         "unique_shrutis": 14
       },
@@ -1088,7 +1088,7 @@
         "pass": true,
         "time_s": 0.026,
         "is_valid": true,
-        "confidence": 0.669,
+        "confidence": 0.6429,
         "repetition": 0.5,
         "n_segments": 6,
         "detected_pattern": [
@@ -1151,22 +1151,22 @@
     "tests": {
       "feature_extraction": {
         "pass": true,
-        "time_s": 0.938,
+        "time_s": 0.907,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 1.0
       },
       "clustering": {
         "pass": true,
-        "time_s": 0.029,
+        "time_s": 0.03,
         "frames": 259,
         "unique_shrutis": 14
       },
       "ghana_patha": {
         "pass": true,
-        "time_s": 0.022,
+        "time_s": 0.024,
         "is_valid": true,
-        "confidence": 0.7743,
+        "confidence": 0.8068,
         "repetition": 0.6,
         "n_segments": 6,
         "detected_pattern": [

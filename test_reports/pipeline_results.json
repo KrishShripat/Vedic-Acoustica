@@ -4,7 +4,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/sa_pure_261hz.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 2.549,
+        "duration_s": 2.494,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
@@ -48,7 +48,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.043,
+        "duration_s": 0.045,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
@@ -80,10 +80,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.016,
+        "duration_s": 0.019,
         "success": true,
         "is_valid": true,
-        "confidence": 0.9323,
+        "confidence": 0.8708,
         "repetition_score": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -103,6 +103,7 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.6,
           "mean_segment_similarity": 0.7948
         }
       },
@@ -150,7 +151,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/pa_pure_392hz.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 0.732,
+        "duration_s": 0.738,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
@@ -194,7 +195,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.026,
+        "duration_s": 0.025,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
@@ -226,10 +227,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.015,
+        "duration_s": 0.019,
         "success": true,
-        "is_valid": true,
-        "confidence": 0.9127,
+        "is_valid": false,
+        "confidence": 0.7765,
         "repetition_score": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -249,6 +250,7 @@
         ],
         "dtw_details": {
           "cycle_score": 0.75,
+          "direction_alternation": 0.2,
           "mean_segment_similarity": 0.9021
         }
       },
@@ -306,7 +308,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/re2_pure_279hz.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 0.731,
+        "duration_s": 0.719,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
@@ -350,7 +352,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.026,
+        "duration_s": 0.023,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
@@ -382,10 +384,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.015,
+        "duration_s": 0.02,
         "success": true,
         "is_valid": true,
-        "confidence": 0.6746,
+        "confidence": 0.6833,
         "repetition_score": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -405,6 +407,7 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.6,
           "mean_segment_similarity": 0.0138
         }
       },
@@ -457,7 +460,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ga4_pure_331hz.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 0.757,
+        "duration_s": 0.744,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
@@ -501,7 +504,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.026,
+        "duration_s": 0.024,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
@@ -533,10 +536,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.016,
+        "duration_s": 0.02,
         "success": true,
         "is_valid": true,
-        "confidence": 0.958,
+        "confidence": 0.8895,
         "repetition_score": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -556,11 +559,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.6,
           "mean_segment_similarity": 0.8728
         }
       },
       "raga_detection": {
-        "duration_s": 0.004,
+        "duration_s": 0.003,
         "success": true,
         "is_inconclusive": true,
         "confidence_threshold": 0.4,
@@ -613,7 +617,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/dha1_pure_413hz.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 0.772,
+        "duration_s": 0.709,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
@@ -657,7 +661,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.026,
+        "duration_s": 0.023,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
@@ -689,10 +693,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.015,
+        "duration_s": 0.019,
         "success": true,
         "is_valid": true,
-        "confidence": 0.6742,
+        "confidence": 0.683,
         "repetition_score": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -712,11 +716,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.6,
           "mean_segment_similarity": 0.0127
         }
       },
       "raga_detection": {
-        "duration_s": 0.047,
+        "duration_s": 0.05,
         "success": true,
         "is_inconclusive": true,
         "confidence_threshold": 0.4,
@@ -769,7 +774,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ma1_oct_698hz.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 0.752,
+        "duration_s": 0.727,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
@@ -813,7 +818,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.027,
+        "duration_s": 0.023,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
@@ -845,10 +850,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.016,
+        "duration_s": 0.02,
         "success": true,
-        "is_valid": true,
-        "confidence": 0.8605,
+        "is_valid": false,
+        "confidence": 0.7386,
         "repetition_score": 1.0,
         "n_segments": 6,
         "detected_pattern": [
@@ -868,6 +873,7 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.2,
           "mean_segment_similarity": 0.5773
         }
       },
@@ -925,7 +931,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ascending_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.676,
+        "duration_s": 1.656,
         "success": true,
         "audio_duration_s": 12.0,
         "sample_rate": 22050,
@@ -969,7 +975,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.038,
+        "duration_s": 0.032,
         "success": true,
         "n_clusters": 22,
         "total_frames": 517,
@@ -1005,10 +1011,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.074,
+        "duration_s": 0.084,
         "success": true,
         "is_valid": false,
-        "confidence": 0.4252,
+        "confidence": 0.4015,
         "repetition_score": 0.0182,
         "n_segments": 12,
         "detected_pattern": [
@@ -1034,11 +1040,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4545,
           "mean_segment_similarity": 0.5971
         }
       },
       "raga_detection": {
-        "duration_s": 0.176,
+        "duration_s": 0.194,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -1126,7 +1133,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/descending_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.676,
+        "duration_s": 1.661,
         "success": true,
         "audio_duration_s": 12.0,
         "sample_rate": 22050,
@@ -1206,10 +1213,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.076,
+        "duration_s": 0.086,
         "success": true,
         "is_valid": false,
-        "confidence": 0.4255,
+        "confidence": 0.4017,
         "repetition_score": 0.0182,
         "n_segments": 12,
         "detected_pattern": [
@@ -1235,11 +1242,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4545,
           "mean_segment_similarity": 0.598
         }
       },
       "raga_detection": {
-        "duration_s": 0.18,
+        "duration_s": 0.187,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -1327,7 +1335,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ghana_pattern_sim.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.412,
+        "duration_s": 1.389,
         "success": true,
         "audio_duration_s": 10.0,
         "sample_rate": 22050,
@@ -1371,7 +1379,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.032,
+        "duration_s": 0.031,
         "success": true,
         "n_clusters": 22,
         "total_frames": 431,
@@ -1407,10 +1415,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.05,
+        "duration_s": 0.061,
         "success": true,
         "is_valid": false,
-        "confidence": 0.5954,
+        "confidence": 0.5381,
         "repetition_score": 0.2222,
         "n_segments": 10,
         "detected_pattern": [
@@ -1434,11 +1442,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4444,
           "mean_segment_similarity": 0.8346
         }
       },
       "raga_detection": {
-        "duration_s": 0.006,
+        "duration_s": 0.005,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -1516,7 +1525,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/bilawal_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.695,
+        "duration_s": 1.637,
         "success": true,
         "audio_duration_s": 12.0,
         "sample_rate": 22050,
@@ -1560,7 +1569,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.033,
+        "duration_s": 0.034,
         "success": true,
         "n_clusters": 22,
         "total_frames": 517,
@@ -1596,10 +1605,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.076,
+        "duration_s": 0.085,
         "success": true,
         "is_valid": false,
-        "confidence": 0.5214,
+        "confidence": 0.4859,
         "repetition_score": 0.2182,
         "n_segments": 12,
         "detected_pattern": [
@@ -1625,11 +1634,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4545,
           "mean_segment_similarity": 0.6157
         }
       },
       "raga_detection": {
-        "duration_s": 0.185,
+        "duration_s": 0.193,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -1717,7 +1727,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/kalyani_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.702,
+        "duration_s": 1.661,
         "success": true,
         "audio_duration_s": 12.0,
         "sample_rate": 22050,
@@ -1761,7 +1771,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.033,
+        "duration_s": 0.034,
         "success": true,
         "n_clusters": 22,
         "total_frames": 517,
@@ -1797,10 +1807,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.073,
+        "duration_s": 0.087,
         "success": true,
         "is_valid": false,
-        "confidence": 0.498,
+        "confidence": 0.4689,
         "repetition_score": 0.2182,
         "n_segments": 12,
         "detected_pattern": [
@@ -1826,11 +1836,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4545,
           "mean_segment_similarity": 0.5448
         }
       },
       "raga_detection": {
-        "duration_s": 0.059,
+        "duration_s": 0.063,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -1918,7 +1929,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/bhairav_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.72,
+        "duration_s": 1.691,
         "success": true,
         "audio_duration_s": 12.0,
         "sample_rate": 22050,
@@ -1998,10 +2009,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.077,
+        "duration_s": 0.085,
         "success": true,
         "is_valid": false,
-        "confidence": 0.4848,
+        "confidence": 0.4594,
         "repetition_score": 0.2182,
         "n_segments": 12,
         "detected_pattern": [
@@ -2027,11 +2038,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4545,
           "mean_segment_similarity": 0.505
         }
       },
       "raga_detection": {
-        "duration_s": 0.116,
+        "duration_s": 0.122,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -2119,40 +2131,40 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/silence_5s.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 0.772,
+        "duration_s": 0.754,
         "success": true,
         "audio_duration_s": 5.0,
         "sample_rate": 22050,
         "total_frames": 216,
-        "voiced_ratio": 0.2454,
-        "tempo_bpm": 103.36,
+        "voiced_ratio": 0.4352,
+        "tempo_bpm": 123.05,
         "mean_pcp": [
-          0.044153,
-          0.033646,
-          0.02853,
-          0.031584,
-          0.028794,
-          0.02946,
-          0.042242,
-          0.041464,
-          0.034178,
-          0.041545,
-          0.037068,
-          0.037044,
-          0.043687,
-          0.056076,
-          0.045528,
-          0.042167,
-          0.051455,
-          0.048499,
-          0.043851,
-          0.055619,
-          0.05095,
-          0.053142,
-          0.079318
+          0.041746,
+          0.032845,
+          0.028174,
+          0.032163,
+          0.03032,
+          0.028672,
+          0.040155,
+          0.040735,
+          0.034537,
+          0.043374,
+          0.038238,
+          0.03741,
+          0.043302,
+          0.057766,
+          0.044563,
+          0.039988,
+          0.050981,
+          0.049634,
+          0.043715,
+          0.054631,
+          0.054236,
+          0.054314,
+          0.078499
         ],
         "f0_track_length": 216,
-        "f0_voiced_count": 53,
+        "f0_voiced_count": 94,
         "mfcc_shape": [
           13,
           216
@@ -2163,38 +2175,38 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.026,
+        "duration_s": 0.027,
         "success": true,
         "n_clusters": 22,
         "total_frames": 216,
-        "unique_shrutis_assigned": 7,
+        "unique_shrutis_assigned": 8,
         "top_5_shrutis": {
-          "Shruti 23 (Sa\u2019)": 199,
-          "Shruti 20 (Ni2, komal)": 5,
-          "Shruti 22 (Ni4, shuddha)": 4,
-          "Shruti 17 (Dha3, shuddha)": 3,
-          "Shruti 21 (Ni3, shuddha)": 2
+          "Shruti 23 (Sa\u2019)": 189,
+          "Shruti 21 (Ni3, shuddha)": 7,
+          "Shruti 14 (Pa)": 6,
+          "Shruti 18 (Dha4, shuddha)": 4,
+          "Shruti 20 (Ni2, komal)": 4
         },
         "mean_pcp_top_5": [
           [
             "Shruti 23 (Sa\u2019)",
-            0.079318
+            0.078499
           ],
           [
             "Shruti 14 (Pa)",
-            0.056076
+            0.057766
           ],
           [
             "Shruti 20 (Ni2, komal)",
-            0.055619
+            0.054631
           ],
           [
             "Shruti 22 (Ni4, shuddha)",
-            0.053142
+            0.054314
           ],
           [
-            "Shruti 17 (Dha3, shuddha)",
-            0.051455
+            "Shruti 21 (Ni3, shuddha)",
+            0.054236
           ]
         ]
       },
@@ -2233,7 +2245,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/vibrato_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.76,
+        "duration_s": 1.648,
         "success": true,
         "audio_duration_s": 12.0,
         "sample_rate": 22050,
@@ -2277,7 +2289,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.034,
+        "duration_s": 0.031,
         "success": true,
         "n_clusters": 22,
         "total_frames": 517,
@@ -2313,10 +2325,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.076,
+        "duration_s": 0.09,
         "success": true,
         "is_valid": false,
-        "confidence": 0.422,
+        "confidence": 0.3991,
         "repetition_score": 0.0182,
         "n_segments": 12,
         "detected_pattern": [
@@ -2342,11 +2354,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.4545,
           "mean_segment_similarity": 0.5873
         }
       },
       "raga_detection": {
-        "duration_s": 0.182,
+        "duration_s": 0.184,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -2439,7 +2452,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/gamaka_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.255,
+        "duration_s": 1.169,
         "success": true,
         "audio_duration_s": 8.5,
         "sample_rate": 22050,
@@ -2483,7 +2496,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.037,
+        "duration_s": 0.03,
         "success": true,
         "n_clusters": 22,
         "total_frames": 367,
@@ -2519,10 +2532,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.035,
+        "duration_s": 0.043,
         "success": true,
         "is_valid": false,
-        "confidence": 0.4264,
+        "confidence": 0.3422,
         "repetition_score": 0.0476,
         "n_segments": 8,
         "detected_pattern": [
@@ -2544,11 +2557,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.1429,
           "mean_segment_similarity": 0.5607
         }
       },
       "raga_detection": {
-        "duration_s": 0.128,
+        "duration_s": 0.136,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -2636,7 +2650,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/breath_gap_scale.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 3.042,
+        "duration_s": 3.037,
         "success": true,
         "audio_duration_s": 21.75,
         "sample_rate": 22050,
@@ -2644,29 +2658,29 @@
         "voiced_ratio": 0.8858,
         "tempo_bpm": 234.91,
         "mean_pcp": [
-          0.114076,
-          0.008291,
-          0.008317,
-          0.04226,
-          0.083544,
-          0.007278,
-          0.014035,
-          0.051305,
-          0.075558,
-          0.091978,
-          0.023075,
-          0.006779,
-          0.013169,
-          0.107542,
-          0.007958,
-          0.006248,
-          0.031657,
-          0.086009,
-          0.007559,
-          0.008054,
-          0.022243,
-          0.092471,
-          0.090592
+          0.113791,
+          0.008281,
+          0.008276,
+          0.042184,
+          0.083585,
+          0.007211,
+          0.013995,
+          0.051178,
+          0.075553,
+          0.092045,
+          0.023148,
+          0.00667,
+          0.013368,
+          0.107424,
+          0.007963,
+          0.006179,
+          0.031485,
+          0.086339,
+          0.007716,
+          0.008076,
+          0.022331,
+          0.092681,
+          0.090524
         ],
         "f0_track_length": 937,
         "f0_voiced_count": 830,
@@ -2687,40 +2701,40 @@
         "unique_shrutis_assigned": 14,
         "top_5_shrutis": {
           "Shruti 10 (Ma1, shuddha)": 119,
-          "Shruti 14 (Pa)": 117,
-          "Shruti 22 (Ni4, shuddha)": 116,
+          "Shruti 14 (Pa)": 118,
+          "Shruti 22 (Ni4, shuddha)": 117,
           "Shruti 1 (Sa)": 115,
-          "Shruti 23 (Sa\u2019)": 115
+          "Shruti 18 (Dha4, shuddha)": 115
         },
         "mean_pcp_top_5": [
           [
             "Shruti 1 (Sa)",
-            0.114076
+            0.113791
           ],
           [
             "Shruti 14 (Pa)",
-            0.107542
+            0.107424
           ],
           [
             "Shruti 22 (Ni4, shuddha)",
-            0.092471
+            0.092681
           ],
           [
             "Shruti 10 (Ma1, shuddha)",
-            0.091978
+            0.092045
           ],
           [
             "Shruti 23 (Sa\u2019)",
-            0.090592
+            0.090524
           ]
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.247,
+        "duration_s": 0.274,
         "success": true,
         "is_valid": false,
-        "confidence": 0.4687,
-        "repetition_score": 0.1211,
+        "confidence": 0.4575,
+        "repetition_score": 0.1158,
         "n_segments": 21,
         "detected_pattern": [
           "reverse",
@@ -2754,11 +2768,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
-          "mean_segment_similarity": 0.5886
+          "direction_alternation": 0.55,
+          "mean_segment_similarity": 0.5884
         }
       },
       "raga_detection": {
-        "duration_s": 0.322,
+        "duration_s": 0.331,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -2826,12 +2841,12 @@
           {
             "raga_name": "Mand",
             "tradition": "Rajasthani folk",
-            "confidence": 0.7306
+            "confidence": 0.7317
           },
           {
             "raga_name": "Bilawal",
             "tradition": "Hindustani",
-            "confidence": 0.7272
+            "confidence": 0.7269
           }
         ],
         "inconclusive_reason": null
@@ -2846,7 +2861,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/isavasya_ghanam_60s.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 8.272,
+        "duration_s": 8.271,
         "success": true,
         "audio_duration_s": 60.0,
         "sample_rate": 22050,
@@ -2890,7 +2905,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.115,
+        "duration_s": 0.113,
         "success": true,
         "n_clusters": 22,
         "total_frames": 2584,
@@ -2926,10 +2941,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 2.016,
+        "duration_s": 2.123,
         "success": true,
         "is_valid": true,
-        "confidence": 0.7545,
+        "confidence": 0.7348,
         "repetition_score": 0.9725,
         "n_segments": 60,
         "detected_pattern": [
@@ -3003,11 +3018,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.5763,
           "mean_segment_similarity": 0.2936
         }
       },
       "raga_detection": {
-        "duration_s": 0.031,
+        "duration_s": 0.029,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -3105,7 +3121,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/rudram_60s.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 8.335,
+        "duration_s": 8.2,
         "success": true,
         "audio_duration_s": 60.0,
         "sample_rate": 22050,
@@ -3149,7 +3165,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.101,
+        "duration_s": 0.104,
         "success": true,
         "n_clusters": 22,
         "total_frames": 2584,
@@ -3185,10 +3201,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 2.011,
+        "duration_s": 2.144,
         "success": true,
         "is_valid": true,
-        "confidence": 0.7943,
+        "confidence": 0.7757,
         "repetition_score": 0.9988,
         "n_segments": 60,
         "detected_pattern": [
@@ -3262,11 +3278,12 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.6271,
           "mean_segment_similarity": 0.3782
         }
       },
       "raga_detection": {
-        "duration_s": 0.03,
+        "duration_s": 0.028,
         "success": true,
         "is_inconclusive": false,
         "confidence_threshold": 0.4,
@@ -3359,7 +3376,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/test_10s.wav",
     "stages": {
       "feature_extraction": {
-        "duration_s": 1.471,
+        "duration_s": 1.375,
         "success": true,
         "audio_duration_s": 10.0,
         "sample_rate": 22050,
@@ -3403,7 +3420,7 @@
         ]
       },
       "clustering": {
-        "duration_s": 0.033,
+        "duration_s": 0.032,
         "success": true,
         "n_clusters": 22,
         "total_frames": 431,
@@ -3439,10 +3456,10 @@
         ]
       },
       "ghana_patha": {
-        "duration_s": 0.052,
+        "duration_s": 0.062,
         "success": true,
         "is_valid": true,
-        "confidence": 0.7028,
+        "confidence": 0.7071,
         "repetition_score": 0.8611,
         "n_segments": 10,
         "detected_pattern": [
@@ -3466,6 +3483,7 @@
         ],
         "dtw_details": {
           "cycle_score": 1.0,
+          "direction_alternation": 0.6667,
           "mean_segment_similarity": 0.2888
         }
       },
