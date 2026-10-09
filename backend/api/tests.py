@@ -128,7 +128,11 @@ class UserIsolationTestCase(TestCase):
         from unittest.mock import patch
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.client.force_authenticate(user=self.user_a)
-        wav_file = SimpleUploadedFile("test_sample.wav", b"RIFF" + b"\x00" * 40, content_type="audio/wav")
+        wav_file = SimpleUploadedFile(
+            "test_sample.wav",
+            b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00" + b"\x00" * 20,
+            content_type="audio/wav"
+        )
         with patch('api.tasks.build_playback_file_task.delay'):
             resp = self.client.post(reverse('upload_audio'), {'audio_file': wav_file, 'title': 'My Chant'}, format='multipart')
         self.assertEqual(resp.status_code, 201)
@@ -136,6 +140,35 @@ class UserIsolationTestCase(TestCase):
         created_rec = AudioRecording.objects.get(id=resp.data['id'])
         self.assertEqual(created_rec.uploaded_by, self.user_a)
         self.assertEqual(resp.data['uploaded_by'], self.user_a.id)
+
+    def test_upload_rejects_non_audio_content_masquerading_as_wav(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_authenticate(user=self.user_a)
+        fake_wav = SimpleUploadedFile("malware.wav", b"<html><body>not audio</body></html>", content_type="audio/wav")
+        resp = self.client.post(reverse('upload_audio'), {'audio_file': fake_wav, 'title': 'Malware'}, format='multipart')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('audio_file', resp.data)
+        self.assertIn('does not match a valid audio format', resp.data['audio_file'][0])
+
+    def test_upload_accepts_valid_audio_formats(self):
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_authenticate(user=self.user_a)
+
+        mp3_file = SimpleUploadedFile("valid.mp3", b"ID3\x03\x00\x00\x00\x00\x00\x10" + b"\x00" * 20, content_type="audio/mpeg")
+        with patch('api.tasks.build_playback_file_task.delay'):
+            resp = self.client.post(reverse('upload_audio'), {'audio_file': mp3_file, 'title': 'Valid MP3'}, format='multipart')
+        self.assertEqual(resp.status_code, 201)
+
+        ogg_file = SimpleUploadedFile("valid.ogg", b"OggS\x00\x02\x00\x00\x00\x00" + b"\x00" * 20, content_type="audio/ogg")
+        with patch('api.tasks.build_playback_file_task.delay'):
+            resp = self.client.post(reverse('upload_audio'), {'audio_file': ogg_file, 'title': 'Valid OGG'}, format='multipart')
+        self.assertEqual(resp.status_code, 201)
+
+        flac_file = SimpleUploadedFile("valid.flac", b"fLaC\x00\x00\x00\x22" + b"\x00" * 20, content_type="audio/flac")
+        with patch('api.tasks.build_playback_file_task.delay'):
+            resp = self.client.post(reverse('upload_audio'), {'audio_file': flac_file, 'title': 'Valid FLAC'}, format='multipart')
+        self.assertEqual(resp.status_code, 201)
 
 
 class AuthAPITestCase(TestCase):

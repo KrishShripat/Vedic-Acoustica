@@ -254,16 +254,22 @@ graph LR
 #### F-08: Upload validation relies only on file extension — no MIME/magic-byte check
 - **Area:** Security
 - **Severity:** High
-- **Evidence:** [serializers.py:44](file:///home/Arc/Vedic-Acoustica/backend/api/serializers.py#L44): `if not value.name.lower().endswith(self._ALLOWED_EXTENSIONS)`. A file named `malware.wav` with arbitrary content passes validation.
-- **Impact:** An attacker can upload any file type by simply naming it `.wav`. While librosa will likely reject non-audio content, the file is already stored on disk.
-- **Fix:** Add `python-magic` for MIME type detection:
-  ```python
-  import magic
-  mime = magic.from_buffer(value.read(1024), mime=True)
-  value.seek(0)
-  if mime not in ('audio/wav', 'audio/mpeg', 'audio/ogg', 'audio/flac', ...):
-      raise ValidationError(...)
-  ```
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [serializers.py:44](file:///home/Arc/Vedic-Acoustica/backend/api/serializers.py#L44): Previously only checked `value.name.lower().endswith(self._ALLOWED_EXTENSIONS)`. Any non-audio file (e.g. HTML files, scripts, binaries) renamed to `.wav` passed validation and was written directly to the media storage on disk.
+- **Impact:** An attacker could upload arbitrary payloads disguised with audio extensions, bypassing validation and potentially polluting media storage.
+- **Fix:**
+  1. Implemented container magic-byte verification in `validate_audio_file` in [serializers.py:48-67](file:///home/Arc/Vedic-Acoustica/backend/api/serializers.py#L48-L67):
+     - WAV: Validates RIFF/RIFX container signature and WAVE format identifier at offset 8.
+     - MP3: Validates ID3 tag container header or MPEG sync word (`0xFF` with upper 3 bits).
+     - OGG: Validates `OggS` container signature.
+     - FLAC: Validates `fLaC` stream marker.
+  2. Preserves stream position safely using `tell()` and `seek()` for downstream saving.
+  3. Added unit tests `test_upload_rejects_non_audio_content_masquerading_as_wav` and `test_upload_accepts_valid_audio_formats` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py).
+  4. Synced serializer to HF deployment mirror.
+- **Verification & Proof:**
+  - Non-audio content disguised as `.wav` returns HTTP 400 Bad Request: `"Uploaded file header does not match a valid audio format (WAV, MP3, OGG, or FLAC)."`.
+  - Legitimate WAV, MP3, OGG, and FLAC uploads return HTTP 201 Created.
+  - Full Django test suite passed: 44/44 tests (`manage.py test api ml_engine`).
 - **Effort:** S | **Priority:** P1
 
 #### F-09: Token stored in localStorage — XSS exposure
@@ -408,7 +414,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | ALLOWED_HOSTS | ✅ Fail-closed | Raises `ImproperlyConfigured` if unset in production |
 | CORS | ✅ Explicit allowlist | `CORS_ALLOW_ALL_ORIGINS = False` |
 | Rate limiting | ✅ Per-scope | 60/min general, 10/hr upload/analyze |
-| Upload validation | ⚠️ Extension-only | No MIME/magic check (F-08) |
+| Upload validation | ✅ Extension + Magic Bytes | Verified WAV/MP3/OGG/FLAC container signatures (F-08) |
 | Token auth | ⚠️ localStorage | XSS-vulnerable (F-09) |
 | Registration | ⚠️ Open | No CAPTCHA/email verification (F-10) |
 | Data isolation | ✅ Enforced | Scoped by uploaded_by FK + public corpus allowance (F-07) |
@@ -477,7 +483,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-05 | Replace `plotly.js-dist` with a lighter build; add code splitting | ✅ **RESOLVED** |
 | F-06 | Add `IsAuthenticated` to list/detail recording views | ✅ **RESOLVED** |
 | F-07 | Add `uploaded_by` FK to `AudioRecording`; filter by user | ✅ **RESOLVED** |
-| F-08 | Add MIME/magic-byte validation on upload |
+| F-08 | Add MIME/magic-byte validation on upload | ✅ **RESOLVED** |
 
 ### Later (P2–P3)
 

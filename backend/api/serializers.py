@@ -46,6 +46,25 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
                 f"Unsupported file type. "
                 f"Allowed extensions: {', '.join(self._ALLOWED_EXTENSIONS)}."
             )
+
+        # Verify magic bytes to reject non-audio files masquerading with audio extensions
+        pos = value.tell() if hasattr(value, 'tell') else 0
+        try:
+            head = value.read(32)
+        finally:
+            if hasattr(value, 'seek'):
+                value.seek(pos)
+
+        is_wav = (head[:4] in (b'RIFF', b'RIFX') and len(head) >= 12 and head[8:12] == b'WAVE')
+        is_mp3 = head[:3] == b'ID3' or (len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0)
+        is_ogg = head[:4] == b'OggS'
+        is_flac = head[:4] == b'fLaC'
+
+        if not (is_wav or is_mp3 or is_ogg or is_flac):
+            raise serializers.ValidationError(
+                "Uploaded file header does not match a valid audio format (WAV, MP3, OGG, or FLAC)."
+            )
+
         return value
 
 
