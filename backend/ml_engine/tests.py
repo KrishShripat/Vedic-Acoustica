@@ -70,4 +70,39 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         self.assertFalse(set(kb['avarohana_bins']).isdisjoint(ni_bins))
 
 
+class ClusterFeatureScalingTestCase(TestCase):
+    def test_run_clustering_output_structure(self):
+        """run_clustering must return valid clusters, labels, and 35-D unscaled centroids."""
+        import numpy as np
+        from ml_engine.ml_engine import run_clustering
+
+        n_frames = 100
+        # Synthetic MFCC: range ~[-400, 100]
+        mfcc = np.random.RandomState(42).randn(13, n_frames) * 50.0 - 200.0
+        # Synthetic Chroma: range ~[0, 1]
+        chroma = np.random.RandomState(42).rand(22, n_frames)
+        pcp = np.random.RandomState(42).rand(23, n_frames)
+
+        features = {
+            'mfcc': mfcc,
+            'chroma': chroma,
+            'pcp': pcp,
+            'mean_pcp': pcp.mean(axis=1),
+        }
+
+        result = run_clustering(features)
+        self.assertIn('shruti_clusters', result)
+        self.assertIn('labels', result)
+        self.assertEqual(len(result['labels']), n_frames)
+        self.assertEqual(len(result['shruti_clusters']), 22)
+
+        # Centroid must have 35 dimensions (13 MFCC + 22 Chroma)
+        c1 = result['shruti_clusters']['shruti_1']['centroid']
+        self.assertEqual(len(c1), 35)
+        # Check that centroids are in unscaled feature range, not pure z-scores
+        mfcc_part = np.array([c1[:13] for c1 in [cl['centroid'] for cl in result['shruti_clusters'].values()]])
+        self.assertTrue(np.any(mfcc_part < -50.0), "Centroids should be in original unscaled MFCC range")
+
+
+
 

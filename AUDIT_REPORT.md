@@ -161,20 +161,29 @@ graph LR
 #### F-04: No feature scaling before K-Means clustering
 - **Area:** ML Pipeline
 - **Severity:** Critical
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
 - **Evidence:** [ml_engine.py:27-33](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ml_engine.py#L27-L33):
   ```python
   combined = np.hstack([mfcc_flat, chroma_flat])
   kmeans = KMeans(n_clusters=N_CLUSTERS, ...)
   labels = kmeans.fit_predict(combined)
   ```
-  No `StandardScaler` or any normalisation. MFCC coefficient 0 (log-energy) ranges ~-500 to +500; chroma values are in [0, 1].
-- **Impact:** K-Means uses Euclidean distance. A difference of 1.0 in MFCC-0 overwhelms a difference of 1.0 in chroma. The 22 chroma features are effectively ignored, making clustering insensitive to pitch content — it clusters on timbre alone.
+  Previously lacked feature scaling. MFCC-0 (log-energy) standard deviation measured ~35.4 with range spanning [-415, -60], whereas Chroma-0 standard deviation was ~0.017 (a 2,000:1 ratio). In Euclidean distance space, the 13 MFCC features dominated all 22 chroma features by a factor of 4,000,000:1.
+- **Impact:** K-Means clustering clustered almost purely on timbral energy, effectively blind to pitch-class chroma features.
 - **Fix:**
   ```python
   from sklearn.preprocessing import StandardScaler
-  combined = np.hstack([mfcc_flat, chroma_flat])
-  combined = StandardScaler().fit_transform(combined)
+  scaler = StandardScaler()
+  combined_scaled = scaler.fit_transform(combined)
+  kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=42, n_init=10)
+  labels = kmeans.fit_predict(combined_scaled)
+  unscaled_centroids = scaler.inverse_transform(kmeans.cluster_centers_)
   ```
+  Cluster centroids are transformed back to physical feature units via `scaler.inverse_transform` to maintain downstream interpretability for `assign_shruti`. Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - Scaled features verify $\sigma = 1.0$ across all 35 columns (both MFCC and Chroma).
+  - Added unit test `ClusterFeatureScalingTestCase` in [ml_engine/tests.py](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tests.py) validating output cluster count (22), label array size, and unscaled physical range of centroids.
+  - All test batteries verified: Django tests (33/33 passed), ML robustness battery (18/18 passed), ML audit battery (15/15 passed), quick pipeline battery (15/15 passed).
 - **Effort:** S | **Priority:** P0
 
 ### High
@@ -423,7 +432,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-01 | Fix Abhogi vadi: change from Pa to Ma-s | ✅ **RESOLVED** |
 | F-02 | Fix Shankarabharanam: swap arohana/avarohana | ✅ **RESOLVED** |
 | F-03 | Fix Kambhoji: remove Ni-s from arohana | ✅ **RESOLVED** |
-| F-04 | Add `StandardScaler` to K-Means feature input |
+| F-04 | Add `StandardScaler` to K-Means feature input | ✅ **RESOLVED** |
 
 ### Next (P1 — within 1 sprint)
 

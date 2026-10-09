@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 from .shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES, assign_shruti
 from .audio_processing import _SHRUTI_FREQS_ARR, _THRESHOLD_CENTS
 
@@ -28,18 +29,21 @@ def run_clustering(features):
     chroma_flat = chroma.T
 
     combined = np.hstack([mfcc_flat, chroma_flat])
+    scaler = StandardScaler()
+    combined_scaled = scaler.fit_transform(combined)
 
     kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=42, n_init=10)
-    labels = kmeans.fit_predict(combined)
+    labels = kmeans.fit_predict(combined_scaled)
+    unscaled_centroids = scaler.inverse_transform(kmeans.cluster_centers_)
 
     shruti_clusters = {}
     for cluster_id in range(N_CLUSTERS):
         frame_indices = np.where(labels == cluster_id)[0]
         shruti_clusters[f'shruti_{cluster_id + 1}'] = {
             'frame_count': int(len(frame_indices)),
-            'centroid': kmeans.cluster_centers_[cluster_id].tolist(),
+            'centroid': unscaled_centroids[cluster_id].tolist(),
             'assigned_shruti': assign_shruti(
-                kmeans.cluster_centers_[cluster_id], features,
+                unscaled_centroids[cluster_id], features,
                 cluster_frames=frame_indices,
             ),
         }

@@ -5,7 +5,7 @@
     "notes": "Re1 275.65 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Re1",
     "detail": {
       "feature_extraction": {
-        "time_s": 2.451,
+        "time_s": 2.565,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0,
@@ -38,7 +38,7 @@
     "notes": "Re2 279.07 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Re2",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.71,
+        "time_s": 0.752,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0,
@@ -71,7 +71,7 @@
     "notes": "Ga3 327.03 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Ga3",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.702,
+        "time_s": 0.745,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0,
@@ -104,7 +104,7 @@
     "notes": "Pa 392.44 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Pa",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.752,
+        "time_s": 0.744,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0,
@@ -137,7 +137,7 @@
     "notes": "Ni4 496.68 Hz + 5Hz/\u00b110\u00a2 vibrato stays on Ni4",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.728,
+        "time_s": 0.747,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0,
@@ -170,14 +170,14 @@
     "notes": "Re1 @ \u00b120\u00a2 spends real time inside Re2's zone \u2014 boundary probe",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.711,
+        "time_s": 0.749,
         "duration": 5.0,
         "frames": 216,
         "voiced_ratio": 1.0,
         "rms": 0.4272
       },
       "clustering": {
-        "time_s": 0.044,
+        "time_s": 0.047,
         "frames": 216,
         "unique_shrutis": 2,
         "top5": {
@@ -211,14 +211,14 @@
     "notes": "Alternating Re1/Re2 (21.5\u00a2 apart) stays two distinct bins",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.693,
+        "time_s": 0.723,
         "duration": 4.8,
         "frames": 207,
         "voiced_ratio": 1.0,
         "rms": 0.4271
       },
       "clustering": {
-        "time_s": 0.024,
+        "time_s": 0.026,
         "frames": 207,
         "unique_shrutis": 2,
         "top5": {
@@ -240,7 +240,7 @@
     "notes": "2\u00d7Sa (523.25 Hz) folds onto the octave Sa' bin",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.479,
+        "time_s": 0.487,
         "duration": 3.0,
         "frames": 130,
         "voiced_ratio": 1.0,
@@ -273,7 +273,7 @@
     "notes": "2\u00d7Pa (784.88 Hz) folds back to Pa via harmonic division",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.46,
+        "time_s": 0.481,
         "duration": 3.0,
         "frames": 130,
         "voiced_ratio": 1.0,
@@ -306,7 +306,7 @@
     "notes": "2\u00d7Ni4 (993.36 Hz) folds back to Ni4",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.471,
+        "time_s": 0.474,
         "duration": 3.0,
         "frames": 130,
         "voiced_ratio": 1.0,
@@ -339,14 +339,14 @@
     "notes": "Bilawal scale + 20 dB noise keeps raga family",
     "detail": {
       "feature_extraction": {
-        "time_s": 1.192,
+        "time_s": 1.261,
         "duration": 8.4,
         "frames": 362,
         "voiced_ratio": 0.9945,
         "rms": 0.4291
       },
       "clustering": {
-        "time_s": 0.034,
+        "time_s": 0.032,
         "frames": 362,
         "unique_shrutis": 22,
         "top5": {
@@ -358,7 +358,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.043,
+        "time_s": 0.041,
         "is_valid": false,
         "confidence": 0.4547,
         "repetition": 0.1429,
@@ -377,7 +377,7 @@
         "n_segments": 8
       },
       "raga": {
-        "time_s": 0.142,
+        "time_s": 0.133,
         "best": "Mand",
         "confidence": 0.9122,
         "is_inconclusive": false
@@ -391,14 +391,14 @@
     "notes": "Bilawal scale + 10 dB noise (stress) keeps raga family",
     "detail": {
       "feature_extraction": {
-        "time_s": 1.191,
+        "time_s": 1.268,
         "duration": 8.4,
         "frames": 362,
         "voiced_ratio": 0.9945,
         "rms": 0.4471
       },
       "clustering": {
-        "time_s": 0.033,
+        "time_s": 0.031,
         "frames": 362,
         "unique_shrutis": 22,
         "top5": {
@@ -429,7 +429,7 @@
         "n_segments": 8
       },
       "raga": {
-        "time_s": 0.131,
+        "time_s": 0.135,
         "best": "Shankarabharanam",
         "confidence": 0.8509,
         "is_inconclusive": false
@@ -443,7 +443,7 @@
     "notes": "1-pole spectral tilt must not break raga detection",
     "detail": {
       "feature_extraction": {
-        "time_s": 1.178,
+        "time_s": 1.227,
         "duration": 8.4,
         "frames": 362,
         "voiced_ratio": 0.9945,
@@ -481,7 +481,7 @@
         "n_segments": 8
       },
       "raga": {
-        "time_s": 0.134,
+        "time_s": 0.138,
         "best": "Shankarabharanam",
         "confidence": 0.8886,
         "is_inconclusive": false
@@ -495,14 +495,14 @@
     "notes": "Canonical Ghana cycle fwd/rev/fwd/rev/fwd accepted",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.878,
+        "time_s": 0.91,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 1.0,
         "rms": 0.4272
       },
       "clustering": {
-        "time_s": 0.029,
+        "time_s": 0.028,
         "frames": 259,
         "unique_shrutis": 14,
         "top5": {
@@ -514,7 +514,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.023,
+        "time_s": 0.022,
         "is_valid": true,
         "confidence": 0.8068,
         "repetition": 0.6,
@@ -539,7 +539,7 @@
     "notes": "Phase-rotated cycle (rev-lead) accepted \u2014 same cycle",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.953,
+        "time_s": 0.87,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 1.0,
@@ -558,7 +558,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.024,
+        "time_s": 0.022,
         "is_valid": true,
         "confidence": 0.8069,
         "repetition": 0.6,
@@ -583,7 +583,7 @@
     "notes": "Silence rejected (RMS guard)",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.872,
+        "time_s": 0.822,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 0.0,
@@ -616,14 +616,14 @@
     "notes": "Broadband noise rejected (spectral-flatness guard)",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.82,
+        "time_s": 0.911,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 0.39,
         "rms": 0.0499
       },
       "clustering": {
-        "time_s": 0.028,
+        "time_s": 0.029,
         "frames": 259,
         "unique_shrutis": 8,
         "top5": {
@@ -653,14 +653,14 @@
     "notes": "Monotone ascending run rejected (no fwd/rev alternation)",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.787,
+        "time_s": 0.882,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 0.9614,
         "rms": 0.4272
       },
       "clustering": {
-        "time_s": 0.028,
+        "time_s": 0.03,
         "frames": 259,
         "unique_shrutis": 13,
         "top5": {
@@ -672,7 +672,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.022,
+        "time_s": 0.023,
         "is_valid": false,
         "confidence": 0.726,
         "repetition": 1.0,
@@ -697,14 +697,14 @@
     "notes": "Monotone descending run rejected (no fwd/rev alternation)",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.776,
+        "time_s": 0.958,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 0.9614,
         "rms": 0.4272
       },
       "clustering": {
-        "time_s": 0.027,
+        "time_s": 0.03,
         "frames": 259,
         "unique_shrutis": 13,
         "top5": {
@@ -716,7 +716,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.023,
+        "time_s": 0.025,
         "is_valid": false,
         "confidence": 0.7114,
         "repetition": 1.0,
@@ -741,14 +741,14 @@
     "notes": "Out-of-order forward/reverse alternation probe",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.768,
+        "time_s": 0.949,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 0.9846,
         "rms": 0.4272
       },
       "clustering": {
-        "time_s": 0.027,
+        "time_s": 0.03,
         "frames": 259,
         "unique_shrutis": 14,
         "top5": {
@@ -760,7 +760,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.023,
+        "time_s": 0.022,
         "is_valid": true,
         "confidence": 0.6462,
         "repetition": 0.4,
@@ -785,14 +785,14 @@
     "notes": "Atonal random pitch walk \u2014 must NOT read as Ghana",
     "detail": {
       "feature_extraction": {
-        "time_s": 0.814,
+        "time_s": 0.869,
         "duration": 6.0,
         "frames": 259,
         "voiced_ratio": 1.0,
         "rms": 0.4272
       },
       "clustering": {
-        "time_s": 0.027,
+        "time_s": 0.029,
         "frames": 259,
         "unique_shrutis": 8,
         "top5": {
@@ -804,7 +804,7 @@
         }
       },
       "ghana": {
-        "time_s": 0.022,
+        "time_s": 0.023,
         "is_valid": true,
         "confidence": 0.429,
         "repetition": 0.4,
