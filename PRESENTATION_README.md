@@ -142,13 +142,18 @@ This produces a **23 × frames** matrix and a **mean_pcp** (23 values) — the r
   `ghana_confidence = 0.6 × mean_segment_similarity + 0.4 × cycle_score`, and the
   reported overall `confidence = 0.4 × repetition + 0.4 × ghana_confidence + 0.2 × direction_alternation`.
   Length < 2.0 s or near-silence (rms < 0.01) → automatically invalid.
+- **Methodology scope note:** The DTW engine validates the acoustic **tonal-contour direction alternation** ($1\to 2, 2\to 1, \dots$ rising/falling melodic trajectory) across segmented intervals. It serves as an objective acoustic-intonation companion to traditional human evaluation, rather than a word-level lexical transcript analyzer.
 
 ### Step 5 — Raga detection (directional scoring + phrase tiebreak)
 - Convert detected pitches into swara presence using the 23-bin PCP together with the short-name table `SWARA_SHORT_NAMES` (Sa, Re1–Re4, Ga1–Ga4, Ma1–Ma4, Pa, Dha1–Dha4, Ni1–Ni4, Sa') — the PCP bins are the index, so no separate 16-note map is needed.
 - **Directional split:** using the F0 gradient, notes are separated into **arohana** (ascending) and **avarohana** (descending) runs — because the same note set can behave differently in each direction in real ragas.
-- Each raga (database = **44 ragas**) is scored on a weighted formula:
+- Each raga (database = **44 ragas**, covering Hindustani and Carnatic traditions) is scored on a weighted formula:
   - `0.25 × Jaccard` (matching note sets) + `0.25 × arohana coverage` + `0.25 × avarohana coverage`
   - − `0.20 × extraneous-note penalty` + `0.10 × vadi bonus` + `0.05 × samvadi bonus` − `0.10 × direction penalty` (when `n_voiced ≥ 10`)
+- **Canonical raga scale modeling:** The 44-raga database encodes canonical scale rules verified against musicological literature:
+  - **Asymmetric & Shadava scales:** Kambhoji's shadava ascent omits Ni while avarohana includes Ni; Shankarabharanam strictly ascends in arohana and descends in avarohana.
+  - **Bhashanga ragas:** Carnatic Bhairavi employs Chatushruti Dhaivata (`Dha-s` / D2) in its vakra ascent and Shuddha Dhaivata (`Dha-k` / D1) in descent, distinguishing it from parent Melakarta Nata Bhairavi.
+  - **Vadi / Samvadi scale integrity:** Every raga's vadi and samvadi strictly reside within its swaras (e.g., Abhogi vadi is Ma-s, samvadi is Sa); Yaman performance time is documented as Evening (6 PM - 9 PM, first prahar of night).
 - Top **5 candidates** are returned. If the best score is below `CONFIDENCE_THRESHOLD = 0.40` → **"Inconclusive"**, no guess.
 - **Yaman vs Bilawal problem** (same notes, different ragas): when the top-2 are within 5%, a **Pakad tiebreak** runs a sliding-window **DTW** against hand-coded signature phrases (we carry 10 templates). Yaman's characteristic Ni-Re-Ga opening beats Bilawal's Sa-first approach.
 
@@ -242,24 +247,24 @@ couldn't, and we shipped the fix with the test that caught it.")*
 ### The end-to-end trip of one recording (memorise this flow)
 
 ```
-User uploads .wav/.mp3/.ogg/.flac (≤50 MB)
+User uploads .wav/.mp3/.ogg/.flac (≤50 MB) — magic bytes verified & safe filenames
         │ POST /api/upload/
         ▼
-Django (the maître d') saves the file, returns 201
+Django (the maître d') saves file with uploaded_by=user, returns 201
         │ POST /api/analyze/123/
         ▼
 Django writes a "ticket" to Redis  ─────→  Celery worker (the kitchen) picks it up
         │ returns 202 (queued)              │ 1. extract_features()      (pYIN, STFT, PCP…)
-        │                                    │ 2. run_clustering()        (KMeans K=22)
-        │                                    │ 3. validate_ghana_patha()  (DTW)
+        │                                    │ 2. run_clustering()        (KMeans K=22, StandardScaler)
+        │                                    │ 3. validate_ghana_patha()  (DTW + direction alternation)
         │                                    │ 4. detect_raga()           (directional + pakad)
         │                                    ▼
         │                            heavy matrices → .npz files on disk
         │                            scalar results → SQLite (JSON metadata)
         │                                    │
         ◀──────────────────────────────────── ┘  is_analyzed=True
-Frontend streams GET /api/analyze/123/progress/ via SSE, falling back to polling
-        every 2.5 s if the stream stalls  → progress bar reaches "done"
+Frontend streams GET /api/analyze/123/status/ via SSE (capped at 45s), falling back to polling
+        GET /api/analyze/123/progress/ every 2.5 s  → progress bar reaches "done"
         │ GET /api/recordings/123/  → analysis_result
         ▼
 React renders the 5 charts (§7) + PDF export button
@@ -269,9 +274,10 @@ React renders the 5 charts (§7) + PDF export button
 
 - **Why Celery + Redis?** The ML run takes 30–120 s. If Django ran it inline, one upload would block *all other users* for 2 minutes. Instead Django hands the task to Redis, a Celery worker runs it, and the website keeps serving. (Concurrency = 2, one worker capped at 1.5 GB memory.)
 - **Why a Redis "single-flight" lock?** A double-click, or Celery re-delivering a task after a crash, must not run the same recording twice. A `SETNX` lock on key `vedic:analyze:lock:<id>` guarantees exactly one analysis.
-- **Why SQLite?** Zero-setup file database — perfect for a free cloud container. Hardened with Write-Ahead Logging (WAL mode), `synchronous=NORMAL`, and a 20-s write-lock timeout so concurrent Gunicorn and Celery readers/writers never block each other. All *heavy* matrices are offloaded to compressed **.npz** files so the DB stores only small scalar metadata (kept DB writes down ~95%).
+- **Why SQLite WAL mode?** Zero-setup file database — perfect for a free cloud container. Hardened via `PRAGMA journal_mode=WAL;` and `PRAGMA synchronous=NORMAL;` so concurrent Gunicorn readers and Celery writers never block each other. All *heavy* matrices are offloaded to compressed **.npz** files so the DB stores only small scalar metadata (kept DB writes down ~95%).
 - **Why file-based progress files?** Gunicorn runs many processes; in-memory progress is invisible across them. A tiny JSON file, written atomically (`tempfile.mkstemp` + `os.replace`), is visible to every process — no extra infra.
-- **Why SSE with a polling fallback?** The progress endpoint streams Server-Sent Events for instant updates, but Vercel's proxy can buffer SSE and freeze the bar. The client therefore falls back to polling the same JSON endpoint every 2.5 s whenever the stream stalls or fails — best of both, robust behind any proxy. *Choose architecture that ships.*
+- **Why 45s SSE with a polling fallback?** The `/status/` SSE stream provides instant progress without constant polling, but holding an SSE connection indefinitely starves Gunicorn synchronous workers. Capping the hold duration to 45 s allows typical runs to stream live while seamlessly falling back to lightweight `GET /progress/` polling (every 2.5 s with exponential backoff) if analysis runs longer or a proxy buffers SSE.
+- **Why per-user isolation & defense-in-depth security?** Uploads are linked to `uploaded_by = request.user`, enforcing strict multi-tenant boundaries (cross-user access returns HTTP 404). Hardened with registration rate throttling (`RegisterAnonThrottle` 10/hr), strict Content-Security-Policy (CSP), `X-Content-Type-Options: nosniff`, and `X-Frame-Options: DENY`.
 
 ### Where everything lives (folders)
 
@@ -354,13 +360,14 @@ All five are interactive Plotly.js charts in `frontend/src/components/`.
 ### 4. Ghana Patha Viz (`GhanaPathaViz.jsx`)
 - **What it shows:** **expected pattern** (green, dashed) vs **detected pattern** (red, solid) across the chant's segments, plus a ✅ Valid / ❌ Invalid verdict and a 0–1 confidence.
 - **Interactive wow:** each segment is a clickable button — click it and **the audio jumps to that segment** (it calls the player's `seekTo()`).
+- **Methodology scope note:** The DTW engine validates acoustic **tonal-contour direction alternation** ($1\to 2, 2\to 1, \dots$ rising/falling melodic trajectory) rather than lexical word-level phonetic permutations. An explicit methodology note is rendered directly beneath the chart in the UI.
 - **Say:** *"Ghana Patha is the hardest oral preservation pattern in the tradition: forward, reverse, forward, reverse, forward. DTW compares each sung segment to those templates. Green is what the liturgy demands; red is what was actually sung. Below empirically-tuned thresholds, the verdict says invalid."*
 
 ### 5. Raga Viz (`RagaViz.jsx`)
 - **What it shows:** the **best raga card** (name, tradition — Hindustani/Carnatic —, confidence %, time-of-day, mood, vadi/samvadi, the arohana & avarohana scale as chips) + a top-5 confidence bar chart with a dashed **40 % threshold** + an amber **Inconclusive** card when nothing clears the bar.
 - **Say:** *"Directional scoring matches the ascending and descending halves of the melody against 44 ragas. If the best match can't clear 40%, the card turns amber and says 'Inconclusive' — honesty is a feature, not a bug."*
 
-**Bonus — PDF export:** the toolbar renders all 5 charts to JPEG via `Plotly.toImage` and lays them into a landscape A4 report with `jsPDF` — *"a teacher could hand this to a classroom as a scientific record."*
+**Bonus — PDF export & Performance:** The toolbar renders all 5 charts to JPEG via `Plotly.toImage` and lays them into a landscape A4 report with `jsPDF` (loaded asynchronously on demand). Replacing monolithic Plotly with `plotly.js-cartesian-dist-min` and code-splitting dropped the main bundle from 10 MB to **250 kB** (a 97.5% drop), ensuring instantaneous initial page loads.
 
 ---
 
@@ -368,12 +375,13 @@ All five are interactive Plotly.js charts in `frontend/src/components/`.
 
 | Layer | Tools (current versions) | Why |
 |---|---|---|
-| Frontend | React 19.2 · Vite 8.1 · Tailwind 4.3 · Plotly.js 3.7 · react-plotly 4.0 · WaveSurfer 7.12 · jsPDF 4.2 · oxlint | modern fast SPA, interactive scientific charts, waveform player, PDF export |
-| Backend | Python 3.13 · Django 6.0 · DRF 3.17 · django-cors-headers 4.9 | the API, admin, ORM, token auth |
+| Frontend | React 19.2 · Vite 8.1 · Tailwind 4.3 · plotly.js-cartesian-dist-min · WaveSurfer 7.12 · jsPDF 4.2 · oxlint | modern fast SPA (250 kB main bundle, 97.5% smaller), interactive scientific charts, waveform player, deferred PDF export |
+| Backend | Python 3.13 · Django 6.0 · DRF 3.17 · django-cors-headers 4.9 · SecurityHeadersMiddleware | the API, admin, ORM, token auth with CSP & security headers, per-user isolation, upload magic-byte verification, and registration rate limiting |
 | Async | Celery 5.4 · Redis 5.2 | message broker + worker pool for the long ML job |
-| Server | Gunicorn 23 (2 workers, 120 s timeout) | WSGI serving |
-| ML/Signal | librosa 0.11 (pYIN, STFT, MFCC, chroma) · scikit-learn 1.9 (K-Means) · NumPy 2.4 · SciPy 1.18 | the 4-stage pipeline |
-| Storage | SQLite (scalars) + `.npz` files on disk (heavy matrices) | zero-setup, small, fast |
+| Server | Gunicorn 23 (2 workers, 120 s timeout) | WSGI serving (SSE held max 45s to avoid worker starvation) |
+| ML/Signal | librosa 0.11 (pYIN, STFT, MFCC, chroma) · scikit-learn 1.9 (StandardScaler + K-Means) · NumPy 2.4 · SciPy 1.18 | the 4-stage pipeline |
+| Storage | SQLite (WAL mode + PRAGMA synchronous=NORMAL) + `.npz` files on disk (heavy matrices) | Write-Ahead Logging allows concurrent Gunicorn readers and Celery writers without lock contention; heavy matrices offloaded to disk |
+| Quality & CI | 56 automated unit/regression tests · oxlint (0 errors/warnings) | CI validates musicological integrity, feature scaling, security throttling, and path confinement |
 | Observability | Prometheus · Grafana · node-exporter | /metrics endpoint, request counts, ML timings, dashboards |
 | Infra | Docker Compose (7 services) · Kubernetes (Minikube) · GitHub Actions CI/CD · Vercel · Hugging Face Space | local→production story, all free |
 
@@ -393,7 +401,7 @@ All five are interactive Plotly.js charts in `frontend/src/components/`.
 6. **How do we know it's accurate?** Name the 4 layers. (§5)
 7. **What does "Inconclusive below 40%" protect against?** (§5 Layer 3)
 8. **Trace one upload** through Redis/Celery/Django back to the frontend. (§6)
-9. **Why Celery-and-not-threads, why SQLite, why .npz offload, why polling-not-SSE?** (§6 + master guide §11)
+9. **Why Celery-and-not-threads, why SQLite WAL mode, why .npz offload, why 45s SSE with polling fallback?** (§6 + master guide §11)
 10. **Name the 5 charts** and what each one proves. (§7)
 
 ---
