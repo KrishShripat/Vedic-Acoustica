@@ -405,8 +405,8 @@ RAGA_DATABASE = [
         'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-k'],        # no Pa, no Ni
         'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-k'],
         'avarohana': ['Sa', 'Dha-k', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
-        'vadi': {'grade': 'Pa', 'name': 'Pa'},
-        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
+        'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
+        'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Any time',
         'mood': 'Introspective, tender',
     },
