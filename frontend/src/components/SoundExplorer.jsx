@@ -225,8 +225,8 @@ export default function SoundExplorer({ onOpenUpload, onSelectSwara }) {
         const samples = new Uint8Array(analyser.fftSize)
         analyser.getByteTimeDomainData(samples)
         context.lineWidth = 2
-        context.strokeStyle = selectedShruti.color
-        context.shadowColor = selectedShruti.color
+        context.strokeStyle = selectedFamily.color
+        context.shadowColor = selectedFamily.color
         context.shadowBlur = 5
         context.beginPath()
         const sliceWidth = width / samples.length
@@ -258,7 +258,7 @@ export default function SoundExplorer({ onOpenUpload, onSelectSwara }) {
       running = false
       cancelAnimationFrame(frameId)
     }
-  }, [isPlayingSynth, isChantPlaying, selectedShruti])
+  }, [isPlayingSynth, isChantPlaying, selectedShruti, selectedFamily])
 
   useEffect(() => () => {
     clearTimeout(stopToneTimerRef.current)
@@ -294,8 +294,8 @@ export default function SoundExplorer({ onOpenUpload, onSelectSwara }) {
           </button>
         </div>
 
-        <div className="tuner-strip" style={{ borderColor: selectedShruti.color }}>
-          <div className="tuner-note-badge" style={{ background: selectedShruti.color }}>
+        <div className="tuner-strip" style={{ borderColor: selectedFamily.color }}>
+          <div className="tuner-note-badge" style={{ background: selectedFamily.color }}>
             {selectedShruti.name}
           </div>
           <div className="tuner-info-col">
