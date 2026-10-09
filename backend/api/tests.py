@@ -475,3 +475,24 @@ class SecuritySettingsTestCase(TestCase):
         self.assertIn("default-src 'self'", resp.headers['Content-Security-Policy'])
         self.assertEqual(resp.headers.get('X-Content-Type-Options'), 'nosniff')
         self.assertEqual(resp.headers.get('X-Frame-Options'), 'DENY')
+
+
+class AnalysisStatusStreamTestCase(TestCase):
+    def test_analysis_status_sse_headers_and_initial_event(self):
+        resp = self.client.get('/api/analyze/99999/status/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'text/event-stream')
+        self.assertEqual(resp['Cache-Control'], 'no-cache')
+        self.assertEqual(resp['X-Accel-Buffering'], 'no')
+
+        stream_iter = iter(resp.streaming_content)
+        first_event = next(stream_iter)
+        self.assertIn(b'data: ', first_event)
+        self.assertIn(b'"stage": "Queued"', first_event)
+
+    def test_analysis_progress_json_endpoint(self):
+        resp = self.client.get('/api/analyze/99999/progress/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'running')
+        self.assertEqual(resp.data['percent'], 0)
+

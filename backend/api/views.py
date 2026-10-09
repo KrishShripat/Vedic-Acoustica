@@ -616,7 +616,10 @@ def analysis_status(request, pk):
         return resp
 
     def _event_stream():
-        max_wait_seconds = 300
+        # Cap streaming hold duration to 45 s to prevent long-held SSE streams
+        # from starving Gunicorn sync worker threads. The frontend seamlessly
+        # transitions to lightweight GET /progress/ polling if analysis takes longer.
+        max_wait_seconds = 45
         elapsed = 0
         poll_interval = 0.8
 

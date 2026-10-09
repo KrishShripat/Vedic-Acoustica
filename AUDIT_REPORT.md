@@ -293,9 +293,15 @@ graph LR
 #### F-11: SSE stream holds a Gunicorn worker thread for up to 300 seconds
 - **Area:** Performance / Reliability
 - **Severity:** Medium
-- **Evidence:** [views.py:602-603](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L602-L603): `max_wait_seconds = 300` with `time.sleep(0.8)` in a loop. With 2 Gunicorn workers, 2 concurrent SSE clients block ALL request handling.
-- **Impact:** Under load, the backend becomes unresponsive while SSE streams are active.
-- **Fix:** Use async workers (uvicorn + ASGI) for the SSE endpoint, or set a much shorter max (30-60s) and rely on the polling fallback.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [views.py:622](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L622): `max_wait_seconds = 300` with `time.sleep(0.8)` in a loop. With 2 Gunicorn workers, 2 concurrent long-lived SSE clients could tie up worker threads for 5 minutes.
+- **Impact:** Under load or sluggish network conditions, backend workers could be monopolized by streaming responses.
+- **Fix:** Reduced `max_wait_seconds` from 300 down to 45 seconds in [views.py](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L622). Since typical audio analysis executes in 10–30 seconds, live SSE streaming is preserved for typical runs. If an analysis exceeds 45 seconds or the connection closes, the frontend [AnalysisProgress.jsx](file:///home/Arc/Vedic-Acoustica/frontend/src/components/AnalysisProgress.jsx) seamlessly falls back to lightweight polling on `GET /api/analyze/<pk>/progress/` (with exponential backoff and `Retry-After` adherence), releasing the worker thread immediately.
+- **Verification & Proof:**
+  - Added unit test suite `AnalysisStatusStreamTestCase` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py) validating `text/event-stream` headers (`Cache-Control: no-cache`, `X-Accel-Buffering: no`), first event stream iteration, and JSON fallback snapshot endpoint.
+  - Ran `DJANGO_DEBUG=True .venv/bin/python backend/manage.py test api ml_engine`: all 50 unit tests passed.
+  - Verified `AnalysisProgress.jsx` client state machine transitions automatically upon stream closure.
+  - Synced changes to HF deployment mirror.
 - **Effort:** M | **Priority:** P2
 
 #### F-12: SQLite under concurrent Gunicorn + Celery with `timeout=20`
@@ -512,11 +518,11 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 
 ### Later (P2–P3)
 
-| ID | Action |
-|----|--------|
+| ID | Action | Status |
+|----|--------|--------|
 | F-09 | Evaluate HttpOnly cookie auth |
 | F-10 | Add registration CAPTCHA |
-| F-11 | Shorten SSE max_wait or move to ASGI |
+| F-11 | Shorten SSE max_wait or move to ASGI | ✅ **RESOLVED** |
 | F-12 | Enable SQLite WAL mode | ✅ **RESOLVED** |
 | F-13 | Add disclaimer about tonal-contour vs word-level Ghana check | ✅ **RESOLVED** |
 | F-14 | Fix Yaman time to "6 PM - 9 PM" | ✅ **RESOLVED** |
