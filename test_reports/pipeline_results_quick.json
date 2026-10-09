@@ -4,7 +4,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/sa_261.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 2.223,
+        "time_s": 2.268,
         "ok": true,
         "duration": 5.0,
         "sr": 22050,
@@ -36,7 +36,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.049,
+        "time_s": 0.048,
         "ok": true,
         "frames": 216,
         "unique_shrutis": 1,
@@ -85,7 +85,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 2.295,
+    "total_time_s": 2.339,
     "desc": "Sa pure tone 261.63 Hz",
     "synth": true
   },
@@ -94,7 +94,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/pa_392.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.793,
+        "time_s": 0.77,
         "ok": true,
         "duration": 5.0,
         "sr": 22050,
@@ -126,7 +126,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.024,
+        "time_s": 0.028,
         "ok": true,
         "frames": 216,
         "unique_shrutis": 1,
@@ -185,7 +185,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.84,
+    "total_time_s": 0.82,
     "desc": "Pa pure tone 392.44 Hz",
     "synth": true
   },
@@ -194,7 +194,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/re2_279.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.777,
+        "time_s": 0.81,
         "ok": true,
         "duration": 5.0,
         "sr": 22050,
@@ -226,7 +226,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.024,
+        "time_s": 0.028,
         "ok": true,
         "frames": 216,
         "unique_shrutis": 1,
@@ -280,7 +280,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.824,
+    "total_time_s": 0.861,
     "desc": "Re2 pure tone 279.07 Hz",
     "synth": true
   },
@@ -289,7 +289,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ga4_331.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.773,
+        "time_s": 0.772,
         "ok": true,
         "duration": 5.0,
         "sr": 22050,
@@ -321,7 +321,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.03,
+        "time_s": 0.028,
         "ok": true,
         "frames": 216,
         "unique_shrutis": 1,
@@ -380,7 +380,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.826,
+    "total_time_s": 0.823,
     "desc": "Ga4 pure tone 331.14 Hz",
     "synth": true
   },
@@ -389,7 +389,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/dha3_436.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.768,
+        "time_s": 0.772,
         "ok": true,
         "duration": 5.0,
         "sr": 22050,
@@ -421,7 +421,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.026,
+        "time_s": 0.027,
         "ok": true,
         "frames": 216,
         "unique_shrutis": 1,
@@ -443,7 +443,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.029,
+        "time_s": 0.027,
         "ok": true,
         "inconclusive": true,
         "threshold": 0.4,
@@ -475,7 +475,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.843,
+    "total_time_s": 0.846,
     "desc": "Dha3 pure tone 436.04 Hz",
     "synth": true
   },
@@ -484,7 +484,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ma1_oct_698.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.802,
+        "time_s": 0.83,
         "ok": true,
         "duration": 5.0,
         "sr": 22050,
@@ -516,7 +516,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.024,
+        "time_s": 0.026,
         "ok": true,
         "frames": 216,
         "unique_shrutis": 1,
@@ -525,7 +525,7 @@
         }
       },
       "ghana_patha": {
-        "time_s": 0.02,
+        "time_s": 0.022,
         "ok": true,
         "valid": false,
         "confidence": 0.7386,
@@ -538,7 +538,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.004,
+        "time_s": 0.003,
         "ok": true,
         "inconclusive": true,
         "threshold": 0.4,
@@ -575,7 +575,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.849,
+    "total_time_s": 0.881,
     "desc": "697.66 Hz (2x Ma1) folds to Ma1 bin",
     "synth": true
   },
@@ -584,7 +584,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/ascending.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.62,
+        "time_s": 0.63,
         "ok": true,
         "duration": 4.0,
         "sr": 22050,
@@ -616,7 +616,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.023,
+        "time_s": 0.027,
         "ok": true,
         "frames": 173,
         "unique_shrutis": 17,
@@ -642,7 +642,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.068,
+        "time_s": 0.064,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -686,7 +686,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.727,
+    "total_time_s": 0.738,
     "desc": "Ascending shuddha major Sa->Sa' 8 notes",
     "synth": true
   },
@@ -695,7 +695,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/descending.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.625,
+        "time_s": 0.641,
         "ok": true,
         "duration": 4.0,
         "sr": 22050,
@@ -727,7 +727,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.024,
+        "time_s": 0.027,
         "ok": true,
         "frames": 173,
         "unique_shrutis": 17,
@@ -753,7 +753,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.068,
+        "time_s": 0.064,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -797,7 +797,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.733,
+    "total_time_s": 0.749,
     "desc": "Descending Sa'->Sa 8 notes",
     "synth": true
   },
@@ -806,7 +806,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/bilawal_3x.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 1.426,
+        "time_s": 1.434,
         "ok": true,
         "duration": 9.6,
         "sr": 22050,
@@ -838,7 +838,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.032,
+        "time_s": 0.034,
         "ok": true,
         "frames": 414,
         "unique_shrutis": 22,
@@ -851,7 +851,7 @@
         }
       },
       "ghana_patha": {
-        "time_s": 0.055,
+        "time_s": 0.054,
         "ok": true,
         "valid": false,
         "confidence": 0.5573,
@@ -864,7 +864,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.162,
+        "time_s": 0.152,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -909,7 +909,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 1.676,
+    "total_time_s": 1.674,
     "desc": "Bilawal major scale x3",
     "synth": true
   },
@@ -918,7 +918,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/kalyani_3x.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 1.47,
+        "time_s": 1.438,
         "ok": true,
         "duration": 9.6,
         "sr": 22050,
@@ -950,7 +950,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.032,
+        "time_s": 0.035,
         "ok": true,
         "frames": 414,
         "unique_shrutis": 22,
@@ -963,7 +963,7 @@
         }
       },
       "ghana_patha": {
-        "time_s": 0.055,
+        "time_s": 0.054,
         "ok": true,
         "valid": false,
         "confidence": 0.5393,
@@ -976,7 +976,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.053,
+        "time_s": 0.052,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -1020,7 +1020,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 1.61,
+    "total_time_s": 1.578,
     "desc": "Kalyani Lydian scale x3 (tivra Ma)",
     "synth": true
   },
@@ -1029,7 +1029,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/bhairav_3x.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 1.397,
+        "time_s": 1.438,
         "ok": true,
         "duration": 9.6,
         "sr": 22050,
@@ -1061,7 +1061,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.032,
+        "time_s": 0.037,
         "ok": true,
         "frames": 414,
         "unique_shrutis": 18,
@@ -1087,7 +1087,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.094,
+        "time_s": 0.098,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -1132,7 +1132,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 1.581,
+    "total_time_s": 1.63,
     "desc": "Bhairav scale x3 (komal Re/Dha)",
     "synth": true
   },
@@ -1141,7 +1141,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/synthetic/malkauns_3x.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 0.932,
+        "time_s": 0.904,
         "ok": true,
         "duration": 6.0,
         "sr": 22050,
@@ -1173,7 +1173,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.028,
+        "time_s": 0.031,
         "ok": true,
         "frames": 259,
         "unique_shrutis": 15,
@@ -1199,7 +1199,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.003,
+        "time_s": 0.004,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -1241,7 +1241,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 0.987,
+    "total_time_s": 0.962,
     "desc": "Malkauns pentatonic x3",
     "synth": true
   },
@@ -1250,7 +1250,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/isavasya_ghanam_60s.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 8.402,
+        "time_s": 8.113,
         "ok": true,
         "duration": 60.0,
         "sr": 22050,
@@ -1282,7 +1282,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.117,
+        "time_s": 0.122,
         "ok": true,
         "frames": 2584,
         "unique_shrutis": 23,
@@ -1295,7 +1295,7 @@
         }
       },
       "ghana_patha": {
-        "time_s": 2.183,
+        "time_s": 2.213,
         "ok": true,
         "valid": true,
         "confidence": 0.7348,
@@ -1308,7 +1308,7 @@
         }
       },
       "raga_detection": {
-        "time_s": 0.03,
+        "time_s": 0.031,
         "ok": true,
         "inconclusive": false,
         "threshold": 0.4,
@@ -1354,7 +1354,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 10.731,
+    "total_time_s": 10.477,
     "desc": "Real: isavasya_ghanam_60s.wav",
     "synth": false
   },
@@ -1363,7 +1363,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/rudram_60s.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 8.042,
+        "time_s": 7.936,
         "ok": true,
         "duration": 60.0,
         "sr": 22050,
@@ -1395,7 +1395,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.1,
+        "time_s": 0.099,
         "ok": true,
         "frames": 2584,
         "unique_shrutis": 23,
@@ -1466,7 +1466,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 10.335,
+    "total_time_s": 10.227,
     "desc": "Real: rudram_60s.wav",
     "synth": false
   },
@@ -1475,7 +1475,7 @@
     "path": "/home/Arc/Vedic-Acoustica/test_audio/test_10s.wav",
     "stages": {
       "feature_extraction": {
-        "time_s": 1.404,
+        "time_s": 1.367,
         "ok": true,
         "duration": 10.0,
         "sr": 22050,
@@ -1507,7 +1507,7 @@
         ]
       },
       "clustering": {
-        "time_s": 0.032,
+        "time_s": 0.033,
         "ok": true,
         "frames": 431,
         "unique_shrutis": 22,
@@ -1520,7 +1520,7 @@
         }
       },
       "ghana_patha": {
-        "time_s": 0.06,
+        "time_s": 0.062,
         "ok": true,
         "valid": true,
         "confidence": 0.7071,
@@ -1579,7 +1579,7 @@
       }
     },
     "errors": [],
-    "total_time_s": 1.502,
+    "total_time_s": 1.468,
     "desc": "Real: test_10s.wav",
     "synth": false
   }

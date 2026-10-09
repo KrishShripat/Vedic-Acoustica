@@ -41,3 +41,18 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         self.assertIn(9, abhogi['vadi_bins'])
         self.assertIn(0, abhogi['samvadi_bins'])
 
+    def test_shankarabharanam_arohana_avarohana_order(self):
+        """Shankarabharanam (29th Melakarta) must ascend in arohana and descend in avarohana."""
+        sb = next(r for r in RAGA_DATABASE if r['name'] == 'Shankarabharanam')
+        expected_arohana = ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s']
+        expected_avarohana = ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa']
+        self.assertEqual(sb['arohana'], expected_arohana)
+        self.assertEqual(sb['avarohana'], expected_avarohana)
+        # Verify arohana_bins starts with 0 (Sa) and ends with Ni-s bins
+        self.assertEqual(sb['arohana_bins'][0], 0)
+        self.assertIn(sb['arohana_bins'][-1], [20, 21])
+        # Verify avarohana_bins starts with 0 (Sa') and returns to 0 (Sa)
+        self.assertEqual(sb['avarohana_bins'][0], 0)
+        self.assertEqual(sb['avarohana_bins'][-1], 0)
+
+

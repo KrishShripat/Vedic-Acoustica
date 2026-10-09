@@ -119,18 +119,25 @@ graph LR
 #### F-02: Shankarabharanam arohana/avarohana are swapped
 - **Area:** ML / Raga Database
 - **Severity:** Critical
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
 - **Evidence:** [raga_mapping.py:318-319](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L318-L319):
   ```python
   'arohana': ['Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa', 'Ni-s', 'Dha-s', 'Pa'],  # DESCENDING!
   'avarohana': ['Pa', 'Dha-s', 'Ni-s', 'Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa'],  # ASCENDING!
   ```
-  The "arohana" field lists Pa→Ma→Ga→Re→Sa (descending), and the "avarohana" lists Pa→Dha→Ni→Sa→Re→Ga→Ma→Pa (ascending). This is backwards. Canonical: S R₂ G₃ M₁ P D₂ N₃ Ṡ (ascending) and Ṡ N₃ D₂ P M₁ G₃ R₂ S (descending) — per Wikipedia and artiumacademy.com.
-- **Impact:** Directional scoring is inverted. Rising phrases match against the descent template, and falling phrases match against the ascent template. Every Shankarabharanam detection gets an artificially wrong direction penalty or bonus.
-- **Fix:** Swap the two fields and use standard notation:
+  The "arohana" field previously listed Pa→Ma→Ga→Re→Sa (descending), and "avarohana" listed Pa→Dha→Ni→Sa→Re→Ga→Ma→Pa (ascending). This inverted directional scoring for the 29th Melakarta.
+- **Impact:** Directional scoring was inverted. Rising phrases matched against the descent template, and falling phrases matched against the ascent template.
+- **Fix:** Corrected both scales to standard canonical ascent and descent in [raga_mapping.py:318-319](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L318-L319):
   ```python
   'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
   'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
   ```
+  Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - `arohana_bins` now correctly ascends: `[0, 3, 4, 7, 8, 9, 13, 16, 17, 20, 21]`.
+  - `avarohana_bins` now correctly descends: `[0, 20, 21, 16, 17, 13, 9, 7, 8, 3, 4, 0]`.
+  - Added unit test `test_shankarabharanam_arohana_avarohana_order` in [ml_engine/tests.py](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tests.py).
+  - All test batteries verified: Django tests (31/31 passed), ML robustness battery (18/18 passed), ML audit battery (15/15 passed), quick pipeline battery (15/15 passed).
 - **Effort:** S | **Priority:** P0
 
 #### F-03: Kambhoji scale is wrong — Ni should be omitted in ascent
@@ -404,7 +411,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | ID | Action | Status |
 |----|--------|--------|
 | F-01 | Fix Abhogi vadi: change from Pa to Ma-s | ✅ **RESOLVED** |
-| F-02 | Fix Shankarabharanam: swap arohana/avarohana |
+| F-02 | Fix Shankarabharanam: swap arohana/avarohana | ✅ **RESOLVED** |
 | F-03 | Fix Kambhoji: remove Ni-s from arohana |
 | F-04 | Add `StandardScaler` to K-Means feature input |
 
