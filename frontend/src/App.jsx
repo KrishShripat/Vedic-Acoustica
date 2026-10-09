@@ -11,7 +11,6 @@ import ShrutiInstrument from './components/ShrutiInstrument'
 import SoundExplorer from './components/SoundExplorer'
 import AuthScreen from './components/AuthScreen'
 import AdminOverview from './components/AdminOverview'
-import exportReport from './utils/exportReport'
 import { getUser, clearAuth, authFetch } from './utils/auth'
 import './observatory.css'
 
@@ -222,6 +221,7 @@ function App() {
     if (!analysis || !selectedRecording) return
     setDownloading(true)
     try {
+      const { default: exportReport } = await import('./utils/exportReport')
       await exportReport(selectedRecording, analysis)
     } catch (err) {
       console.error('Report export failed:', err)

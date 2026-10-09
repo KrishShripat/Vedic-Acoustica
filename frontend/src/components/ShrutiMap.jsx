@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import Plot from 'react-plotly.js'
+import Plot from './Plot'
 
 // 1:1 with backend ml_engine/shruti_mapping.py::SHRUTI_NAMES (23 ascending bins)
 const SHRUTI_NAMES = [

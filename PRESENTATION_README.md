@@ -124,6 +124,7 @@ This produces a **23 × frames** matrix and a **mean_pcp** (23 values) — the r
 
 ### Step 3 — K-Means clustering (Shruti Detection)
 - Every frame is represented as a vector = `[13 MFCC | 22 chroma]` = **35 numbers**.
+- **Feature Standardization (`StandardScaler`):** Before clustering, all 35 dimensions are standardized to zero mean and unit variance. Because raw MFCC energy has $\sigma \approx 35$ while chroma has $\sigma \approx 0.017$ (a $>2,000:1$ ratio), standardization ensures pitch chroma features contribute equally in Euclidean distance alongside timbral features rather than being drowned out. Centroids are inverse-transformed back to physical units for interpretable downstream inspection.
 - **K-Means with K = 22** groups all frames into 22 clusters (`KMeans(22, random_state=42, n_init=10)`). The fixed seed guarantees the exact same result every run — **reproducibility**. One cluster ≈ one "voice colour" region.
 - Each cluster is then **assigned a Shruti** using its *voiced F0s* ("musical truth"): take the median F0 of the cluster's voiced frames, and assign the nearest Shruti within 25 cents; only if a cluster has no pitch energy do we fall back to its dominant chroma bin.
 

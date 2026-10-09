@@ -1,4 +1,4 @@
-import Plot from 'react-plotly.js'
+import Plot from './Plot'
 
 export default function ClusterPlot({ data, onReady }) {
   if (!data?.shruti_clusters) return <p>No cluster data</p>

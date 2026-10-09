@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Plot from 'react-plotly.js'
+import Plot from './Plot'
 
 // Phrase-level direction cycle: forward=2, reverse=1
 // Matches backend GHANA_CYCLE — repeated to cover all detected segments.

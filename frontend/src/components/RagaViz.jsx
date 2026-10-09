@@ -1,4 +1,4 @@
-import Plot from 'react-plotly.js'
+import Plot from './Plot'
 
 // 1:1 with backend shruti_mapping.SHRUTI_NAMES (23 ascending bins).
 // Matches: arohana/avarohana are bin-index lists, matched_swaras are bin ints.

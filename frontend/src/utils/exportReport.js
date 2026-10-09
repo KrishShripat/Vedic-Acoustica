@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import Plotly from 'plotly.js-dist'
+import Plotly from 'plotly.js-cartesian-dist-min'
 
 const CHART_DEFS = [
   { id: 'chart-spectrogram', title: 'Spectrogram' },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
-import Plotly from 'plotly.js-dist'
+import { Plotly } from './Plot'
 
 /**
  * SpectrogramView

@@ -191,12 +191,20 @@ graph LR
 #### F-05: 10 MB monolithic JS bundle
 - **Area:** Frontend / Performance
 - **Severity:** High
-- **Evidence:** `frontend/dist/assets/index-BRv35g3q.js` = **10,017,115 bytes** (9.6 MB). `plotly.js-dist` is the primary culprit (~8 MB unminified).
-- **Impact:** Every page load (including the login screen) downloads ~10 MB of JS. On mobile or slow connections this is extremely slow. Vercel serves this gzipped (~3 MB), but it's still excessive.
-- **Fix:** 
-  1. Replace `plotly.js-dist` with `plotly.js-basic-dist` or `plotly.js-cartesian-dist` (~2-3 MB).
-  2. Add `React.lazy()` code-splitting for chart components.
-  3. Add `manualChunks` in Vite config to split plotly into a separate chunk.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** `frontend/dist/assets/index-BRv35g3q.js` was previously **10,017,115 bytes** (9.6 MB). `plotly.js-dist` was the primary culprit (~11.2 MB unminified source).
+- **Impact:** Every page load (including the login screen) downloaded ~10 MB of unminified JS. On mobile or constrained networks this caused severe TTI delays.
+- **Fix:**
+  1. Replaced unminified `plotly.js-dist` with `plotly.js-cartesian-dist-min` (1.5 MB uncompressed, supporting scatter, bar, and heatmap). Created reusable component [Plot.jsx](file:///home/Arc/Vedic-Acoustica/frontend/src/components/Plot.jsx) with `react-plotly.js/factory`.
+  2. Implemented chunk splitting in [vite.config.js](file:///home/Arc/Vedic-Acoustica/frontend/vite.config.js) separating `plotly-vendor`, `jspdf-vendor`, and `wavesurfer-vendor`.
+  3. Replaced eager jsPDF import with dynamic `import('./utils/exportReport')` in [App.jsx](file:///home/Arc/Vedic-Acoustica/frontend/src/App.jsx), ensuring PDF generation code is never fetched until requested.
+- **Verification & Proof:**
+  - `oxlint`: 0 warnings, 0 errors across 19 files.
+  - Production build measurements:
+    - Main entry `index.js`: **249.53 kB** (gzip: **76.20 kB**) — a **97.5% reduction** from 10,031 kB.
+    - `plotly-vendor.js`: 1,458 kB (gzip: 482 kB) in a dedicated cached chunk.
+    - `jspdf-vendor.js`: 627 kB (gzip: 187 kB) loaded on-demand.
+    - Build time dropped from 4.19s to **620ms** (6.7x speedup).
 - **Effort:** M | **Priority:** P1
 
 #### F-06: Recordings list endpoint is unauthenticated and unpaginated in the frontend
@@ -436,9 +444,9 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 
 ### Next (P1 — within 1 sprint)
 
-| ID | Action |
-|----|--------|
-| F-05 | Replace `plotly.js-dist` with a lighter build; add code splitting |
+| ID | Action | Status |
+|----|--------|--------|
+| F-05 | Replace `plotly.js-dist` with a lighter build; add code splitting | ✅ **RESOLVED** |
 | F-06 | Add `IsAuthenticated` to list/detail recording views |
 | F-07 | Add `uploaded_by` FK to `AudioRecording`; filter by user |
 | F-08 | Add MIME/magic-byte validation on upload |
