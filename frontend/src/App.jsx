@@ -7,11 +7,13 @@ import GhanaPathaViz from './components/GhanaPathaViz'
 import RagaViz from './components/RagaViz'
 import AudioPlayer from './components/AudioPlayer'
 import AnalysisProgress from './components/AnalysisProgress'
+import ShrutiInstrument from './components/ShrutiInstrument'
+import SoundExplorer from './components/SoundExplorer'
 import AuthScreen from './components/AuthScreen'
 import AdminOverview from './components/AdminOverview'
 import exportReport from './utils/exportReport'
 import { getUser, clearAuth, authFetch } from './utils/auth'
-import './App.css'
+import './observatory.css'
 
 const API_BASE = '/api'
 const NUM_CHARTS = 5
@@ -31,6 +33,8 @@ function App() {
   const [fetchError, setFetchError] = useState(null)
   // Playback cursor shared between AudioPlayer → SpectrogramView
   const [playbackTime, setPlaybackTime] = useState(null)
+  const [selectedSwara, setSelectedSwara] = useState('Sa')
+  const [activeSection, setActiveSection] = useState('upload')
   // Imperative ref to AudioPlayer — lets GhanaPathaViz call seekTo(seconds)
   const playerRef = useRef(null)
 
@@ -38,6 +42,14 @@ function App() {
   const [user, setUser] = useState(() => getUser())
   const [authLoading, setAuthLoading] = useState(true)
   const [showAdmin, setShowAdmin] = useState(false)
+
+  const getDisplayName = useCallback((userData) => {
+    if (!userData) return 'Researcher'
+    const first = (userData.first_name || '').trim()
+    const last = (userData.last_name || '').trim()
+    const fullName = [first, last].filter(Boolean).join(' ')
+    return fullName || userData.username || 'Researcher'
+  }, [])
 
   // Validate a stored token on load; clear it if the backend rejects it.
   useEffect(() => {
@@ -72,11 +84,6 @@ function App() {
     const onExpired = () => { clearAuth(); setUser(null) }
     window.addEventListener('auth-expired', onExpired)
     return () => window.removeEventListener('auth-expired', onExpired)
-  }, [])
-
-  const handleGuest = useCallback(() => {
-    clearAuth()
-    setUser({ username: 'Guest', email: '', is_staff: false, is_superuser: false, is_guest: true })
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -115,6 +122,10 @@ function App() {
 
   useEffect(() => {
     setChartsReady(0)
+  }, [analysis])
+
+  useEffect(() => {
+    setSelectedSwara(analysis?.raga_detection?.detected_swaras?.[0]?.swara || 'Sa')
   }, [analysis])
 
   const handleUpload = useCallback(async (file) => {
@@ -223,159 +234,330 @@ function App() {
   // ── Auth gate: show login until identity is confirmed ────────────────────
   if (authLoading) {
     return (
-      <div className="card" style={{ textAlign: 'center' }}>
-        <span className="loading-spinner" style={{ width: 26, height: 26 }} /> Loading…
+      <div className="observatory-loading">
+        <span className="loading-spinner" />
+        <span>Opening the acoustic observatory…</span>
       </div>
     )
   }
 
   if (!user) {
-    return <AuthScreen apiBase={API_BASE} onAuthed={setUser} onGuest={handleGuest} />
+    return <AuthScreen apiBase={API_BASE} onAuthed={setUser} />
   }
 
+  const displayName = getDisplayName(user)
+
   return (
-    <div>
-      <h1>Vedic Acoustica</h1>
-      <p className="subtitle">Microtonal Voice Analysis &middot; 22 Shrutis &middot; Raga Detection &middot; Ghana Patha Validation</p>
-
-      <div className="status-bar">
-        <span className="dot"></span>
-        {window.location.hostname === 'localhost' ? 'Backend: localhost:8000' : '● Backend Connected'}
-        {analysis && <span style={{ marginLeft: 'auto', color: '#4caf50' }}>Analysis Complete</span>}
-        <span className="auth-badge">👤 {user.username}{user.is_staff ? ' (admin)' : user.is_guest ? ' (read-only)' : ''}</span>
-        {user.is_staff && (
-          <button type="button" className="btn btn-secondary auth-btn" onClick={() => setShowAdmin(s => !s)}>
-            {showAdmin ? 'Hide Admin' : 'Admin'}
+    <div className="observatory dashboard-shell">
+      <header className="observatory-nav">
+        <a className="observatory-brand" href="#top" aria-label="Vedic Acoustica home">
+          <span className="brand-seal" aria-hidden="true">ॐ</span>
+          <span className="brand-wordmark">
+            <strong>VEDIC ACŪSTICA</strong>
+            <small>Ancient Sound • Modern Intelligence</small>
+          </span>
+        </a>
+        <nav className="observatory-links" aria-label="Main navigation">
+          <button
+            type="button"
+            className={`workspace-tab ${activeSection === 'upload' ? 'active' : ''}`}
+            aria-pressed={activeSection === 'upload'}
+            onClick={() => setActiveSection('upload')}
+          >
+            Upload
           </button>
-        )}
-        <button type="button" className="btn btn-secondary auth-btn" onClick={handleLogout}>Logout</button>
-      </div>
-
-      {showAdmin && (
-        <div style={{ marginTop: '1rem' }}>
-          <AdminOverview apiBase={API_BASE} />
-        </div>
-      )}
-
-      <AudioUploader onUpload={handleUpload} />
-
-      {fetchError && (
-        <div className="card" style={{ borderColor: '#e94560', background: 'rgba(233, 69, 96, 0.08)' }}>
-          <p style={{ color: '#e94560', fontSize: '0.85rem', margin: 0 }}>
-            Could not reach backend: {fetchError}
-          </p>
-        </div>
-      )}
-
-      {recordings.length > 0 && (
-        <div className="card">
-          <h2>Recordings</h2>
-          <div className="recording-list">
-            {recordings.map(r => (
-              <div
-                key={r.id}
-                className={`recording-item ${selectedRecording?.id === r.id ? 'active' : ''}`}
-                onClick={() => handleSelectRecording(r)}
-              >
-                <span>{r.title}</span>
-                {r.is_analyzed && <span className="badge">Analyzed</span>}
-              </div>
-            ))}
-          </div>
-          {selectedRecording && (
-            <>
-              <button
-                className="btn"
-                onClick={handleAnalyze}
-                disabled={analyzing}
-                style={{ marginTop: '1rem' }}
-              >
-                {analyzing ? <><span className="loading-spinner" /> Analysing…</> : 'Run Analysis'}
-              </button>
-
-              {analyzing && (
-                <div style={{ marginTop: '1.25rem' }}>
-                  <AnalysisProgress
-                    recordingId={selectedRecording.id}
-                    apiBase={API_BASE}
-                    onDone={handleAnalysisDone}
-                    onError={(msg) => setAnalyzeError(msg)}
-                  />
-                </div>
-              )}
-
-              {analyzeError && !analyzing && (
-                <p style={{ marginTop: '0.75rem', color: '#e94560', fontSize: '0.85rem' }}>
-                  ⚠️ {analyzeError}
-                </p>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {selectedRecording && (
-        <AudioPlayer
-          ref={playerRef}
-          audioUrl={resolveMediaUrl(selectedRecording.playback_file || selectedRecording.audio_file)}
-          title={selectedRecording.title}
-          onTimeUpdate={(t) => setPlaybackTime(t)}
-        />
-      )}
-
-      {analysis && (
-        <>
-          <div className="report-bar">
-            <button
-              className="btn btn-secondary report-btn"
-              onClick={handleDownloadReport}
-              disabled={downloading || chartsReady < NUM_CHARTS}
-            >
-              {downloading
-                ? <><span className="loading-spinner"></span> Generating...</>
-                : chartsReady < NUM_CHARTS
-                  ? '⏳ Preparing report...'
-                  : '⬇ Download PDF Report'}
+          <button
+            type="button"
+            className={`workspace-tab ${activeSection === 'explorer' ? 'active' : ''}`}
+            aria-pressed={activeSection === 'explorer'}
+            onClick={() => setActiveSection('explorer')}
+          >
+            Explorer
+          </button>
+          {analysis && activeSection === 'upload' && <a href="#research-folio">Research</a>}
+        </nav>
+        <div className="nav-identity">
+          <span className="auth-badge">Welcome back, {displayName}</span>
+          {user.is_staff && (
+            <button type="button" className="engraved-button small" onClick={() => setShowAdmin(s => !s)}>
+              {showAdmin ? 'Close ledger' : 'Admin ledger'}
             </button>
+          )}
+          <button type="button" className="engraved-button small" onClick={handleLogout}>Leave</button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section className="observatory-hero dashboard-hero">
+          <div className="hero-copy">
+            <span className="eyebrow">VEDIC ACŪSTICA</span>
+            <h1>Welcome back,<em>{displayName}</em></h1>
+            <p className="hero-subtitle">Ancient Sound • Modern Intelligence</p>
+            <p className="hero-description">
+              Enter the acoustic chamber to explore the 22 Śruti, study a recording,
+              and follow its melodic and recitation patterns.
+            </p>
+            <div className="hero-index">
+              <span>22 ŚRUTI</span><i />
+              <span>RĀGA</span><i />
+              <span>GHANA PATHA</span>
+            </div>
+            <a className="hero-invitation" href="#acoustic-chamber">
+              <span>Continue to the listening chamber</span><b aria-hidden="true">↓</b>
+            </a>
           </div>
-          <div className="grid">
-            <div className="card" id="chart-spectrogram">
-              <h2>Spectrogram</h2>
-              <SpectrogramView
-                data={analysis.spectrogram_data}
-                duration={analysis.duration}
-                onReady={markChartReady}
-                playbackTime={playbackTime}
-              />
-            </div>
-            <div className="card" id="chart-clusters">
-              <h2>Shruti Clusters (K=22)</h2>
-              <ClusterPlot data={analysis} onReady={markChartReady} />
-            </div>
+          <ShrutiInstrument
+            selectedSwara={selectedSwara}
+            detectedSwaras={analysis?.raga_detection?.detected_swaras ?? []}
+            onSelect={setSelectedSwara}
+          />
+        </section>
+
+        {showAdmin && (
+          <section className="admin-ledger">
+            <AdminOverview apiBase={API_BASE} />
+          </section>
+        )}
+
+        {activeSection === 'upload' && <section className="dashboard-tools" id="acoustic-chamber">
+          <div className="dashboard-tool-heading" id="recording-archive">
+            <span className="eyebrow">I · The listening chamber</span>
+            <h2>Offer a recording to the instrument</h2>
+            <p>Choose a recording to begin an acoustic study.</p>
           </div>
-          <div className="grid">
-            <div className="card" id="chart-shruti-map">
-              <h2>23 Shruti Frequency Map</h2>
-              <ShrutiMap data={analysis} onReady={markChartReady} />
+          <AudioUploader onUpload={handleUpload} />
+
+          {fetchError && (
+            <p className="error-inscription" role="alert">
+              The recording archive could not be opened. Please try again later.
+            </p>
+          )}
+
+          {recordings.length > 0 && (
+            <div className="archive-panel card">
+              <div className="archive-heading">
+                <div>
+                  <span className="eyebrow">II · Recordings</span>
+                  <h2>Listening archive</h2>
+                </div>
+                <span className="archive-count">{recordings.length.toString().padStart(2, '0')} ENTRIES</span>
+              </div>
+              <div className="recording-list">
+                {recordings.map((recording, index) => (
+                  <button
+                    type="button"
+                    key={recording.id}
+                    className={`recording-item ${selectedRecording?.id === recording.id ? 'active' : ''}`}
+                    onClick={() => handleSelectRecording(recording)}
+                    aria-pressed={selectedRecording?.id === recording.id}
+                  >
+                    <span className="recording-index">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="recording-title">{recording.title}</span>
+                    <span className={`recording-state ${recording.is_analyzed ? 'is-analyzed' : ''}`}>
+                      {recording.is_analyzed ? 'Examined' : 'Unexamined'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {selectedRecording && (
+                <>
+                  <button className="engraved-button" onClick={handleAnalyze} disabled={analyzing}>
+                    {analyzing
+                      ? <><span className="loading-spinner" /> Tracing the sound…</>
+                      : 'Begin acoustic analysis'}
+                  </button>
+                  {analyzing && (
+                    <div className="progress-manuscript">
+                      <AnalysisProgress
+                        recordingId={selectedRecording.id}
+                        apiBase={API_BASE}
+                        onDone={handleAnalysisDone}
+                        onError={(msg) => setAnalyzeError(msg)}
+                      />
+                    </div>
+                  )}
+                  {analyzeError && !analyzing && (
+                    <p className="error-inscription" role="alert">{analyzeError}</p>
+                  )}
+                </>
+              )}
             </div>
-            <div className="card" id="chart-ghana-path">
-              <h2>Ghana Patha Validation</h2>
-              <GhanaPathaViz
-                data={analysis}
-                duration={analysis.duration}
-                playerRef={playerRef}
-                onReady={markChartReady}
-              />
+          )}
+        </section>}
+
+        {activeSection === 'explorer' && (
+          <section className="explorer-section" id="explorer">
+            <div className="dashboard-tool-heading">
+              <span className="eyebrow">I · The acoustic explorer</span>
+              <h2>Study the architecture of sound</h2>
+              <p>Explore the 22 Śruti instrument and inspect real observations from your selected recording.</p>
             </div>
-          </div>
-          <div className="grid">
-            <div className="card" id="chart-raga-detection" style={{ gridColumn: '1 / -1' }}>
-              <h2>Raga Detection</h2>
-              <RagaViz data={analysis} onReady={markChartReady} />
+
+            <SoundExplorer
+              onOpenUpload={() => setActiveSection('upload')}
+              onSelectSwara={setSelectedSwara}
+            />
+
+            <div className="explorer-feature-grid">
+              <div className="folio-panel explorer-scale">
+                <div className="folio-heading">
+                  <h2>The 22-fold scale</h2>
+                  <span className="folio-number">ŚRUTI YANTRA</span>
+                </div>
+                <p>Select an engraved degree to focus it on the observatory instrument above.</p>
+                <div className="explorer-family-list" aria-label="Swara families">
+                  {['Sa', 'Re', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni'].map((family) => (
+                    <button
+                      key={family}
+                      type="button"
+                      className={`engraved-button small ${selectedSwara.startsWith(family) ? 'selected' : ''}`}
+                      onClick={() => setSelectedSwara(family === 'Sa' || family === 'Pa' ? family : `${family}1`)}
+                      aria-pressed={selectedSwara.startsWith(family)}
+                    >
+                      {family}
+                    </button>
+                  ))}
+                </div>
+                <p className="instrument-note">
+                  Selected degree: <strong>{selectedSwara}</strong>
+                  {analysis?.raga_detection?.detected_swaras?.some(item => item.swara === selectedSwara)
+                    ? ' · present in the selected analysis'
+                    : ''}
+                </p>
+              </div>
+
+              <div className="folio-panel explorer-recordings">
+                <div className="folio-heading">
+                  <h2>Listening archive</h2>
+                  <span className="folio-number">{recordings.length.toString().padStart(2, '0')} ENTRIES</span>
+                </div>
+                {recordings.length ? (
+                  <div className="recording-list">
+                    {recordings.map((recording, index) => (
+                      <button
+                        type="button"
+                        key={recording.id}
+                        className={`recording-item ${selectedRecording?.id === recording.id ? 'active' : ''}`}
+                        onClick={() => handleSelectRecording(recording)}
+                        aria-pressed={selectedRecording?.id === recording.id}
+                      >
+                        <span className="recording-index">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="recording-title">{recording.title}</span>
+                        <span className={`recording-state ${recording.is_analyzed ? 'is-analyzed' : ''}`}>
+                          {recording.is_analyzed ? 'Examined' : 'Unexamined'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="archive-empty">
+                    {fetchError ? 'The archive is unavailable until its connection is restored.' : 'No recordings are held in this archive yet.'}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+
+            <div className="explorer-feature-grid explorer-observations">
+              <div className="folio-panel">
+                <div className="folio-heading">
+                  <h2>Rāga observation</h2>
+                  <span className="folio-number">FROM ANALYSIS</span>
+                </div>
+                {analysis
+                  ? <RagaViz data={analysis} />
+                  : <p className="archive-empty">Select an analyzed recording in the Upload section to inspect its detected rāga.</p>}
+              </div>
+              <div className="folio-panel">
+                <div className="folio-heading">
+                  <h2>Ghana Patha observation</h2>
+                  <span className="folio-number">FROM ANALYSIS</span>
+                </div>
+                {analysis
+                  ? <GhanaPathaViz data={analysis} duration={analysis.duration} playerRef={playerRef} />
+                  : <p className="archive-empty">Ghana Patha findings appear here after a recording has been analyzed.</p>}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {selectedRecording && (
+          <section className="playback-chamber" aria-label="Selected recording playback">
+            <div className="playback-caption">
+              <span className="eyebrow">Listening instrument</span>
+              <p>Follow the voice through the sound trace</p>
+            </div>
+            <AudioPlayer
+              ref={playerRef}
+              audioUrl={resolveMediaUrl(selectedRecording.playback_file || selectedRecording.audio_file)}
+              title={selectedRecording.title}
+              onTimeUpdate={(t) => setPlaybackTime(t)}
+            />
+          </section>
+        )}
+
+        {analysis && activeSection === 'upload' && (
+          <section className="research-section" id="research-folio">
+            <div className="research-title-row">
+              <div className="dashboard-tool-heading">
+                <span className="eyebrow">III · Observations from the instrument</span>
+                <h2>Research folio</h2>
+              </div>
+              <button
+                className="engraved-button report-btn"
+                onClick={handleDownloadReport}
+                disabled={downloading || chartsReady < NUM_CHARTS}
+              >
+                {downloading
+                  ? <><span className="loading-spinner" /> Preparing folio…</>
+                  : chartsReady < NUM_CHARTS
+                    ? 'Preparing folio…'
+                    : 'Download research folio'}
+              </button>
+            </div>
+            <div className="grid">
+              <div className="card" id="chart-spectrogram">
+                <h2>Spectrogram</h2>
+                <SpectrogramView
+                  data={analysis.spectrogram_data}
+                  duration={analysis.duration}
+                  onReady={markChartReady}
+                  playbackTime={playbackTime}
+                />
+              </div>
+              <div className="card" id="chart-clusters">
+                <h2>Shruti Clusters (K=22)</h2>
+                <ClusterPlot data={analysis} onReady={markChartReady} />
+              </div>
+            </div>
+            <div className="grid">
+              <div className="card" id="chart-shruti-map">
+                <h2>23 Shruti Frequency Map</h2>
+                <ShrutiMap data={analysis} onReady={markChartReady} />
+              </div>
+              <div className="card" id="chart-ghana-path">
+                <h2>Ghana Patha Validation</h2>
+                <GhanaPathaViz
+                  data={analysis}
+                  duration={analysis.duration}
+                  playerRef={playerRef}
+                  onReady={markChartReady}
+                />
+              </div>
+            </div>
+            <div className="grid">
+              <div className="card" id="chart-raga-detection" style={{ gridColumn: '1 / -1' }}>
+                <h2>Raga Detection</h2>
+                <RagaViz data={analysis} onReady={markChartReady} />
+              </div>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="observatory-footer">
+        <span>VEDIC ACŪSTICA</span>
+        <span>AN INSTRUMENT FOR THE STUDY OF SACRED SOUND</span>
+      </footer>
     </div>
   )
 }
