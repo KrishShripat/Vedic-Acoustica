@@ -460,3 +460,11 @@ class SecuritySettingsTestCase(TestCase):
         self.assertIn('django-insecure-dev-key-replace-in-production', _KNOWN_INSECURE_SECRET_KEYS)
         self.assertIn('django-insecure-hf-fallback-key-for-spaces', _KNOWN_INSECURE_SECRET_KEYS)
         self.assertIn('django-insecure-build-placeholder', _KNOWN_INSECURE_SECRET_KEYS)
+
+    def test_sqlite_wal_mode_configured(self):
+        from django.db import connection
+        if connection.vendor == 'sqlite':
+            with connection.cursor() as cursor:
+                cursor.execute('PRAGMA journal_mode;')
+                mode = cursor.fetchone()[0]
+                self.assertIn(mode.lower(), ('wal', 'memory'))

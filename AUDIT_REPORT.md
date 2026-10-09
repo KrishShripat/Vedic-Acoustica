@@ -301,9 +301,14 @@ graph LR
 #### F-12: SQLite under concurrent Gunicorn + Celery with `timeout=20`
 - **Area:** Data Integrity / Reliability
 - **Severity:** Medium
-- **Evidence:** [settings.py:120](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py#L120): `'timeout': 20`. 2 Gunicorn workers + 2 Celery workers = 4 processes writing to the same SQLite file.
-- **Impact:** Under concurrent load, `OperationalError: database is locked` is likely. SQLite's WAL mode would help but is not configured.
-- **Fix:** Enable WAL mode: `'OPTIONS': {'timeout': 20, 'init_command': 'PRAGMA journal_mode=WAL;'}` — actually, Django's SQLite backend doesn't support `init_command`. Use a startup management command or connection signal to set WAL mode.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [settings.py:120](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py#L120): Previously only set `'timeout': 20` without Write-Ahead Logging. Default SQLite journal mode (`delete`) acquires exclusive database file locks during writes, risking `OperationalError: database is locked` when Gunicorn and Celery write simultaneously.
+- **Impact:** Write lock contention and potential dropped results under concurrent uploads and background analysis tasks.
+- **Fix:** Registered `connection_created` signal in `ApiConfig.ready()` in [apps.py](file:///home/Arc/Vedic-Acoustica/backend/api/apps.py) executing `PRAGMA journal_mode=WAL;` and `PRAGMA synchronous=NORMAL;` on all SQLite connections. In WAL mode, readers do not block writers and writers do not block readers. Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - Verified `PRAGMA journal_mode;` returns `wal` and `PRAGMA synchronous;` returns `1` (NORMAL) on live connections.
+  - Added unit test `SecuritySettingsTestCase.test_sqlite_wal_mode_configured` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py).
+  - All 47 Django tests passed (`manage.py test api ml_engine`).
 - **Effort:** S | **Priority:** P2
 
 #### F-13: Ghana Pāṭha validation is a tonal-contour check, not a word-level pattern check
@@ -502,7 +507,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-09 | Evaluate HttpOnly cookie auth |
 | F-10 | Add registration CAPTCHA |
 | F-11 | Shorten SSE max_wait or move to ASGI |
-| F-12 | Enable SQLite WAL mode |
+| F-12 | Enable SQLite WAL mode | ✅ **RESOLVED** |
 | F-13 | Add disclaimer about tonal-contour vs word-level Ghana check |
 | F-14 | Fix Yaman time to "6 PM - 9 PM" | ✅ **RESOLVED** |
 | F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
