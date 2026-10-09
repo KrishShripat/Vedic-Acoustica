@@ -210,9 +210,20 @@ graph LR
 #### F-06: Recordings list endpoint is unauthenticated and unpaginated in the frontend
 - **Area:** Security / Privacy
 - **Severity:** High
-- **Evidence:** [views.py:474](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L474): `list_recordings` has no `@permission_classes([IsAuthenticated])`. The backend returns paginated results (page_size=20), but the live API at `/api/recordings/` returns **all 19 recordings** (currently fits in one page). Any anonymous user can enumerate all uploaded file names and metadata.
-- **Impact:** File titles (e.g., "kalyani_3x.wav") and upload timestamps of all users are publicly visible. `recording_detail` is also unauthenticated, leaking full analysis results.
-- **Fix:** Add `@permission_classes([IsAuthenticated])` to `list_recordings` and `recording_detail`. Filter queryset by `request.user` or add an `uploaded_by` FK.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [views.py:474](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L474): `list_recordings` previously had no `@permission_classes([IsAuthenticated])`, and `recording_detail` had no auth decorator. Any anonymous user could enumerate all uploaded file names, timestamps, and full analysis results.
+- **Impact:** File titles (e.g., "kalyani_3x.wav") and upload timestamps of all users were publicly visible to unauthenticated requests. `recording_detail` was also unauthenticated, leaking full analysis results (PCP heatmaps, detected swaras, raga classifications, and Ghana Patha DTW scores).
+- **Fix:**
+  1. Added `@permission_classes([IsAuthenticated])` to both `list_recordings` and `recording_detail` in [views.py:474, 509](file:///home/Arc/Vedic-Acoustica/backend/api/views.py). Synced to HF deployment mirror.
+  2. Updated [App.jsx](file:///home/Arc/Vedic-Acoustica/frontend/src/App.jsx) to ensure `fetchRecordings` only executes when authenticated, and clears recordings state upon user logout or session expiration.
+  3. Added unit tests `test_list_recordings_requires_auth`, `test_recording_detail_requires_auth`, and `test_recording_detail_authenticated` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py).
+- **Verification & Proof:**
+  - Unauthenticated `GET /api/recordings/` now returns HTTP 401 Unauthorized.
+  - Unauthenticated `GET /api/recordings/<pk>/` now returns HTTP 401 Unauthorized.
+  - Authenticated requests return HTTP 200 with data.
+  - Django test suite passed: 36/36 tests (`manage.py test api ml_engine`).
+  - ML quick test battery passed: 15/15 tests (`test_ml_quick.py`).
+  - Frontend production build passed cleanly: `npm run build` and `oxlint` (0 errors across 19 files).
 - **Effort:** S | **Priority:** P1
 
 #### F-07: No per-user data isolation — all recordings visible to all users
@@ -447,7 +458,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | ID | Action | Status |
 |----|--------|--------|
 | F-05 | Replace `plotly.js-dist` with a lighter build; add code splitting | ✅ **RESOLVED** |
-| F-06 | Add `IsAuthenticated` to list/detail recording views |
+| F-06 | Add `IsAuthenticated` to list/detail recording views | ✅ **RESOLVED** |
 | F-07 | Add `uploaded_by` FK to `AudioRecording`; filter by user |
 | F-08 | Add MIME/magic-byte validation on upload |
 

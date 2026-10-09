@@ -11,7 +11,7 @@ import ShrutiInstrument from './components/ShrutiInstrument'
 import SoundExplorer from './components/SoundExplorer'
 import AuthScreen from './components/AuthScreen'
 import AdminOverview from './components/AdminOverview'
-import { getUser, clearAuth, authFetch } from './utils/auth'
+import { getUser, getToken, clearAuth, authFetch } from './utils/auth'
 import './observatory.css'
 
 const API_BASE = '/api'
@@ -80,7 +80,11 @@ function App() {
 
   // AdminOverview signals an expired token → bounce to the login screen.
   useEffect(() => {
-    const onExpired = () => { clearAuth(); setUser(null) }
+    const onExpired = () => {
+      clearAuth()
+      setUser(null)
+      setRecordings([])
+    }
     window.addEventListener('auth-expired', onExpired)
     return () => window.removeEventListener('auth-expired', onExpired)
   }, [])
@@ -96,6 +100,7 @@ function App() {
     setUser(null)
     setAnalysis(null)
     setSelectedRecording(null)
+    setRecordings([])
   }, [])
 
   const markChartReady = useCallback(() => {
@@ -103,6 +108,7 @@ function App() {
   }, [])
 
   const fetchRecordings = useCallback(async () => {
+    if (!getToken()) return
     try {
       const res = await authFetch(`${API_BASE}/recordings/`)
       if (!res.ok) throw new Error(`Backend returned ${res.status}`)
@@ -116,8 +122,10 @@ function App() {
   }, [])
 
   useEffect(() => {
-    fetchRecordings()
-  }, [fetchRecordings])
+    if (user) {
+      fetchRecordings()
+    }
+  }, [user, fetchRecordings])
 
   useEffect(() => {
     setChartsReady(0)

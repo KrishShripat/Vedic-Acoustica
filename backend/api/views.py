@@ -471,6 +471,7 @@ def _build_playback_file(recording):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def list_recordings(request):
     """
     GET /api/recordings/
@@ -506,6 +507,7 @@ def list_recordings(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def recording_detail(request, pk):
     try:
         recording = AudioRecording.objects.get(pk=pk)

@@ -19,6 +19,26 @@ class RecordingAPITestCase(TestCase):
         self.assertEqual(response.data['count'], 0)
         self.assertEqual(response.data['results'], [])
 
+    def test_list_recordings_requires_auth(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(reverse('list_recordings'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_recording_detail_requires_auth(self):
+        from api.models import AudioRecording
+        rec = AudioRecording.objects.create(title='test_rec')
+        self.client.force_authenticate(user=None)
+        response = self.client.get(reverse('recording_detail', args=[rec.id]))
+        self.assertEqual(response.status_code, 401)
+
+    def test_recording_detail_authenticated(self):
+        from api.models import AudioRecording
+        rec = AudioRecording.objects.create(title='test_rec')
+        response = self.client.get(reverse('recording_detail', args=[rec.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['id'], rec.id)
+        self.assertEqual(response.data['title'], 'test_rec')
+
     def test_upload_requires_file(self):
         response = self.client.post(reverse('upload_audio'), {}, format='multipart')
         self.assertEqual(response.status_code, 400)
