@@ -392,7 +392,7 @@ RAGA_DATABASE = [
         'name': 'Kambhoji',
         'tradition': 'Carnatic',
         'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
-        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s'],
         'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Pa', 'name': 'Pa'},
         'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},

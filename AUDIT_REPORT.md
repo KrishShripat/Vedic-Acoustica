@@ -143,9 +143,19 @@ graph LR
 #### F-03: Kambhoji scale is wrong — Ni should be omitted in ascent
 - **Area:** ML / Raga Database
 - **Severity:** Critical
-- **Evidence:** [raga_mapping.py:395](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L395): arohana includes `'Ni-s'`, but canonical Kambhoji is shadava (6-note) in ascent — Ni is omitted. Source: carnatica.in, shankarmahadevanacademy.com, Wikipedia.
-- **Impact:** Kambhoji becomes indistinguishable from Shankarabharanam/Bilawal/Mand in the scorer since they all share the same full heptatonic swara set.
-- **Fix:** Change arohana to `['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s']` (omit Ni-s).
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [raga_mapping.py:395](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L395): arohana previously included `'Ni-s'`, but canonical Kambhoji is shadava (6-note) in ascent — Ni is strictly omitted ($S - R_2 - G_3 - M_1 - P - D_2 - \dot{S}$). Source: carnatica.in, shankarmahadevanacademy.com, Wikipedia.
+- **Impact:** Kambhoji was previously coded as sampurna-sampurna, making its ascent indistinguishable from Shankarabharanam/Bilawal in the directional scorer.
+- **Fix:** Removed `'Ni-s'` from arohana in [raga_mapping.py:395](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L395):
+  ```python
+  'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s'],
+  ```
+  Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - `arohana_bins` maps to 6 swara zones `[0, 3, 4, 7, 8, 9, 13, 16, 17]` — all Nishada bins (18..21) are verified disjoint.
+  - `avarohana_bins` retains Ni-s: `[0, 20, 21, 16, 17, 13, 9, 7, 8, 3, 4, 0]`.
+  - Added unit test `test_kambhoji_shadava_ascent` in [ml_engine/tests.py](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tests.py).
+  - All test batteries verified: Django tests (32/32 passed), ML robustness battery (18/18 passed), ML audit battery (15/15 passed), quick pipeline battery (15/15 passed).
 - **Effort:** S | **Priority:** P0
 
 #### F-04: No feature scaling before K-Means clustering
@@ -412,7 +422,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 |----|--------|--------|
 | F-01 | Fix Abhogi vadi: change from Pa to Ma-s | ✅ **RESOLVED** |
 | F-02 | Fix Shankarabharanam: swap arohana/avarohana | ✅ **RESOLVED** |
-| F-03 | Fix Kambhoji: remove Ni-s from arohana |
+| F-03 | Fix Kambhoji: remove Ni-s from arohana | ✅ **RESOLVED** |
 | F-04 | Add `StandardScaler` to K-Means feature input |
 
 ### Next (P1 — within 1 sprint)

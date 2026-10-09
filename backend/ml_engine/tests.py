@@ -48,11 +48,26 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         expected_avarohana = ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa']
         self.assertEqual(sb['arohana'], expected_arohana)
         self.assertEqual(sb['avarohana'], expected_avarohana)
-        # Verify arohana_bins starts with 0 (Sa) and ends with Ni-s bins
         self.assertEqual(sb['arohana_bins'][0], 0)
         self.assertIn(sb['arohana_bins'][-1], [20, 21])
-        # Verify avarohana_bins starts with 0 (Sa') and returns to 0 (Sa)
         self.assertEqual(sb['avarohana_bins'][0], 0)
         self.assertEqual(sb['avarohana_bins'][-1], 0)
+
+    def test_kambhoji_shadava_ascent(self):
+        """Kambhoji is shadava-sampurna: arohana omits Ni, avarohana includes Ni."""
+        kb = next(r for r in RAGA_DATABASE if r['name'] == 'Kambhoji')
+        self.assertEqual(
+            kb['arohana'],
+            ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s']
+        )
+        self.assertNotIn('Ni-s', kb['arohana'])
+        self.assertNotIn('Ni-k', kb['arohana'])
+        self.assertIn('Ni-s', kb['avarohana'])
+        # Ni bins (18..21) must be absent from arohana_bins
+        ni_bins = {18, 19, 20, 21}
+        self.assertTrue(set(kb['arohana_bins']).isdisjoint(ni_bins))
+        # But Ni bins must be present in avarohana_bins
+        self.assertFalse(set(kb['avarohana_bins']).isdisjoint(ni_bins))
+
 
 
