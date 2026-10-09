@@ -380,8 +380,11 @@ RAGA_DATABASE = [
     {
         'name': 'Bhairavi (Carnatic)',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
-        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        # Canonical bhashanga scale (janya of 20th Melakarta Natabhairavi):
+        # vakra ascent uses Chatushruti Dhaivata (Dha-s / D2), while descent
+        # uses Shuddha Dhaivata (Dha-k / D1).
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Ga-k', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
         'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
         'samvadi': {'grade': 'Sa', 'name': 'Sa'},

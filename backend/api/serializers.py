@@ -30,8 +30,12 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
         import re
         # Sanitize to an ASCII-safe basename: strip directory components,
         # replace any character that isn't alphanumeric, dot, hyphen, or
-        # underscore with '_', and cap at 200 characters.
-        safe_name = re.sub(r'[^\w.\-]', '_', os.path.basename(value.name))
+        # underscore with '_', strip leading dashes/dots to prevent CLI flag
+        # confusion in downstream subprocesses, and cap at 200 characters.
+        raw_base = os.path.basename(value.name)
+        safe_name = re.sub(r'[^\w.\-]', '_', raw_base).lstrip('.-')
+        if not safe_name:
+            safe_name = 'audio_recording'
         if len(safe_name) > 200:
             safe_name = safe_name[:200]
         value.name = safe_name

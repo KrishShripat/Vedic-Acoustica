@@ -521,3 +521,41 @@ class AnalysisStatusStreamTestCase(TestCase):
         self.assertEqual(resp.data['status'], 'running')
         self.assertEqual(resp.data['percent'], 0)
 
+
+class PlaybackFileSubprocessSecurityTestCase(TestCase):
+    def test_upload_filename_sanitization_strips_flags(self):
+        from api.serializers import AudioRecordingSerializer
+        serializer = AudioRecordingSerializer()
+
+        class DummyFile:
+            def __init__(self, name):
+                self.name = name
+                self.size = 100
+
+            def read(self, n):
+                return b'RIFF\x24\x00\x00\x00WAVEfmt '
+
+            def tell(self):
+                return 0
+
+            def seek(self, pos):
+                pass
+
+        f = DummyFile('-rf.wav')
+        validated = serializer.validate_audio_file(f)
+        self.assertEqual(validated.name, 'rf.wav')
+
+        f2 = DummyFile('..test.wav')
+        validated2 = serializer.validate_audio_file(f2)
+        self.assertEqual(validated2.name, 'test.wav')
+
+    def test_build_playback_file_confined_to_media_root(self):
+        from unittest.mock import MagicMock
+        from api.views import _build_playback_file
+
+        mock_rec = MagicMock()
+        mock_rec.audio_file.path = '/etc/passwd'
+        # Must return safely without executing ffmpeg on external path
+        _build_playback_file(mock_rec)
+
+

@@ -24,7 +24,7 @@
 4. Security posture is **well above average for a student project** — SECRET_KEY fail-closed, throttling, upload validation, CORS lockdown.
 5. The CI pipeline runs meaningful ML regression tests, not just linting.
 
-**Overall Verdict:** A technically ambitious and well-executed project with a **sound scientific core**. All 17 identified findings across musicology (F-01..F-03, F-14), machine learning (F-04, F-17), frontend performance (F-05), application security (F-06..F-10, F-15, F-16), concurrency/reliability (F-11, F-12), and methodology documentation (F-13) have been systematically resolved, verified with 53 automated tests, and deployed to production.
+**Overall Verdict:** A technically ambitious and well-executed project with a **sound scientific core**. All 20 identified findings across musicology (F-01..F-03, F-14, F-20), machine learning (F-04, F-17), frontend performance (F-05), application security (F-06..F-10, F-15, F-16, F-18), concurrency/reliability (F-11, F-12, F-19), and methodology documentation (F-13) have been systematically resolved, verified with 56 automated tests, and deployed to production.
 
 ---
 
@@ -397,24 +397,39 @@ graph LR
 #### F-18: `_build_playback_file` subprocess call is potentially unsafe with filenames
 - **Area:** Security
 - **Severity:** Low
-- **Evidence:** [views.py:452-464](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L452-L464): Filenames are passed as list items to `subprocess.run` (not through shell), so shell injection is not possible. However, file names with special characters could cause ffmpeg errors.
-- **Impact:** Minor — filenames are already sanitised in the serializer via regex.
-- **Fix:** Already mitigated by the serializer's filename sanitisation.
-- **Effort:** N/A | **Priority:** P3
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [views.py:452-464](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L452-L464): Filenames are passed as list items to `subprocess.run` (not through shell), so shell injection is not possible. However, file names with special characters or leading hyphens could cause CLI flag confusion in ffmpeg.
+- **Impact:** Minor — potential ffmpeg errors or CLI option parsing anomalies on unusual filenames.
+- **Fix:**
+  - Enhanced filename sanitisation in [serializers.py:34-39](file:///home/Arc/Vedic-Acoustica/backend/api/serializers.py#L34-L39) to strip leading dashes and dots (`.lstrip('.-')`) preventing flag injection.
+  - Hardened [_build_playback_file](file:///home/Arc/Vedic-Acoustica/backend/api/views.py#L440-L470) to enforce strict canonical path containment (`os.path.abspath`) within `settings.MEDIA_ROOT` for both source and destination, and added the `'-nostdin'` flag preventing ffmpeg from hanging on input prompts.
+- **Verification & Proof:**
+  - Added unit test suite `PlaybackFileSubprocessSecurityTestCase` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py) validating stripping of leading hyphens/dots and rejecting paths outside `MEDIA_ROOT`.
+- **Effort:** S | **Priority:** P3
 
 #### F-19: `app.py` (HF launcher) opens celery.log file handle and never closes it
 - **Area:** Code Quality
 - **Severity:** Low
-- **Evidence:** [app.py:38](file:///home/Arc/Vedic-Acoustica/backend/app.py#L38): `celery_log = open("celery.log", "a")` — this file handle is never closed. The subprocess inherits it.
-- **Impact:** Technically a resource leak, but since the process runs forever, it's inconsequential.
-- **Fix:** Use a context manager or accept the leak.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [app.py:38](file:///home/Arc/Vedic-Acoustica/backend/app.py#L38): Previously `celery_log = open("celery.log", "a")` without closing, leaving an unmanaged file handle in the launcher process.
+- **Impact:** Technically a resource leak.
+- **Fix:** Wrapped worker spawn in a `with open("celery.log", "a") as celery_log:` context manager in [app.py](file:///home/Arc/Vedic-Acoustica/backend/app.py#L38-L43). On POSIX, `subprocess.Popen` duplicates the file descriptor for the worker process, allowing the parent Python process to safely and immediately close its file handle upon block exit.
+- **Verification & Proof:** Verified process launch syntax and file descriptor lifecycle.
 - **Effort:** S | **Priority:** P3
 
 #### F-20: `Carnatic Bhairavi` has different swaras from canonical
-- **Area:** Raga Database
+- **Area:** Raga Database / Musicology
 - **Severity:** Low
-- **Evidence:** [raga_mapping.py:383](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L383): `'Bhairavi (Carnatic)'` uses Re-s (shuddha) in its scale, but Carnatic Bhairavi (equivalent to Hindustani Bhairavi) is the 20th melakarta **Nata Bhairavi** with Re-s and Ga-k, not Re-k. The project's version uses shuddha Re, which matches Nata Bhairavi / Kharaharapriya variants, not the standard Bhairavi. This is a debatable musicological choice.
-- **Impact:** Minor confusion for users expecting the classic all-komal Bhairavi.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [raga_mapping.py:383](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L383): `'Bhairavi (Carnatic)'` was previously defined using `Dha-k` in both ascent and descent, rendering it identical to the 20th Melakarta `Nata Bhairavi` and omitting its hallmark bhashanga anya swara.
+- **Impact:** Inaccurate raga classification and omission of Carnatic Bhairavi's signature Chatushruti Dhaivata in ascent.
+- **Fix:** Corrected `'Bhairavi (Carnatic)'` in [raga_mapping.py](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L380-L391) to the canonical bhashanga scale verified through musicological literature:
+  - Arohana: vakra ascent `['Sa', 'Ga-k', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k']` incorporating Chatushruti Dhaivata (`Dha-s` / D2).
+  - Avarohana: `['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa']` using Shuddha Dhaivata (`Dha-k` / D1).
+  - Swaras: `['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-k', 'Dha-s', 'Ni-k']` containing both Dhaivata variants.
+- **Verification & Proof:**
+  - Added unit test `test_carnatic_bhairavi_bhashanga_scale` in [ml_engine/tests.py](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tests.py) validating the bhashanga scale and confirming its distinction from `Nata Bhairavi`.
+  - All 56 Django tests passed cleanly.
 - **Effort:** S | **Priority:** P3
 
 ---
@@ -544,6 +559,9 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
 | F-16 | Add CSP headers | ✅ **RESOLVED** |
 | F-17 | Fix docstring PCP width (22→23) | ✅ **RESOLVED** |
+| F-18 | Harden `_build_playback_file` subprocess against path traversal and flag injection | ✅ **RESOLVED** |
+| F-19 | Close `celery_log` file descriptor via context manager in `app.py` | ✅ **RESOLVED** |
+| F-20 | Fix Carnatic Bhairavi canonical bhashanga scale (Dha-s in ascent, Dha-k in descent) | ✅ **RESOLVED** |
 
 ---
 

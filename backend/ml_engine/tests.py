@@ -74,6 +74,31 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         yaman = next(r for r in RAGA_DATABASE if r['name'] == 'Yaman')
         self.assertEqual(yaman['time'], 'Evening (6 PM - 9 PM)')
 
+    def test_carnatic_bhairavi_bhashanga_scale(self):
+        """Bhairavi (Carnatic) is a bhashanga raga with Chatushruti Dhaivata (Dha-s / D2)
+        in arohana and Shuddha Dhaivata (Dha-k / D1) in avarohana."""
+        cb = next(r for r in RAGA_DATABASE if r['name'] == 'Bhairavi (Carnatic)')
+        nb = next(r for r in RAGA_DATABASE if r['name'] == 'Nata Bhairavi')
+
+        # Carnatic Bhairavi must have Dha-s in arohana and Dha-k in avarohana
+        self.assertIn('Dha-s', cb['arohana'])
+        self.assertNotIn('Dha-k', cb['arohana'])
+        self.assertIn('Dha-k', cb['avarohana'])
+        self.assertNotIn('Dha-s', cb['avarohana'])
+        self.assertIn('Dha-s', cb['swaras'])
+        self.assertIn('Dha-k', cb['swaras'])
+
+        # Parent Nata Bhairavi uses Dha-k in both directions (linear sampurna)
+        self.assertIn('Dha-k', nb['arohana'])
+        self.assertIn('Dha-k', nb['avarohana'])
+        self.assertNotIn('Dha-s', nb['swaras'])
+
+        # Dha-s bins (16, 17) must be in cb arohana_bins, Dha-k bins (14, 15) in avarohana_bins
+        dha_s_bins = {16, 17}
+        dha_k_bins = {14, 15}
+        self.assertTrue(dha_s_bins.issubset(set(cb['arohana_bins'])))
+        self.assertTrue(dha_k_bins.issubset(set(cb['avarohana_bins'])))
+
 
 class ClusterFeatureScalingTestCase(TestCase):
     def test_run_clustering_output_structure(self):

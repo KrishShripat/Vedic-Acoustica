@@ -438,20 +438,28 @@ def upload_audio(request):
 
 def _build_playback_file(recording):
     import subprocess  # noqa: PLC0415
+    from django.conf import settings
 
     if not recording.audio_file:
         return
-    src = recording.audio_file.path
-    dst = os.path.join(
-        os.path.dirname(src),
-        os.path.splitext(os.path.basename(src))[0] + '.mp3',
-    )
-    if not os.path.exists(src):
+    src = os.path.abspath(recording.audio_file.path)
+    media_root = os.path.abspath(settings.MEDIA_ROOT)
+    if not src.startswith(media_root) or not os.path.isfile(src):
         return
+
+    dst = os.path.abspath(
+        os.path.join(
+            os.path.dirname(src),
+            os.path.splitext(os.path.basename(src))[0] + '.mp3',
+        )
+    )
+    if not dst.startswith(media_root):
+        return
+
     try:
         subprocess.run(
             [
-                'ffmpeg', '-y',
+                'ffmpeg', '-nostdin', '-y',
                 '-i', src,
                 '-codec:a', 'libmp3lame',
                 '-b:a', '96k',

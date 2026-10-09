@@ -35,12 +35,12 @@ if os.system("python manage.py migrate --noinput") != 0:
 
 # 3. Start Celery Worker
 print("Starting Celery...")
-celery_log = open("celery.log", "a")
-subprocess.Popen(
-    ["celery", "-A", "vedic_acoustica", "worker", "--loglevel=info", "--concurrency=2"],
-    stdout=celery_log,
-    stderr=subprocess.STDOUT,
-)
+with open("celery.log", "a") as celery_log:
+    subprocess.Popen(
+        ["celery", "-A", "vedic_acoustica", "worker", "--loglevel=info", "--concurrency=2"],
+        stdout=celery_log,
+        stderr=subprocess.STDOUT,
+    )
 
 # 4. Start Django via Gunicorn on port 7860 (the port Hugging Face watches)
 print("Starting Django on port 7860...")
