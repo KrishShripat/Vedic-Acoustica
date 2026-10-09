@@ -13,19 +13,34 @@ All views here are light function-based API views that return only primitive
 JSON (no large analysis matrices), so they are cheap for the frontend to poll.
 """
 
+import re
 from django.contrib.auth import authenticate, get_user_model
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import (
     api_view,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import AudioRecording
 
 User = get_user_model()
+
+
+class RegisterAnonThrottle(AnonRateThrottle):
+    """Strict per-IP rate limit on new user registrations to mitigate bot abuse."""
+    scope = 'register_anon'
+
+
+class LoginAnonThrottle(AnonRateThrottle):
+    """Per-IP rate limit on login attempts to mitigate brute-force credential stuffing."""
+    scope = 'login_anon'
 
 
 def _user_payload(user) -> dict:
@@ -44,6 +59,7 @@ def _user_payload(user) -> dict:
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([RegisterAnonThrottle])
 def register(request):
     """
     POST /api/auth/register/
@@ -63,6 +79,27 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    if len(username) < 3 or len(username) > 150:
+        return Response(
+            {'error': 'Username must be between 3 and 150 characters.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not re.match(r'^[\w.@+-]+$', username):
+        return Response(
+            {'error': 'Username contains invalid characters.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response(
+                {'error': 'Invalid email address format.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     if User.objects.filter(username__iexact=username).exists():
         return Response(
             {'error': 'A user with that username already exists.'},
@@ -72,6 +109,12 @@ def register(request):
     if len(password) < 8:
         return Response(
             {'error': 'Password must be at least 8 characters long.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if len(password) > 128:
+        return Response(
+            {'error': 'Password must not exceed 128 characters.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -91,6 +134,7 @@ def register(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([LoginAnonThrottle])
 def login(request):
     """
     POST /api/auth/login/

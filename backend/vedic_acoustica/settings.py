@@ -199,6 +199,8 @@ REST_FRAMEWORK = {
         'anon':         '60/minute',   # default for low-cost read endpoints
         'upload_anon':  '10/hour',     # per-IP limit on audio file uploads
         'analyze_anon': '10/hour',     # per-IP limit on ML analysis triggers
+        'register_anon': '10/hour',    # per-IP limit on account registrations
+        'login_anon':   '30/minute',   # per-IP limit on login attempts
     },
 }
 

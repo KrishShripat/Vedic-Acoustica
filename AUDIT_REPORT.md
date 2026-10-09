@@ -285,9 +285,16 @@ graph LR
 #### F-10: Open registration with no CAPTCHA or email verification
 - **Area:** Security
 - **Severity:** Medium
-- **Evidence:** [auth_views.py:46-89](file:///home/Arc/Vedic-Acoustica/backend/api/auth_views.py#L46-L89): `register` is `AllowAny`. Only validation: username uniqueness + password ≥ 8 chars.
-- **Impact:** Bot spam, resource exhaustion (each account can upload/analyze 10 files/hour).
-- **Fix:** Add rate limiting to registration (already have `AnonRateThrottle`), add CAPTCHA, or require email verification.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [auth_views.py:46-89](file:///home/Arc/Vedic-Acoustica/backend/api/auth_views.py#L46-L89): `register` was previously unthrottled with minimal payload sanitation, exposing the endpoint to automated bot account creation and credential stuffing.
+- **Impact:** Bot spam and resource exhaustion (unlimited account creation bypassing upload/analysis quotas).
+- **Fix:**
+  - Implemented `RegisterAnonThrottle` (scope `'register_anon'`: 10 req/hour per IP) and `LoginAnonThrottle` (scope `'login_anon'`: 30 req/min per IP) in [auth_views.py](file:///home/Arc/Vedic-Acoustica/backend/api/auth_views.py) and configured rates in [settings.py](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py).
+  - Enforced strict payload validation: username length (3–150 chars) and safe character set (`^[\w.@+-]+$`); email format verification via Django's `validate_email`; and maximum password length (128 chars) preventing hash-computation CPU exhaustion attacks.
+- **Verification & Proof:**
+  - Added 3 comprehensive test cases in `AuthAPITestCase` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py): `test_register_invalid_email_format_rejected`, `test_register_username_validation`, and `test_register_rate_limit_throttle` (asserts HTTP 429 upon exceeding 10 requests).
+  - All 53 Django tests passed (`manage.py test api ml_engine`).
+  - Synced changes to HF deployment mirror.
 - **Effort:** M | **Priority:** P2
 
 #### F-11: SSE stream holds a Gunicorn worker thread for up to 300 seconds
@@ -521,7 +528,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | ID | Action | Status |
 |----|--------|--------|
 | F-09 | Evaluate HttpOnly cookie auth |
-| F-10 | Add registration CAPTCHA |
+| F-10 | Add registration rate limiting and payload validation | ✅ **RESOLVED** |
 | F-11 | Shorten SSE max_wait or move to ASGI | ✅ **RESOLVED** |
 | F-12 | Enable SQLite WAL mode | ✅ **RESOLVED** |
 | F-13 | Add disclaimer about tonal-contour vs word-level Ghana check | ✅ **RESOLVED** |

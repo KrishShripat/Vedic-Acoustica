@@ -173,6 +173,8 @@ class UserIsolationTestCase(TestCase):
 
 class AuthAPITestCase(TestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.client = APIClient()
 
     def register(self, **overrides):
@@ -203,6 +205,29 @@ class AuthAPITestCase(TestCase):
     def test_register_short_password_rejected(self):
         response = self.register(password='short')
         self.assertEqual(response.status_code, 400)
+
+    def test_register_invalid_email_format_rejected(self):
+        response = self.register(email='not-an-email')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'Invalid email address format.')
+
+    def test_register_username_validation(self):
+        response = self.register(username='ab')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Username must be between 3 and 150 characters.', response.data['error'])
+
+        response = self.register(username='bad user!')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Username contains invalid characters.', response.data['error'])
+
+    def test_register_rate_limit_throttle(self):
+        from django.core.cache import cache
+        cache.clear()
+        for i in range(10):
+            res = self.register(username=f'user_{i}', email=f'user_{i}@example.com')
+            self.assertEqual(res.status_code, 201)
+        throttled_res = self.register(username='user_11', email='user_11@example.com')
+        self.assertEqual(throttled_res.status_code, 429)
 
     def test_login_with_username(self):
         self.register()
