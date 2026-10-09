@@ -195,13 +195,13 @@ def _traceback_length(D):
 
 def segment_pcp_sequences(pcp, sr, hop_length, n_segments):
     """
-    Divide the (22, n_frames) PCP matrix into ``n_segments`` slices.
+    Divide the (23, n_frames) PCP matrix into ``n_segments`` slices.
 
     Uses ``np.array_split`` so the remainder is distributed onto the last
     segments instead of being silently dropped — trailing audio frames (up to
     ~1 s) otherwise never participate in the DTW / Ghana verdict.
 
-    Returns a list of (n_frames_seg, 22) arrays — transposed so rows are
+    Returns a list of (n_frames_seg, 23) arrays — transposed so rows are
     frames, columns are Shruti bins (the format expected by DTW).
     """
     # np.array_split distributes the remainder so the last segment absorbs
@@ -220,7 +220,7 @@ def match_segments_dtw(segments):
 
     Parameters
     ----------
-    segments : list of (n_frames_seg, 22) arrays
+    segments : list of (n_frames_seg, 23) arrays
 
     Returns
     -------

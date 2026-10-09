@@ -351,9 +351,11 @@ graph LR
 #### F-17: Docstring in `segment_pcp_sequences` says "(22, n_frames)" but PCP is 23 bins
 - **Area:** Documentation
 - **Severity:** Low
-- **Evidence:** [ghana_patha.py:196-209](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L196-L209): docstring says `(22, n_frames)` in two places, but the actual PCP has 23 bins (0–22 inclusive).
-- **Impact:** Confusing for developers.
-- **Fix:** Change `22` to `23` in the docstrings.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [ghana_patha.py:196-225](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L196-L225): docstrings previously stated `(22, n_frames)` and `(n_frames_seg, 22)`, but the actual PCP matrix has 23 bins (0–22 inclusive, ending at Sa').
+- **Impact:** Misleading for developers and external auditors inspecting array dimensions.
+- **Fix:** Corrected all docstrings in [ghana_patha.py:198, 204, 223](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L198-L223) to state `(23, n_frames)` and `(n_frames_seg, 23)`. Synced to HF deployment mirror.
+- **Verification & Proof:** Verified docstring and shape consistency against actual output from `compute_shruti_pcp` and `segment_pcp_sequences`.
 - **Effort:** S | **Priority:** P3
 
 #### F-18: `_build_playback_file` subprocess call is potentially unsafe with filenames
@@ -505,7 +507,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-14 | Fix Yaman time to "6 PM - 9 PM" | ✅ **RESOLVED** |
 | F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
 | F-16 | Add CSP headers |
-| F-17 | Fix docstring PCP width (22→23) |
+| F-17 | Fix docstring PCP width (22→23) | ✅ **RESOLVED** |
 
 ---
 
