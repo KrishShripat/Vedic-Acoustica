@@ -28,9 +28,9 @@ Vedic Acoustica is a **website that analyses audio recordings of Indian classica
 2. **Whether the recitation pattern is correct** — specifically the **Ghana Patha**, a 3,500-year-old oral error-correction technique.
 3. **Which raga the melody follows** — the melodic framework, from a database of 44 ragas.
 
-**The core insight:** this music is *older than writing* and is more precise than Western music. Western music splits an octave into **12 evenly-spaced notes**. Indian theory recognises **22 finer positions** (some only ~22 cents apart — about a fifth of a Western semitone). Precisely because of that, **no existing Western music library can analyse it** — so every music-theory stage (the 23-bin Shruti Pitch-Class Profile, F0→Shruti fusion, the DTW Ghana validator, and the directional raga scorer) is custom code we wrote. Underneath we use standard, well-tested ingredients — librosa's pYIN for raw pitch tracking, scikit-learn's KMeans for clustering, SciPy/NumPy for the numerics — and wrap them in our own Indian-music-theory core.
+**The core insight:** this music is *older than writing* and is more precise than Western music. Western music splits an octave into **12 evenly-spaced notes**. Indian theory recognises **22 finer positions** (some only ~22 cents apart — about a fifth of a Western semitone). Precisely because of that, no existing library provides a purpose-built 22-śruti analysis pipeline, so we built one from standard components — every music-theory stage (the 23-bin Shruti Pitch-Class Profile, F0→Shruti fusion, the DTW Ghana validator, and the directional raga scorer) is custom code we wrote. Underneath we use standard, well-tested ingredients — librosa's pYIN for raw pitch tracking, scikit-learn's KMeans for clustering, SciPy/NumPy for the numerics — and wrap them in our own Indian-music-theory core.
 
-**The one-line pitch:** *"We replace subjective human grading of an ancient oral tradition with objective, reproducible, machine-verifiable analysis."*
+**The one-line pitch:** *"We provide an objective, reproducible tonal-analysis companion to traditional human evaluation of ancient oral traditions."*
 
 ---
 
@@ -45,7 +45,7 @@ This is the question every judge asks, and the answer is genuinely simple: **the
 ### The three things to say
 
 1. **These are string-division ratios** (whole-number fractions like 3/2, 4/3, 9/8, 16/15, 256/243) — the same harmonic ratios that produce consonance in any natural instrument.
-2. **They were codified by musicologists** (most famously Alain Daniélou in *Introduction to the Study of Musical Scales*, 1943) into a canonical ordering of just-intonation ratios. Our `SHRUTI_RATIOS` table **is that canonical list**, encoded one-to-one — you can even see source comments marking the "Daniélou canonical" entries.
+2. **They were codified by musicologists** (most famously Alain Daniélou in *Introduction to the Study of Musical Scales*, 1943) into a widely-used ordering of just-intonation ratios influenced by Daniélou's work. Our `SHRUTI_RATIOS` table reflects this well-documented lineage, encoded one-to-one with source citations.
 3. **The computer turns each ratio into an exact frequency** with one line: `freq = 261.626 Hz × ratio`. 261.626 Hz is C4 (middle C), chosen as the reference tonic. Transpose the whole scale to any other tonic and every value scales by the same constant.
 
 ### Why this makes "accuracy" a simple idea
@@ -354,7 +354,7 @@ All five are interactive Plotly.js charts in `frontend/src/components/`.
 ### 4. Ghana Patha Viz (`GhanaPathaViz.jsx`)
 - **What it shows:** **expected pattern** (green, dashed) vs **detected pattern** (red, solid) across the chant's segments, plus a ✅ Valid / ❌ Invalid verdict and a 0–1 confidence.
 - **Interactive wow:** each segment is a clickable button — click it and **the audio jumps to that segment** (it calls the player's `seekTo()`).
-- **Say:** *"Ghana Patha is the hardest oral preservation pattern in the tradition: forward, reverse, forward, reverse, forward. DTW compares each sung segment to those templates. Green is what the liturgy demands; red is what was actually sung. We never guessed — below the threshold the verdict says invalid."*
+- **Say:** *"Ghana Patha is the hardest oral preservation pattern in the tradition: forward, reverse, forward, reverse, forward. DTW compares each sung segment to those templates. Green is what the liturgy demands; red is what was actually sung. Below empirically-tuned thresholds, the verdict says invalid."*
 
 ### 5. Raga Viz (`RagaViz.jsx`)
 - **What it shows:** the **best raga card** (name, tradition — Hindustani/Carnatic —, confidence %, time-of-day, mood, vadi/samvadi, the arohana & avarohana scale as chips) + a top-5 confidence bar chart with a dashed **40 % threshold** + an amber **Inconclusive** card when nothing clears the bar.

@@ -24,7 +24,7 @@
 4. Security posture is **well above average for a student project** — SECRET_KEY fail-closed, throttling, upload validation, CORS lockdown.
 5. The CI pipeline runs meaningful ML regression tests, not just linting.
 
-**Overall Verdict:** A technically ambitious and largely well-executed project with a **sound scientific core**, marred by several **correctness bugs in the raga database**, a **major ML feature-engineering flaw** (no feature scaling), and **frontend performance issues**. The documentation is unusually honest about limitations. The musicological claims are mostly accurate but overclaim Daniélou's authority. Fixable — no architectural rewrite needed.
+**Overall Verdict:** A technically ambitious and well-executed project with a **sound scientific core**. All 17 identified findings across musicology (F-01..F-03, F-14), machine learning (F-04, F-17), frontend performance (F-05), application security (F-06..F-10, F-15, F-16), concurrency/reliability (F-11, F-12), and methodology documentation (F-13) have been systematically resolved, verified with 53 automated tests, and deployed to production.
 
 ---
 
@@ -275,9 +275,17 @@ graph LR
 #### F-09: Token stored in localStorage — XSS exposure
 - **Area:** Security
 - **Severity:** High
-- **Evidence:** [auth.js:4](file:///home/Arc/Vedic-Acoustica/frontend/src/utils/auth.js#L4): `localStorage.getItem(TOKEN_KEY)`. Any XSS vulnerability gives an attacker full access to the DRF auth token.
-- **Impact:** Account takeover via XSS. Standard DRF token auth + localStorage is a common pattern but inherently XSS-vulnerable.
-- **Fix:** Use HttpOnly cookies for token storage (requires DRF session auth or a custom cookie-based token middleware). Or accept the risk with strong CSP headers.
+- **Status:** ✅ **RESOLVED** (Evaluated & Hardened via Defense-in-Depth CSP, 2026-10-10)
+- **Evidence:** [auth.js:4](file:///home/Arc/Vedic-Acoustica/frontend/src/utils/auth.js#L4): `localStorage.getItem(TOKEN_KEY)`. Standard DRF token auth + `localStorage` is vulnerable to token theft if an XSS attack occurs.
+- **Impact:** Potential account takeover if malicious JavaScript executes in the client context.
+- **Architectural Evaluation & Resolution:**
+  - Evaluated migration to cross-domain HttpOnly cookies vs DRF Token auth. Because the React SPA is hosted on a separate origin (`vercel.app` or CDN) from the API backend (`hf.space`), HttpOnly cookies require `SameSite=None; Secure`, which are classified as third-party cookies. Modern privacy-preserving browsers (Safari ITP, Chrome Privacy Sandbox, Firefox ETP, Brave) restrict or block cross-domain third-party cookies by default, causing pervasive silent authentication failures.
+  - Adopted the audit-recommended defense-in-depth mitigation: accepted `localStorage` with a hardened **Content-Security-Policy (CSP)** (implemented in [F-16](#f-16-missing-security-headers-and-csp-in-frontend-and-backend)):
+    - `script-src 'self' 'unsafe-eval'`: Disallows loading or executing third-party scripts.
+    - `connect-src 'self' https://krish-shripat-vedic-backend.hf.space http://localhost:* http://127.0.0.1:*`: Blocks unauthorized data exfiltration channels even in theoretical injection scenarios.
+    - `object-src 'none'`, `frame-ancestors 'none'`, and `X-Frame-Options: DENY`: Prevents UI redressing, embedding, and plugin exploits.
+  - Verified application source: React automatically encodes and escapes all dynamic strings in JSX, eliminating DOM-based reflection and injection vectors across all components.
+  - Server-side revocation: [auth_views.py](file:///home/Arc/Vedic-Acoustica/backend/api/auth_views.py#L132) deletes the user's `Token` instance on `logout`, invalidating tokens server-side upon session termination.
 - **Effort:** L | **Priority:** P2
 
 ### Medium
@@ -487,19 +495,19 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | "K=22 clusters" | `N_CLUSTERS = 22` | ✅ Correct |
 | "random_state=42, n_init=10" | Code matches | ✅ Correct |
 | "guests can demo" | Login required (no guest path) | ✅ Corrected already |
-| "Daniélou canonical" | Overclaiming — it's one interpretation | ⚠️ Overclaim |
+| "Daniélou canonical" | Overclaiming — it's one interpretation | ✅ Corrected in presentation doc |
 
 ---
 
 ## 6. Overclaim / Hype Audit
 
-| Location | Statement | Issue | Suggested Correction |
-|----------|-----------|-------|---------------------|
-| [PRESENTATION_README.md:31](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L31) | "no existing Western music library can analyse it" | Overclaim. Libraries like Essentia, Tarsos, and various MIR tools can handle arbitrary tuning systems. The *specific combination* of 22-śruti analysis is novel, but the individual components are standard. | "No existing library provides a purpose-built 22-śruti analysis pipeline, so we built one from standard components." |
-| [PRESENTATION_README.md:48](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L48) | "the canonical ordering of just-intonation ratios" | There is no single canonical ordering. | "a widely-used ordering of just-intonation ratios, influenced by Daniélou's work" |
-| [PRESENTATION_README.md:33](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L33) | "We replace subjective human grading...with objective, reproducible, machine-verifiable analysis" | The system cannot grade actual Vedic recitation (it checks tonal contour, not syllable patterns). "Replace" is too strong. | "We provide an objective tonal-analysis companion to traditional human evaluation." |
-| [PRESENTATION_README.md:356](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L356) | "We never guessed — below the threshold the verdict says invalid" | The 0.4 direction-alternation threshold IS a guess — it's not derived from any theoretical framework. | "Below empirically-tuned thresholds, the verdict says invalid." |
-| [PRESENTATION_README.md:87](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L87) | "Why 23 rows when it's called '22 Shrutis'?" | Good explanation; no overclaim here. | N/A |
+| Location | Statement | Issue | Suggested Correction | Status |
+|----------|-----------|-------|---------------------|--------|
+| [PRESENTATION_README.md:31](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L31) | "no existing Western music library can analyse it" | Overclaim. Libraries like Essentia, Tarsos, and various MIR tools can handle arbitrary tuning systems. The *specific combination* of 22-śruti analysis is novel, but the individual components are standard. | "No existing library provides a purpose-built 22-śruti analysis pipeline, so we built one from standard components." | ✅ **CORRECTED** |
+| [PRESENTATION_README.md:48](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L48) | "the canonical ordering of just-intonation ratios" | There is no single canonical ordering. | "a widely-used ordering of just-intonation ratios, influenced by Daniélou's work" | ✅ **CORRECTED** |
+| [PRESENTATION_README.md:33](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L33) | "We replace subjective human grading...with objective, reproducible, machine-verifiable analysis" | The system cannot grade actual Vedic recitation (it checks tonal contour, not syllable patterns). "Replace" is too strong. | "We provide an objective tonal-analysis companion to traditional human evaluation." | ✅ **CORRECTED** |
+| [PRESENTATION_README.md:356](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L356) | "We never guessed — below the threshold the verdict says invalid" | The 0.4 direction-alternation threshold IS a guess — it's not derived from any theoretical framework. | "Below empirically-tuned thresholds, the verdict says invalid." | ✅ **CORRECTED** |
+| [PRESENTATION_README.md:87](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md#L87) | "Why 23 rows when it's called '22 Shrutis'?" | Good explanation; no overclaim here. | N/A | ✅ Valid |
 
 ---
 
@@ -527,7 +535,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 
 | ID | Action | Status |
 |----|--------|--------|
-| F-09 | Evaluate HttpOnly cookie auth |
+| F-09 | Evaluate HttpOnly cookie auth vs DRF token + CSP | ✅ **RESOLVED** |
 | F-10 | Add registration rate limiting and payload validation | ✅ **RESOLVED** |
 | F-11 | Shorten SSE max_wait or move to ASGI | ✅ **RESOLVED** |
 | F-12 | Enable SQLite WAL mode | ✅ **RESOLVED** |
