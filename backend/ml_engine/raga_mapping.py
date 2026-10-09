@@ -99,7 +99,7 @@ RAGA_DATABASE = [
         'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-t', 'Ga-s', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'samvadi': {'grade': 'Ni-s', 'name': 'Ni'},
-        'time': 'Evening (9 PM - Midnight)',
+        'time': 'Evening (6 PM - 9 PM)',
         'mood': 'Devotional, serene, romantic',
     },
     {

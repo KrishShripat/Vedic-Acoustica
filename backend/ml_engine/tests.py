@@ -69,6 +69,11 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         # But Ni bins must be present in avarohana_bins
         self.assertFalse(set(kb['avarohana_bins']).isdisjoint(ni_bins))
 
+    def test_yaman_performance_time(self):
+        """Yaman performance time is first prahar of night: 6 PM - 9 PM."""
+        yaman = next(r for r in RAGA_DATABASE if r['name'] == 'Yaman')
+        self.assertEqual(yaman['time'], 'Evening (6 PM - 9 PM)')
+
 
 class ClusterFeatureScalingTestCase(TestCase):
     def test_run_clustering_output_structure(self):

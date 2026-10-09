@@ -317,9 +317,13 @@ graph LR
 #### F-14: Yaman performance time is inaccurate
 - **Area:** Raga Database
 - **Severity:** Medium  
-- **Evidence:** [raga_mapping.py:102](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L102): `'time': 'Evening (9 PM - Midnight)'`. Multiple authoritative sources (spardhaschoolofmusic.com, artiumacademy.com, shankarmahadevanacademy.com) say Yaman's performance time is **first prahar of night: 6 PM to 9 PM**.
-- **Impact:** Incorrect metadata displayed to users.
-- **Fix:** Change to `'Evening (6 PM - 9 PM)'` or `'First prahar of night'`.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [raga_mapping.py:102](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L102): previously had `'time': 'Evening (9 PM - Midnight)'`. Multiple authoritative sources (spardhaschoolofmusic.com, artiumacademy.com, shankarmahadevanacademy.com, tanarang.com) confirm Yaman's performance time is the **first prahar of night: 6 PM to 9 PM**.
+- **Impact:** Misrepresented canonical prahar timing in UI cards and analysis exports.
+- **Fix:** Changed Yaman's performance time to `'Evening (6 PM - 9 PM)'` in [raga_mapping.py:102](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L102). Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - Added unit test `test_yaman_performance_time` in [ml_engine/tests.py](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tests.py).
+  - All 46 Django tests passed (`manage.py test api ml_engine`).
 - **Effort:** S | **Priority:** P2
 
 #### F-15: `docker-compose.yml` uses insecure secret key
@@ -498,7 +502,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-11 | Shorten SSE max_wait or move to ASGI |
 | F-12 | Enable SQLite WAL mode |
 | F-13 | Add disclaimer about tonal-contour vs word-level Ghana check |
-| F-14 | Fix Yaman time to "6 PM - 9 PM" |
+| F-14 | Fix Yaman time to "6 PM - 9 PM" | ✅ **RESOLVED** |
 | F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
 | F-16 | Add CSP headers |
 | F-17 | Fix docstring PCP width (22→23) |
