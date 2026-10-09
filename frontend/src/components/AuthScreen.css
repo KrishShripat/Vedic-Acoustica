@@ -59,24 +59,6 @@
   gap: 0.75rem;
 }
 
-.btn-guest-hero {
-  background: linear-gradient(135deg, #e94560, #ff6b6b);
-  color: #fff;
-  border: none;
-  font-size: 0.88rem;
-  font-weight: 700;
-  padding: 0.55rem 1.15rem;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(233, 69, 96, 0.35);
-  transition: all 0.2s;
-}
-
-.btn-guest-hero:hover {
-  box-shadow: 0 4px 18px rgba(233, 69, 96, 0.5);
-  transform: translateY(-1px);
-}
-
 .btn-secondary-nav {
   background: #12121a;
   border: 1px solid #2a2a3e;
@@ -92,22 +74,6 @@
 .btn-secondary-nav:hover {
   background: #1a1a2e;
   color: #fff;
-}
-
-.nav-back-link {
-  background: transparent;
-  border: none;
-  color: #e94560;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0.5rem 0.75rem;
-  transition: opacity 0.2s;
-}
-
-.nav-back-link:hover {
-  opacity: 0.8;
-  text-decoration: underline;
 }
 
 /* ── Punchy Hero Section ─────────────────────────────────────────────────── */
@@ -632,21 +598,6 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
-.btn-back-clean {
-  background: transparent;
-  border: none;
-  color: #e94560;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 1.25rem;
-}
-
-.btn-back-clean:hover {
-  text-decoration: underline;
-}
-
 .auth-card-head {
   text-align: center;
   margin-bottom: 1.5rem;
@@ -662,31 +613,6 @@
 .auth-card-head p {
   font-size: 0.85rem;
   color: #94a3b8;
-  margin: 0;
-}
-
-.guest-quick-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background: rgba(233, 69, 96, 0.08);
-  border: 1px solid rgba(233, 69, 96, 0.25);
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.guest-quick-box strong {
-  display: block;
-  font-size: 0.85rem;
-  color: #ff8c94;
-  margin-bottom: 2px;
-}
-
-.guest-quick-box p {
-  font-size: 0.76rem;
-  color: #cbd5e1;
   margin: 0;
 }
 
@@ -750,6 +676,16 @@
   margin-bottom: 1.25rem;
 }
 
+.clean-success-alert {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.6);
+  color: #a7f3d0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  margin-bottom: 1.25rem;
+}
+
 .clean-form {
   display: flex;
   flex-direction: column;
@@ -781,9 +717,67 @@
   transition: all 0.18s;
 }
 
+.password-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.6rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  background: rgba(148, 163, 184, 0.12);
+  color: #fff;
+  outline: none;
+}
+
 .clean-form-group input:focus {
   border-color: #e94560;
   box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.2);
+}
+
+.auth-form-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.25rem;
+}
+
+.clean-link-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #f5c98c;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+}
+
+.clean-link-button:hover,
+.clean-link-button:focus-visible {
+  color: #fff4dc;
+  outline: none;
 }
 
 .btn-submit-clean {

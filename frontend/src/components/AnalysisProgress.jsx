@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { authFetch } from '../utils/auth'
 
 const STAGES = [
   { key: 'Feature Extraction', icon: '🔬', label: 'Feature Extraction' },
@@ -9,6 +10,20 @@ const STAGES = [
 ]
 
 const STAGE_ORDER = STAGES.map(s => s.key)
+const SSE_READ_TIMEOUT_MS = 5000
+const POLL_INTERVAL_MS = 2500
+const MAX_POLL_FAILURES = 5
+
+function retryDelay(response, fallback = 15000) {
+  const retryAfter = response.headers.get('Retry-After')
+  if (!retryAfter) return fallback
+
+  const seconds = Number(retryAfter)
+  if (Number.isFinite(seconds)) return Math.max(1000, seconds * 1000)
+
+  const retryAt = Date.parse(retryAfter)
+  return Number.isNaN(retryAt) ? fallback : Math.max(1000, retryAt - Date.now())
+}
 
 function stageIndex(stageName) {
   const idx = STAGE_ORDER.findIndex(s =>
@@ -20,10 +35,9 @@ function stageIndex(stageName) {
 /**
  * AnalysisProgress
  *
- * Polls GET /api/analyze/<id>/progress/ (a small JSON snapshot) instead of
- * holding an SSE stream — streaming EventSource through the Vercel proxy gets
- * buffered, which made the progress bar freeze mid-analysis.  JSON polling is
- * robust behind any buffering proxy.
+ * Uses the existing GET /status/ SSE stream first. If a proxy buffers the
+ * stream or the connection stalls, it falls back to the JSON progress
+ * snapshot endpoint, with one request at a time and Retry-After support.
  *
  * Props:
  *   recordingId  – int, the PK of the recording being analysed
@@ -41,45 +55,153 @@ export default function AnalysisProgress({ recordingId, apiBase, onDone, onError
     doneRef.current = false
     setProgress({ stage: 'Queued', percent: 0, status: 'running' })
 
-    const url = `${apiBase}/analyze/${recordingId}/progress/`
+    const statusUrl = `${apiBase}/analyze/${recordingId}/status/`
+    const progressUrl = `${apiBase}/analyze/${recordingId}/progress/`
     let failedPolls = 0
+    let cancelled = false
+    let controller = null
+
+    const finish = (data) => {
+      if (cancelled || doneRef.current) return
+      setProgress(data)
+      if (data.status === 'done') {
+        doneRef.current = true
+        onDone?.()
+      } else if (data.status === 'error') {
+        doneRef.current = true
+        onError?.(data.error || 'Analysis failed')
+      }
+    }
+
+    const schedulePoll = (delay) => {
+      if (cancelled || doneRef.current) return
+      clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(poll, delay)
+    }
 
     const poll = async () => {
-      if (doneRef.current) return
+      if (cancelled || doneRef.current) return
       try {
-        const res = await fetch(url)
+        const res = await authFetch(progressUrl)
+        if (res.status === 429) {
+          schedulePoll(retryDelay(res))
+          return
+        }
         if (!res.ok) {
-          if (++failedPolls > 5) {
-            clearInterval(timerRef.current)
+          if (++failedPolls > MAX_POLL_FAILURES) {
+            doneRef.current = true
             onError?.(`Progress endpoint failed (HTTP ${res.status}).`)
+            return
           }
+          schedulePoll(Math.min(POLL_INTERVAL_MS * (2 ** (failedPolls - 1)), 30000))
           return
         }
         failedPolls = 0
         const data = await res.json()
-        setProgress(data)
-        if (data.status === 'done') {
-          doneRef.current = true
-          clearInterval(timerRef.current)
-          onDone?.()
-        } else if (data.status === 'error') {
-          doneRef.current = true
-          clearInterval(timerRef.current)
-          onError?.(data.error || 'Analysis failed')
-        }
+        finish(data)
+        if (!doneRef.current) schedulePoll(POLL_INTERVAL_MS)
       } catch {
-        if (++failedPolls > 5) {
-          clearInterval(timerRef.current)
+        if (cancelled) return
+        if (++failedPolls > MAX_POLL_FAILURES) {
+          doneRef.current = true
           onError?.('Connection to analysis progress was lost.')
+          return
+        }
+        schedulePoll(Math.min(POLL_INTERVAL_MS * (2 ** (failedPolls - 1)), 30000))
+      }
+    }
+
+    const consumeSse = async () => {
+      controller = new AbortController()
+      try {
+        const res = await authFetch(statusUrl, {
+          headers: { Accept: 'text/event-stream' },
+          signal: controller.signal,
+        })
+
+        if (res.status === 429) {
+          schedulePoll(retryDelay(res))
+          return
+        }
+        if (!res.ok || !res.body) {
+          schedulePoll(POLL_INTERVAL_MS)
+          return
+        }
+
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        const handleEvent = (eventText) => {
+          const data = eventText
+            .split('\n')
+            .filter(line => line.startsWith('data:'))
+            .map(line => line.slice(5).trim())
+            .join('\n')
+          if (!data) return
+
+          try {
+            const snapshot = JSON.parse(data)
+            if (
+              typeof snapshot.error === 'string' &&
+              snapshot.error.toLowerCase().includes('too many status requests')
+            ) {
+              schedulePoll(retryDelay(res))
+              controller.abort()
+              return
+            }
+            finish(snapshot)
+            if (doneRef.current) controller.abort()
+          } catch (err) {
+            if (err instanceof SyntaxError) {
+              console.error('Invalid analysis progress event:', err)
+              schedulePoll(POLL_INTERVAL_MS)
+              controller.abort()
+              return
+            }
+            throw err
+          }
+        }
+
+        while (!cancelled && !doneRef.current) {
+          let timeoutId
+          const timeout = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('SSE progress stream stalled')), SSE_READ_TIMEOUT_MS)
+          })
+          let result
+          try {
+            result = await Promise.race([reader.read(), timeout])
+          } finally {
+            clearTimeout(timeoutId)
+          }
+          if (result.done) break
+
+          buffer += decoder.decode(result.value, { stream: true }).replace(/\r\n/g, '\n')
+          let boundary = buffer.indexOf('\n\n')
+          while (boundary !== -1) {
+            const eventText = buffer.slice(0, boundary)
+            buffer = buffer.slice(boundary + 2)
+            handleEvent(eventText)
+            boundary = buffer.indexOf('\n\n')
+          }
+        }
+
+        if (!cancelled && !doneRef.current) schedulePoll(POLL_INTERVAL_MS)
+      } catch (err) {
+        if (cancelled || doneRef.current) return
+        if (err.name !== 'AbortError') {
+          controller?.abort()
+          schedulePoll(POLL_INTERVAL_MS)
         }
       }
     }
 
-    poll()
-    timerRef.current = setInterval(poll, 1000)
+    consumeSse()
 
     return () => {
-      clearInterval(timerRef.current)
+      cancelled = true
+      clearTimeout(timerRef.current)
+      controller?.abort()
       doneRef.current = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
