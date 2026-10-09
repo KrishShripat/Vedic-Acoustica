@@ -29,6 +29,7 @@ from api.views import (
     _build_playback_file,
 )
 from api.models import AudioRecording
+from ml_engine import PIPELINE_VERSION
 from ml_engine.audio_processing import extract_features
 from ml_engine.ml_engine import run_clustering
 from ml_engine.ghana_patha import validate_ghana_patha
@@ -159,6 +160,8 @@ def _run_pipeline(pk: int) -> dict:
 
         # ── Build slim metadata dict (scalars only — no matrices) ─────────────
         metadata = {
+            # Algorithm version that produced this result (stale-result detection)
+            'pipeline_version':             PIPELINE_VERSION,
             # Shruti clustering scalars
             'shruti_clusters':              clustering_results['shruti_clusters'],
             # freq_assignments intentionally omitted — per-frame strings, consumed by nothing

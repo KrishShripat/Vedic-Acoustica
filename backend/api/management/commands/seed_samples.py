@@ -39,6 +39,27 @@ from api.tasks import process_audio_task
 from ml_engine.audio_processing import SR
 from ml_engine.shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES
 
+def _ghana_motif(cycles: int = 3) -> list:
+    """Build a bell-shaped Ghana-path sequence over a 5-word phrase.
+
+    For each consecutive 3-word window ``abc`` the traditional pattern is
+    ``ab, ba, abc, cba, abc``; the run closes with ``de, ed, de``.  Repeating
+    the pass keeps the clip analysis-friendly (a clear forward/reverse cycle
+    for the DTW validator).
+    """
+    phrase = [0, 4, 7, 9, 13]  # Sa Re Ga Ma Pa (shuddha Shruti bins)
+    notes = []
+    for _ in range(cycles):
+        for i in range(len(phrase) - 2):
+            a, b, c = phrase[i], phrase[i + 1], phrase[i + 2]
+            notes += [a, b, b, a, a, b, c, c, b, a, a, b, c]
+        d, e = phrase[-2], phrase[-1]
+        notes += [d, e, e, d, d, e]
+    return notes
+
+
+_GHANA_MOTIF = _ghana_motif(cycles=3)
+
 # ── Samples to seed: {filename: (description, shruti index motif, octave) } ─
 # The motif is a list of Shruti indices swept in a gentle melody; playing it one
 # octave down keeps it in a comfortable recitation register (~130–165 Hz).
@@ -50,9 +71,14 @@ _SAMPLES = {
         'note_dur': 0.55,
         'octave': 0.5,
     },
+    'isavasya_ghanam_60s.wav': {
+        'title': 'Sample: Ghana Patha recitation (synthetic)',
+        'motif': _GHANA_MOTIF,
+        # 60 s target for the landing-page player.
+        'note_dur': 60.0 / len(_GHANA_MOTIF),
+        'octave': 0.5,
+    },
 }
-
-_TOTAL_FALLBACK_SECONDS = 10.5
 
 
 def _note(freq_hz: float, dur_s: float, octave: float) -> np.ndarray:
@@ -130,10 +156,11 @@ class Command(BaseCommand):
             )
             recording.save()
             seeded += 1
+            duration_s = max(0.0, (len(data) - 44) / (2 * SR))
             self.stdout.write(
                 self.style.SUCCESS(
                     f'{name}: seeded as pk={recording.pk} '
-                    f'({len(data) / 1024 ** 2:.2f} MB, {_TOTAL_FALLBACK_SECONDS:.1f}s clip).'
+                    f'({len(data) / 1024 ** 2:.2f} MB, {duration_s:.1f}s clip).'
                 )
             )
 

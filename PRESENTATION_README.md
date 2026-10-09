@@ -86,7 +86,7 @@ Full table from `backend/ml_engine/shruti_mapping.py` (reference tonic = **261.6
 
 **Why 23 rows when it's called "22 Shrutis"?** The canon is 22 positions within one octave. The list above arranges them in **strictly ascending pitch** (four variants each for Re, Ga, Ma, Dha, and Ni — covering the komal/shuddha/tivra grades), and **Sa' (2/1) is bin 23** so the Pitch-Class Profile covers the *entire* octave span — nothing silently falls off the top of the chart.
 
-**The killer detail to mention if pushed:** *"The two closest Shrutis, Re1 and Re2, are separated by only 21.5 cents. That spacing is the design tension — our matching tolerance of ±25 cents is deliberately narrower than half of that gap* (actually wider than the gap — that's why we also median-filter the pitch track), *so a note can't wobble between two labels frame to frame."*
+**The killer detail to mention if pushed:** *"The two closest Shrutis, Re1 and Re2, are separated by only 21.5 cents. That is the design tension: our ±25-cent matching window is wider than that gap, so on its own it could tag a note as either neighbour. Two extra guards keep it disciplined — an F0-based assignment that always picks the single *nearest* Shruti, and a median filter (kernel 5) on the pitch track — so a note can't wobble between two labels frame to frame."*
 
 ---
 
@@ -106,7 +106,7 @@ All numbers below are from the actual code (`backend/ml_engine/audio_processing.
 - The F0 track is **median-filtered (kernel 5)** to remove micro-jitter that would otherwise flicker a note between two neighbouring Shruti labels (they're only 21.5 cents apart after all).
 - Simultaneously we compute: **13 MFCCs** (timbre), a **22-bin chroma**, spectral centroid, a dB **spectrogram** (STFT, hann window), tempo, and a **rms** loudness value.
 
-### Step 2 — The 22-bin Pitch-Class Profile (PCP) — *the custom heart of the project*
+### Step 2 — The 23-bin Pitch-Class Profile (PCP) — *the custom heart of the project*
 A PCP answers: *"how much acoustic energy is present at each Shruti at every moment?"*
 
 For every STFT frequency bin `f` and for harmonics `h = 1..5` the code treats `f/h` as a candidate fundamental:
@@ -118,9 +118,9 @@ best_Shruti = the Shruti with the smallest cents distance
 
 - If that distance is **< 25 cents** (`_THRESHOLD_CENTS`), the bin "hits" that Shruti and adds `(1/h) × magnitude` into its PCP bin (harmonics are weighted down so a 3× overtone can't masquerade as a real note).
 - Then **F0 fusion**: for every *voiced* frame, we know the true fundamental from pYIN, so we add a direct **8× average-magnitude boost** (`_F0_BOOST = 8.0`) onto the exact Shruti — this drowns out "harmonic ghost notes" (e.g., a singer on Sa at 261.6 Hz would otherwise also light up Pa at 392 Hz, its 3rd harmonic).
-- Each frame is normalised so its 22 bins sum to 1.
+- Each frame is normalised so its 23 bins sum to 1 (Sa … Ni4 plus the closing Sa' octave).
 
-This produces a **22 × frames** matrix and a **mean_pcp** (22 values) — the recording's tonal fingerprint.
+This produces a **23 × frames** matrix and a **mean_pcp** (23 values) — the recording's tonal fingerprint.
 
 ### Step 3 — K-Means clustering (Shruti Detection)
 - Every frame is represented as a vector = `[13 MFCC | 22 chroma]` = **35 numbers**.
@@ -143,7 +143,7 @@ This produces a **22 × frames** matrix and a **mean_pcp** (22 values) — the r
   Length < 2.0 s or near-silence (rms < 0.01) → automatically invalid.
 
 ### Step 5 — Raga detection (directional scoring + phrase tiebreak)
-- Convert detected pitches into swara presence using the `SWARA_MAP` (Sa=0 … Ni3=15 over the PCP bins).
+- Convert detected pitches into swara presence using the 23-bin PCP together with the short-name table `SWARA_SHORT_NAMES` (Sa, Re1–Re4, Ga1–Ga4, Ma1–Ma4, Pa, Dha1–Dha4, Ni1–Ni4, Sa') — the PCP bins are the index, so no separate 16-note map is needed.
 - **Directional split:** using the F0 gradient, notes are separated into **arohana** (ascending) and **avarohana** (descending) runs — because the same note set can behave differently in each direction in real ragas.
 - Each raga (database = **44 ragas**) is scored on a weighted formula:
   - `0.25 × Jaccard` (matching note sets) + `0.25 × arohana coverage` + `0.25 × avarohana coverage`
@@ -257,7 +257,8 @@ Django writes a "ticket" to Redis  ─────→  Celery worker (the kitche
         │                            scalar results → SQLite (JSON metadata)
         │                                    │
         ◀──────────────────────────────────── ┘  is_analyzed=True
-Frontend polls  GET /api/analyze/123/progress/  every 1 s  → progress bar reaches "done"
+Frontend streams GET /api/analyze/123/progress/ via SSE, falling back to polling
+        every 2.5 s if the stream stalls  → progress bar reaches "done"
         │ GET /api/recordings/123/  → analysis_result
         ▼
 React renders the 5 charts (§7) + PDF export button
@@ -269,7 +270,7 @@ React renders the 5 charts (§7) + PDF export button
 - **Why a Redis "single-flight" lock?** A double-click, or Celery re-delivering a task after a crash, must not run the same recording twice. A `SETNX` lock on key `vedic:analyze:lock:<id>` guarantees exactly one analysis.
 - **Why SQLite?** Zero-setup file database — perfect for a free cloud container. Hardened with a 20-s write-lock timeout, and all *heavy* matrices are offloaded to compressed **.npz** files so the DB stores only small scalar metadata (kept DB writes down ~95%).
 - **Why file-based progress files?** Gunicorn runs many processes; in-memory progress is invisible across them. A tiny JSON file, written atomically (`tempfile.mkstemp` + `os.replace`), is visible to every process — no extra infra.
-- **Why JSON polling (not SSE)?** Vercel's proxy buffers Server-Sent Events and the progress bar froze. Polling a JSON endpoint every 1 s is robust behind any proxy. *Choose architecture that ships.*
+- **Why SSE with a polling fallback?** The progress endpoint streams Server-Sent Events for instant updates, but Vercel's proxy can buffer SSE and freeze the bar. The client therefore falls back to polling the same JSON endpoint every 2.5 s whenever the stream stalls or fails — best of both, robust behind any proxy. *Choose architecture that ships.*
 
 ### Where everything lives (folders)
 
@@ -375,7 +376,7 @@ All five are interactive Plotly.js charts in `frontend/src/components/`.
 | Observability | Prometheus · Grafana · node-exporter | /metrics endpoint, request counts, ML timings, dashboards |
 | Infra | Docker Compose (7 services) · Kubernetes (Minikube) · GitHub Actions CI/CD · Vercel · Hugging Face Space | local→production story, all free |
 
-**Endpoints the frontend actually calls:** upload, recordings list/detail, analyze + progress poll, auth (register/login/logout/me), admin overview — token-authenticated via `Authorization: Token <key>`; guests can demo without an account.
+**Endpoints the frontend actually calls:** upload, recordings list/detail, analyze + progress stream/poll, auth (register/login/logout/me), admin overview — token-authenticated via `Authorization: Token <key>`. The redesigned shell gates every view behind login, so an account is required to explore.
 
 ---
 
