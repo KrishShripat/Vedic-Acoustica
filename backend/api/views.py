@@ -424,7 +424,7 @@ def _build_analysis_response(recording: 'AudioRecording') -> dict | None:
 def upload_audio(request):
     serializer = AudioRecordingSerializer(data=request.data)
     if serializer.is_valid():
-        recording = serializer.save()
+        recording = serializer.save(uploaded_by=request.user)
         # Transcode to MP3 in the background — ffmpeg can run up to 120 s and
         # would otherwise race gunicorn's --timeout 120 inside this request.
         from .tasks import build_playback_file_task  # noqa: PLC0415
@@ -492,6 +492,7 @@ def list_recordings(request):
         "results":  [ ... ]
     }
     """
+    from django.db.models import Q  # noqa: PLC0415
     from rest_framework.pagination import PageNumberPagination  # noqa: PLC0415
 
     paginator = PageNumberPagination()
@@ -499,7 +500,13 @@ def list_recordings(request):
     paginator.page_size_query_param = 'page_size'
     paginator.max_page_size = 100
 
-    qs = AudioRecording.objects.all().order_by('-uploaded_at')
+    if request.user.is_staff:
+        qs = AudioRecording.objects.all().order_by('-uploaded_at')
+    else:
+        qs = AudioRecording.objects.filter(
+            Q(uploaded_by=request.user) | Q(uploaded_by__isnull=True)
+        ).order_by('-uploaded_at')
+
     page = paginator.paginate_queryset(qs, request)
     serializer = AudioRecordingListSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
@@ -512,6 +519,10 @@ def recording_detail(request, pk):
     try:
         recording = AudioRecording.objects.get(pk=pk)
     except AudioRecording.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    # Per-user data isolation: non-staff users cannot access other users' private uploads
+    if not request.user.is_staff and recording.uploaded_by is not None and recording.uploaded_by != request.user:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     base = AudioRecordingSerializer(recording).data
@@ -547,6 +558,10 @@ def analyze_audio(request, pk):
     try:
         recording = AudioRecording.objects.get(pk=pk)
     except AudioRecording.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    # Per-user data isolation: non-staff users cannot trigger analysis on other users' private uploads
+    if not request.user.is_staff and recording.uploaded_by is not None and recording.uploaded_by != request.user:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     audio_path = recording.audio_file.path

@@ -229,9 +229,26 @@ graph LR
 #### F-07: No per-user data isolation — all recordings visible to all users
 - **Area:** Security / Data Integrity
 - **Severity:** High
-- **Evidence:** The `AudioRecording` model has no `user` / `uploaded_by` foreign key ([models.py:7-41](file:///home/Arc/Vedic-Acoustica/backend/api/models.py#L7-L41)). The list endpoint returns ALL recordings. Any authenticated user sees everyone's uploads.
-- **Impact:** Privacy violation. One user can see and play another user's uploaded audio.
-- **Fix:** Add `uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, ...)` and filter queries in views.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** The `AudioRecording` model previously lacked an `uploaded_by` foreign key ([models.py:7-41](file:///home/Arc/Vedic-Acoustica/backend/api/models.py#L7-L41)). The list endpoint returned ALL recordings to every authenticated user, and detail/analyze endpoints allowed cross-tenant access.
+- **Impact:** Total lack of per-user data isolation. One user could view, analyze, and inspect another user's uploaded audio and acoustic features.
+- **Fix:**
+  1. Added `uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name='recordings')` to `AudioRecording` in [models.py](file:///home/Arc/Vedic-Acoustica/backend/api/models.py).
+  2. Created and applied migration [0006_audiorecording_uploaded_by.py](file:///home/Arc/Vedic-Acoustica/backend/api/migrations/0006_audiorecording_uploaded_by.py).
+  3. Added `uploaded_by` as read-only field to serializers in [serializers.py](file:///home/Arc/Vedic-Acoustica/backend/api/serializers.py).
+  4. Updated `upload_audio` view in [views.py](file:///home/Arc/Vedic-Acoustica/backend/api/views.py) to save `uploaded_by=request.user`.
+  5. Scoped `list_recordings` queryset: regular users receive `Q(uploaded_by=request.user) | Q(uploaded_by__isnull=True)` (their private uploads and public corpus audio), whereas staff can view all records.
+  6. Enforced 404 rejection on cross-user access in `recording_detail` and `analyze_audio`.
+  7. Synced all models, serializers, views, and migrations to HF deployment mirror.
+- **Verification & Proof:**
+  - Added dedicated `UserIsolationTestCase` suite with 6 test cases in [backend/api/tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py):
+    - `test_list_recordings_isolation`: Verified user isolation (User A never sees User B's recordings, and vice versa; both see public recordings).
+    - `test_list_recordings_staff_sees_all`: Verified staff can view entire archive.
+    - `test_recording_detail_isolation`: Verified 404 response on cross-user access; 200 on owned and public recordings.
+    - `test_recording_detail_staff_can_view_any`: Verified staff access to any recording.
+    - `test_analyze_audio_isolation`: Verified 404 response when attempting to run analysis on another user's recording.
+    - `test_upload_attaches_uploaded_by`: Verified upload automatically associates `uploaded_by=request.user`.
+  - Full test suite passed: 42/42 tests (`manage.py test api ml_engine`).
 - **Effort:** M | **Priority:** P1
 
 #### F-08: Upload validation relies only on file extension — no MIME/magic-byte check
@@ -394,7 +411,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | Upload validation | ⚠️ Extension-only | No MIME/magic check (F-08) |
 | Token auth | ⚠️ localStorage | XSS-vulnerable (F-09) |
 | Registration | ⚠️ Open | No CAPTCHA/email verification (F-10) |
-| Data isolation | ❌ Missing | No per-user filtering (F-07) |
+| Data isolation | ✅ Enforced | Scoped by uploaded_by FK + public corpus allowance (F-07) |
 | CSP | ❌ Missing | No Content-Security-Policy (F-16) |
 | .env in git | ✅ Gitignored | `.env` in `.gitignore`, never committed |
 | Metrics auth | ✅ Bearer token | Production requires `METRICS_TOKEN` |
@@ -459,7 +476,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 |----|--------|--------|
 | F-05 | Replace `plotly.js-dist` with a lighter build; add code splitting | ✅ **RESOLVED** |
 | F-06 | Add `IsAuthenticated` to list/detail recording views | ✅ **RESOLVED** |
-| F-07 | Add `uploaded_by` FK to `AudioRecording`; filter by user |
+| F-07 | Add `uploaded_by` FK to `AudioRecording`; filter by user | ✅ **RESOLVED** |
 | F-08 | Add MIME/magic-byte validation on upload |
 
 ### Later (P2–P3)

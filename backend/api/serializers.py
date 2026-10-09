@@ -13,10 +13,10 @@ class AudioRecordingSerializer(serializers.ModelSerializer):
         # path to the compressed .npz file for the current record.
         fields = [
             'id', 'title', 'audio_file', 'playback_file', 'uploaded_at',
-            'analysis_metadata', 'matrices_file', 'is_analyzed',
+            'uploaded_by', 'analysis_metadata', 'matrices_file', 'is_analyzed',
         ]
         read_only_fields = [
-            'id', 'uploaded_at', 'analysis_metadata', 'matrices_file', 'is_analyzed',
+            'id', 'uploaded_at', 'uploaded_by', 'analysis_metadata', 'matrices_file', 'is_analyzed',
         ]
 
     def get_playback_file(self, obj):
@@ -56,5 +56,5 @@ class AudioRecordingListSerializer(AudioRecordingSerializer):
     class Meta(AudioRecordingSerializer.Meta):
         fields = [
             'id', 'title', 'audio_file', 'playback_file', 'uploaded_at',
-            'is_analyzed',
+            'uploaded_by', 'is_analyzed',
         ]

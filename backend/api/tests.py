@@ -58,6 +58,86 @@ class RecordingAPITestCase(TestCase):
         self.assertEqual(response.status_code, 401)
 
 
+class UserIsolationTestCase(TestCase):
+    def setUp(self):
+        from api.models import AudioRecording
+        User = get_user_model()
+        self.user_a = User.objects.create_user(username='user_a', password='password123')
+        self.user_b = User.objects.create_user(username='user_b', password='password123')
+        self.admin = User.objects.create_user(username='admin', password='password123', is_staff=True)
+
+        self.rec_a = AudioRecording.objects.create(title='A private', uploaded_by=self.user_a)
+        self.rec_b = AudioRecording.objects.create(title='B private', uploaded_by=self.user_b)
+        self.rec_public = AudioRecording.objects.create(title='Public sample', uploaded_by=None)
+        self.client = APIClient()
+
+    def test_list_recordings_isolation(self):
+        # User A should only see rec_a and rec_public
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(reverse('list_recordings'))
+        self.assertEqual(resp.status_code, 200)
+        ids = [item['id'] for item in resp.data['results']]
+        self.assertIn(self.rec_a.id, ids)
+        self.assertIn(self.rec_public.id, ids)
+        self.assertNotIn(self.rec_b.id, ids)
+
+        # User B should only see rec_b and rec_public
+        self.client.force_authenticate(user=self.user_b)
+        resp = self.client.get(reverse('list_recordings'))
+        self.assertEqual(resp.status_code, 200)
+        ids = [item['id'] for item in resp.data['results']]
+        self.assertIn(self.rec_b.id, ids)
+        self.assertIn(self.rec_public.id, ids)
+        self.assertNotIn(self.rec_a.id, ids)
+
+    def test_list_recordings_staff_sees_all(self):
+        self.client.force_authenticate(user=self.admin)
+        resp = self.client.get(reverse('list_recordings'))
+        self.assertEqual(resp.status_code, 200)
+        ids = [item['id'] for item in resp.data['results']]
+        self.assertIn(self.rec_a.id, ids)
+        self.assertIn(self.rec_b.id, ids)
+        self.assertIn(self.rec_public.id, ids)
+
+    def test_recording_detail_isolation(self):
+        # User A cannot view user B's recording
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(reverse('recording_detail', args=[self.rec_b.id]))
+        self.assertEqual(resp.status_code, 404)
+
+        # User A can view their own recording
+        resp = self.client.get(reverse('recording_detail', args=[self.rec_a.id]))
+        self.assertEqual(resp.status_code, 200)
+
+        # User A can view public recording
+        resp = self.client.get(reverse('recording_detail', args=[self.rec_public.id]))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_recording_detail_staff_can_view_any(self):
+        self.client.force_authenticate(user=self.admin)
+        resp = self.client.get(reverse('recording_detail', args=[self.rec_b.id]))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_analyze_audio_isolation(self):
+        # User A cannot trigger analysis on user B's recording
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.post(reverse('analyze_audio', args=[self.rec_b.id]))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_upload_attaches_uploaded_by(self):
+        from unittest.mock import patch
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_authenticate(user=self.user_a)
+        wav_file = SimpleUploadedFile("test_sample.wav", b"RIFF" + b"\x00" * 40, content_type="audio/wav")
+        with patch('api.tasks.build_playback_file_task.delay'):
+            resp = self.client.post(reverse('upload_audio'), {'audio_file': wav_file, 'title': 'My Chant'}, format='multipart')
+        self.assertEqual(resp.status_code, 201)
+        from api.models import AudioRecording
+        created_rec = AudioRecording.objects.get(id=resp.data['id'])
+        self.assertEqual(created_rec.uploaded_by, self.user_a)
+        self.assertEqual(resp.data['uploaded_by'], self.user_a.id)
+
+
 class AuthAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()

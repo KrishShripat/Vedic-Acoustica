@@ -377,7 +377,7 @@ All five are interactive Plotly.js charts in `frontend/src/components/`.
 | Observability | Prometheus · Grafana · node-exporter | /metrics endpoint, request counts, ML timings, dashboards |
 | Infra | Docker Compose (7 services) · Kubernetes (Minikube) · GitHub Actions CI/CD · Vercel · Hugging Face Space | local→production story, all free |
 
-**Endpoints the frontend actually calls:** upload, recordings list/detail, analyze + progress stream/poll, auth (register/login/logout/me), admin overview — token-authenticated via `Authorization: Token <key>`. The redesigned shell gates every view behind login, so an account is required to explore.
+**Endpoints the frontend actually calls:** upload, recordings list/detail, analyze + progress stream/poll, auth (register/login/logout/me), admin overview — token-authenticated via `Authorization: Token <key>`. The redesigned shell gates every view behind login, and per-user data isolation ensures researchers only see their own uploads and public corpus audio (cross-tenant access returns HTTP 404). Staff accounts retain full ledger observability.
 
 ---
 
