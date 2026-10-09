@@ -468,3 +468,10 @@ class SecuritySettingsTestCase(TestCase):
                 cursor.execute('PRAGMA journal_mode;')
                 mode = cursor.fetchone()[0]
                 self.assertIn(mode.lower(), ('wal', 'memory'))
+
+    def test_security_headers_middleware_present(self):
+        resp = self.client.get('/api/recordings/')
+        self.assertIn('Content-Security-Policy', resp.headers)
+        self.assertIn("default-src 'self'", resp.headers['Content-Security-Policy'])
+        self.assertEqual(resp.headers.get('X-Content-Type-Options'), 'nosniff')
+        self.assertEqual(resp.headers.get('X-Frame-Options'), 'DENY')

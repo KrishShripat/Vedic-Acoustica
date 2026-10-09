@@ -352,9 +352,15 @@ graph LR
 #### F-16: No `Content-Security-Policy` headers
 - **Area:** Security
 - **Severity:** Low
-- **Evidence:** No CSP middleware or header configuration anywhere in settings.py.
-- **Impact:** Increases XSS attack surface (especially relevant given F-09 token-in-localStorage).
-- **Fix:** Add `django-csp` middleware or set CSP headers via Vercel configuration.
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** Previously lacked CSP headers across both frontend and backend deployments.
+- **Impact:** Elevated attack surface for XSS or cross-origin embedding.
+- **Fix:**
+  1. Configured strict `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: strict-origin-when-cross-origin` in [vercel.json](file:///home/Arc/Vedic-Acoustica/frontend/vercel.json).
+  2. Implemented `SecurityHeadersMiddleware` in [middleware.py](file:///home/Arc/Vedic-Acoustica/backend/api/middleware.py) and added to `MIDDLEWARE` in [settings.py](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py). Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - Added unit test `SecuritySettingsTestCase.test_security_headers_middleware_present` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py) asserting presence and directives of CSP and framing headers.
+  - All 48 Django tests passed (`manage.py test api ml_engine`).
 - **Effort:** S | **Priority:** P3
 
 #### F-17: Docstring in `segment_pcp_sequences` says "(22, n_frames)" but PCP is 23 bins
@@ -437,7 +443,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | Token auth | ⚠️ localStorage | XSS-vulnerable (F-09) |
 | Registration | ⚠️ Open | No CAPTCHA/email verification (F-10) |
 | Data isolation | ✅ Enforced | Scoped by uploaded_by FK + public corpus allowance (F-07) |
-| CSP | ❌ Missing | No Content-Security-Policy (F-16) |
+| CSP | ✅ Enforced | Configured in vercel.json & SecurityHeadersMiddleware (F-16) |
 | .env in git | ✅ Gitignored | `.env` in `.gitignore`, never committed |
 | Metrics auth | ✅ Bearer token | Production requires `METRICS_TOKEN` |
 
@@ -515,7 +521,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-13 | Add disclaimer about tonal-contour vs word-level Ghana check | ✅ **RESOLVED** |
 | F-14 | Fix Yaman time to "6 PM - 9 PM" | ✅ **RESOLVED** |
 | F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
-| F-16 | Add CSP headers |
+| F-16 | Add CSP headers | ✅ **RESOLVED** |
 | F-17 | Fix docstring PCP width (22→23) | ✅ **RESOLVED** |
 
 ---
