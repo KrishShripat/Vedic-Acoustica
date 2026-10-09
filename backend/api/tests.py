@@ -451,3 +451,12 @@ class MatrixPathSecurityTestCase(TestCase):
                 symlink_path.unlink()
             if target_outside.exists():
                 target_outside.unlink()
+
+
+class SecuritySettingsTestCase(TestCase):
+    def test_insecure_secret_keys_blocklist(self):
+        from vedic_acoustica.settings import _KNOWN_INSECURE_SECRET_KEYS
+        self.assertIn('change-me-in-production', _KNOWN_INSECURE_SECRET_KEYS)
+        self.assertIn('django-insecure-dev-key-replace-in-production', _KNOWN_INSECURE_SECRET_KEYS)
+        self.assertIn('django-insecure-hf-fallback-key-for-spaces', _KNOWN_INSECURE_SECRET_KEYS)
+        self.assertIn('django-insecure-build-placeholder', _KNOWN_INSECURE_SECRET_KEYS)

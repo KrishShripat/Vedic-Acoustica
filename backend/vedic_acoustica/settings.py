@@ -22,6 +22,7 @@ _KNOWN_INSECURE_SECRET_KEYS = {
     'django-insecure-dev-key-replace-in-production',
     'django-insecure-hf-fallback-key-for-spaces',
     'django-insecure-build-placeholder',
+    'change-me-in-production',
 }
 
 _secret_key = os.environ.get('DJANGO_SECRET_KEY', '')

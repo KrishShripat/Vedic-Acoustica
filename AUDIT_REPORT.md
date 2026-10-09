@@ -325,9 +325,13 @@ graph LR
 #### F-15: `docker-compose.yml` uses insecure secret key
 - **Area:** Security
 - **Severity:** Medium
-- **Evidence:** [docker-compose.yml:32](file:///home/Arc/Vedic-Acoustica/docker-compose.yml#L32): `DJANGO_SECRET_KEY=change-me-in-production`. While `DJANGO_DEBUG=True` is also set (which bypasses the fail-closed check in settings.py), this is a bad default.
-- **Impact:** If someone runs docker-compose with `DJANGO_DEBUG=False` without changing the key, the settings.py check will correctly refuse to start. But the "change-me-in-production" key is not in the `_KNOWN_INSECURE_SECRET_KEYS` set, so it would NOT be caught.
-- **Fix:** Add `'change-me-in-production'` to the `_KNOWN_INSECURE_SECRET_KEYS` set in [settings.py:21-25](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py#L21-L25).
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [docker-compose.yml:32](file:///home/Arc/Vedic-Acoustica/docker-compose.yml#L32): `DJANGO_SECRET_KEY=change-me-in-production`. Previously, `'change-me-in-production'` was not in the `_KNOWN_INSECURE_SECRET_KEYS` set in [settings.py:21-25](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py#L21-L25).
+- **Impact:** If someone ran docker-compose with `DJANGO_DEBUG=False` without replacing the key, Django would boot with a publicly known placeholder signing key.
+- **Fix:** Added `'change-me-in-production'` to `_KNOWN_INSECURE_SECRET_KEYS` in [settings.py](file:///home/Arc/Vedic-Acoustica/backend/vedic_acoustica/settings.py). When `DEBUG=False`, Django fails closed with `ImproperlyConfigured`. Synced to HF deployment mirror.
+- **Verification & Proof:**
+  - Added `SecuritySettingsTestCase.test_insecure_secret_keys_blocklist` in [tests.py](file:///home/Arc/Vedic-Acoustica/backend/api/tests.py).
+  - All 45 Django tests passed (`manage.py test api ml_engine`).
 - **Effort:** S | **Priority:** P2
 
 ### Low
@@ -495,7 +499,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-12 | Enable SQLite WAL mode |
 | F-13 | Add disclaimer about tonal-contour vs word-level Ghana check |
 | F-14 | Fix Yaman time to "6 PM - 9 PM" |
-| F-15 | Add `change-me-in-production` to insecure key blocklist |
+| F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
 | F-16 | Add CSP headers |
 | F-17 | Fix docstring PCP width (22→23) |
 
