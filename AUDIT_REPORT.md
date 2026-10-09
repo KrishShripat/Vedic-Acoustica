@@ -314,10 +314,14 @@ graph LR
 #### F-13: Ghana Pāṭha validation is a tonal-contour check, not a word-level pattern check
 - **Area:** ML / Musicological Accuracy
 - **Severity:** Medium
-- **Evidence:** [ghana_patha.py:103](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L103): `GHANA_CYCLE = ['forward', 'reverse', 'forward', 'reverse', 'forward']`. The code segments audio into time slices and checks if they alternate ascending/descending. Real Ghana Pāṭha is `1-2, 2-1, 1-2-3, 3-2-1, 1-2-3` at the **word/syllable** level.
-- **Impact:** The system can only verify *tonal direction alternation*, not actual Ghana Pāṭha structure. A raga alap (melodic exploration) with ascending/descending phrases could score as "valid Ghana."
-- **Fix:** This is a known limitation — the docs partially acknowledge it. Add an explicit disclaimer in the UI: "Detects tonal direction alternation consistent with Ghana Pāṭha, not word-level syllable patterns."
-- **Effort:** S (docs) / L (real fix) | **Priority:** P2
+- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
+- **Evidence:** [ghana_patha.py:103](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L103): `GHANA_CYCLE = ['forward', 'reverse', 'forward', 'reverse', 'forward']`. The code segments audio into time slices and checks if they alternate ascending/descending. Canonical Ghana Pāṭha is `1-2, 2-1, 1-2-3, 3-2-1, 1-2-3` at the **word/syllable** level.
+- **Impact:** The system verifies tonal-contour direction alternation, not lexical syllable permutations.
+- **Fix:** Added an explicit methodology scope note directly in the UI in [GhanaPathaViz.jsx](file:///home/Arc/Vedic-Acoustica/frontend/src/components/GhanaPathaViz.jsx) and documented this distinction clearly in [PRESENTATION_README.md](file:///home/Arc/Vedic-Acoustica/PRESENTATION_README.md).
+- **Verification & Proof:**
+  - Component updated and verified with clean production build (`npm run build`, `oxlint` 0 errors across 19 files).
+  - Scope disclaimer renders directly below the DTW sequence chart in the dashboard folio.
+- **Effort:** S | **Priority:** P2
 
 #### F-14: Yaman performance time is inaccurate
 - **Area:** Raga Database
@@ -508,7 +512,7 @@ The scoring formula is **conceptually sound** with good feature engineering (dir
 | F-10 | Add registration CAPTCHA |
 | F-11 | Shorten SSE max_wait or move to ASGI |
 | F-12 | Enable SQLite WAL mode | ✅ **RESOLVED** |
-| F-13 | Add disclaimer about tonal-contour vs word-level Ghana check |
+| F-13 | Add disclaimer about tonal-contour vs word-level Ghana check | ✅ **RESOLVED** |
 | F-14 | Fix Yaman time to "6 PM - 9 PM" | ✅ **RESOLVED** |
 | F-15 | Add `change-me-in-production` to insecure key blocklist | ✅ **RESOLVED** |
 | F-16 | Add CSP headers |

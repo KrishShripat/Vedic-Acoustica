@@ -252,6 +252,10 @@ export default function GhanaPathaViz({ data, duration, playerRef, onReady }) {
           Detected sequence: [{data.ghana_patha_detected_pattern.join(', ')}]
         </p>
       )}
+
+      <p className="methodology-note" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.6rem', fontStyle: 'italic', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.5rem', lineHeight: '1.4' }}>
+        ℹ️ <strong>Scope Note:</strong> Validates acoustic tonal-contour direction alternation consistent with Ghana Pāṭha recitation cycles via DTW, rather than lexical word-level syllable permutations.
+      </p>
     </div>
   )
 }
