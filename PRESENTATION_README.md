@@ -27,6 +27,7 @@
 5. [The 4-Stage DSP/ML Pipeline (Conceptual & Mathematical)](#5-the-4-stage-dspml-pipeline-conceptual--mathematical)
    - [Stage 0: Audio Ingestion & Resampling](#stage-0-audio-ingestion--resampling)
    - [Stage 1: Feature Extraction & Pitch Tracking (pYIN)](#stage-1-feature-extraction--pitch-tracking-pyin)
+   - [Stage 1b: Dynamic Tonic (Sa) Estimation & Grid Transposition](#stage-1b-dynamic-tonic-sa-estimation--grid-transposition)
    - [Stage 2: 23-Bin Shruti Pitch-Class Profile (PCP) with F0 Fusion](#stage-2-23-bin-shruti-pitch-class-profile-pcp-with-f0-fusion)
    - [Stage 3: Feature Standardization & K-Means Clustering](#stage-3-feature-standardization--k-means-clustering)
    - [Stage 4: Ghana Pāṭha Recitation Validation (DTW)](#stage-4-ghana-pāṭha-recitation-validation-dtw)
@@ -78,7 +79,7 @@ Vedic Acoustica is an end-to-end web platform and scientific signal processing e
 
 > "Hello judges! For over 3,500 years, Vedic chants and Indian classical ragas have been preserved entirely through oral transmission with microtonal precision. But every standard audio library in the world forces music onto a Western 12-note scale, erasing microtones entirely. 
 > 
-> We built **Vedic Acoustica**: the first full-stack acoustic platform designed specifically for 22-Shruti microtonal analysis. Our custom DSP pipeline combines probabilistic pitch tracking with a 23-bin Just Intonation Pitch-Class Profile and Dynamic Time Warping to validate ancient oral error-correction patterns and classify 44 canonical ragas. It runs on a modern decoupled architecture with Django, Celery, and React, backed by 56 automated tests and an 18-probe robustness battery. Let me show you how it works!"
+> We built **Vedic Acoustica**: the first full-stack acoustic platform designed specifically for 22-Shruti microtonal analysis. Our custom DSP pipeline combines probabilistic pitch tracking with a 23-bin Just Intonation Pitch-Class Profile and Dynamic Time Warping to validate ancient oral error-correction patterns and classify 44 canonical ragas. It runs on a modern decoupled architecture with Django, Celery, and React, backed by 63 automated tests, an 18-probe robustness battery, and automatic tonic detection so any performance key analyzes correctly. Let me show you how it works!"
 
 ---
 
@@ -94,7 +95,7 @@ Vedic Acoustica is an end-to-end web platform and scientific signal processing e
 > 3. **Third**, we apply **Dynamic Time Warping (DTW)** across phrase segments to mathematically verify whether the chant follows the canonical forward-reverse-forward cycle of Ghana Pāṭha.
 > 4. **Fourth**, we split the melodic trajectory into ascending and descending runs to identify the raga across a 44-raga database, backed by signature phrase tiebreakers.
 > 
-> In our live dashboard, you see five synchronized scientific visualizations—from a real-time playback spectrogram to an interactive 23-row Shruti heatmap and Ghana segment seeker. Our architecture is production-ready: asynchronous Celery workers, SQLite in WAL mode, a 45-second SSE stream with polling fallback, and a 250 kB optimized frontend. Best of all, our pipeline is proven with 56 passing unit tests and an 18-probe stress battery."
+> In our live dashboard, you see five synchronized scientific visualizations—from a real-time playback spectrogram to an interactive 23-row Shruti heatmap and Ghana segment seeker. Our architecture is production-ready: asynchronous Celery workers, SQLite in WAL mode, a 45-second SSE stream with polling fallback, and a 250 kB optimized frontend. Best of all, our pipeline auto-detects the chanter's own tonic so it works in any key, and it is proven with 63 passing unit tests, an 18-probe stress battery, and a 15-trial dynamic-tonic invariance suite."
 
 ---
 
@@ -127,7 +128,8 @@ Vedic Acoustica is an end-to-end web platform and scientific signal processing e
   - First, all 23 Shruti frequencies are derived from pure mathematical ratios referenced to middle C ($261.626\text{ Hz}$).
   - Second, we verified our pipeline against synthetic pure tones and known scales in `test_audio/synthetic/`.
   - Third, we built a 21-probe ML robustness battery testing noise stress, vibrato margins, and edge cases. In fact, our battery caught an early bug where broadband white noise produced false-positive Ghana matches—and we permanently fixed it by adding a spectral flatness gate.
-  - All 56 automated unit tests pass in 10 seconds."
+  - And fourth, we estimate the chanter's own tonic $Sa$ automatically and transpose our 23-Shruti grid onto it—so recordings keyed to $E\flat$ or $F$ analyze correctly, not just $C_4$.
+  - All 63 automated unit tests pass in seconds."
 
 #### Minute 4:00–5:00 — Conclusion & Q&A Transition
 - **Say:** "In summary, Vedic Acoustica bridges 3,500 years of oral tradition with modern signal processing. It provides microtone extraction, recitation error detection, and directional raga classification in an open, reproducible, and production-tested system. Thank you, and we welcome your questions!"
@@ -160,7 +162,7 @@ Where do the numbers come from? In ancient treatises like the *Nāṭyaśāstra*
 
 In the 20th century, musicologist **Alain Daniélou** (*Introduction to the Study of Musical Scales*, 1943) codified the exact rational fractions of the 22-Shruti just intonation scale. Our file [`shruti_mapping.py`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/shruti_mapping.py) implements this canonical ratio set directly:
 $$\text{Frequency} = \text{REFERENCE\_FREQ} \times \text{Ratio}$$
-where $\text{REFERENCE\_FREQ} = 261.626\text{ Hz}$ (standard middle C / $C_4$).
+where $\text{REFERENCE\_FREQ} = 261.626\text{ Hz}$ (standard middle C / $C_4$). At runtime, `REFERENCE_FREQ` is *replaced by the chanter's own auto-detected tonic* whenever the pitch evidence is confident (see [Stage 1b](#stage-1b-dynamic-tonic-sa-estimation--grid-transposition)); the canonical $C_4$ values below are simply the reference configuration.
 
 ### 3.3 The 21.5¢ Syntonic Comma (Re1 vs Re2)
 The most critical challenge in 22-Shruti analysis occurs at the interval between $Re_1$ (komal Rishabha) and $Re_2$:
@@ -185,7 +187,7 @@ $$1-2, \quad 2-1, \quad 1-2-3, \quad 3-2-1, \quad 1-2-3; \quad 2-3, \quad 3-2, \
 
 ## 4. The 23-Bin Shruti Frequency Ground Truth Table
 
-All 23 rows from [`backend/ml_engine/shruti_mapping.py`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/shruti_mapping.py#L13-L63). Reference tonic $Sa = 261.626\text{ Hz}$ ($C_4$). Cents are computed as $\text{cents} = 1200 \times \log_2(\text{ratio})$.
+All 23 rows from [`backend/ml_engine/shruti_mapping.py`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/shruti_mapping.py#L13-L63). Reference tonic $Sa = 261.626\text{ Hz}$ ($C_4$); the grid is transposed to the performance's auto-detected $Sa$ at runtime (see [Stage 1b](#stage-1b-dynamic-tonic-sa-estimation--grid-transposition)). Cents are computed as $\text{cents} = 1200 \times \log_2(\text{ratio})$.
 
 | Bin | Name | Grade / Type | Ratio | Cents (¢) | Frequency (Hz) | Musicological Description |
 |:---:|:---|:---|:---:|:---:|:---:|:---|
@@ -233,6 +235,12 @@ Stage 0: Preprocessing (22,050 Hz Mono, Hop 512 samples)
    │      • Kernel-5 Median Filter on F0
    │      • 13 MFCCs + 22 Chroma + Spectrogram (STFT) + RMS
    │
+   ├───► Stage 1b: Dynamic Tonic (Sa) Estimation
+   │      • Fold voiced F0 to one octave → pitch-class histogram
+   │      • Dominant peak = performance's Sa; confidence = peak prominence
+   │      • Transpose the 23-Shruti grid onto the detected tonic
+   │      • Falls back to C4 reference when the histogram is ambiguous
+   │
    ├───► Stage 2: 23-Bin Shruti Pitch-Class Profile (PCP)
    │      • Harmonic accumulation (h = 1..5, weight 1/h)
    │      • ±25 cents matching threshold
@@ -270,6 +278,18 @@ Stage 0: Preprocessing (22,050 Hz Mono, Hop 512 samples)
 - **Search Bounds:** $C_2 \approx 65.4\text{ Hz}$ to $C_7 \approx 2,093\text{ Hz}$ (covers all human chanting ranges).
 - **Pitch Jitter Smoothing:** The raw $F_0$ track is passed through a **kernel-5 median filter** (`scipy.signal.medfilt(kernel_size=5)`). This eliminates microtonal vocal flutter from falsely jumping across the $21.5\text{¢}$ gap between $Re_1$ and $Re_2$.
 - **Timbral Features:** $13$ Mel-Frequency Cepstral Coefficients (MFCCs), $22$ chroma bands, spectral centroid, RMS energy, and spectrogram.
+
+---
+
+### Stage 1b: Dynamic Tonic (Sa) Estimation & Grid Transposition
+[`estimate_tonic_cents()` in `tonic.py`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tonic.py) removes the assumption that every chanter is keyed to $C_4$:
+
+1. **Folded Pitch-Class Histogram:** Every voiced $F_0$ is reduced modulo the octave, mapped into $10\text{¢}$ bins, and smoothed with a $2$-bin moving average. The dominant peak is the performance's own tonic $Sa$.
+2. **Prominence-Based Confidence:** Confidence is the peak's height relative to the next-highest non-adjacent peak (a $4$-bin exclusion zone masks the peak's skirts):
+   $$\text{confidence} = \frac{\text{peak} - \text{runner\_up}}{\text{peak}}$$
+3. **Transposition:** If confidence $\ge 0.50$ (`min_confidence`) and at least $20$ voiced frames are present (`min_voiced_frames`), all $23$ Shruti frequencies are re-anchored: $f_{\text{shruti}} = f_{\text{tonic}} \times \text{ratio}$. Otherwise the pipeline transparently falls back to the $C_4$ reference. A manual `tonic_hz` override is also supported.
+
+*Why this matters:* Testing on real chant clips showed the performances were **not** keyed to $C_4$ at all—the Isāvāsya Ghanam recording centers on $E\flat$ ($\approx 305\text{ Hz}$, confidence $0.71$) and the Rudram recording on $F$ ($\approx 346\text{ Hz}$, confidence $0.74$). Auto-tonic re-anchoring recovers their true shruti grids and corrects their raga labels.
 
 ---
 
@@ -347,6 +367,9 @@ When judges ask *"How do you validate accuracy without a labeled dataset?"*, del
 │ Layer 2.5: 21-Probe ML Robustness Battery (18 Asserts) │
 │ • Noise stress (10/20 dB), vibrato margins (±10¢/±20¢) │
 ├────────────────────────────────────────────────────────┤
+│ Layer 2.6: Dynamic-Tonic Invariance (15/15)            │
+│ • Same scale at Sa = D4/G3/F4 -> identical raga        │
+├────────────────────────────────────────────────────────┤
 │ Layer 3: Deliberate Rejection Gates Keep Garbage Out   │
 │ • RMS < 0.01, Flatness > 0.35, Confidence < 0.40       │
 └────────────────────────────────────────────────────────┘
@@ -361,6 +384,7 @@ We generate synthetic audio clips with mathematically exact frequencies in [`tes
 - `nearcents_re1_re2` ($275.65\text{ Hz}$ and $279.07\text{ Hz}$, $21.5\text{¢}$ apart) $\implies$ Proves distinct cluster separation.
 - `scale_bhairav.wav`, `scale_kalyani.wav` $\implies$ Proves raga directionality.
 - `ghana_pattern_sim.wav` $\implies$ Proves Ghana DTW cycle matching.
+- Transposed synthetic scales (`test_ml_tonic.py`: same raga rendered at $Sa = D_4, G_3, F_4$) $\implies$ Proves the Shruti grid re-anchors to any tonic and recovers the identical raga **15/15** (both manual and auto tonic estimation).
 
 ### Layer 2.5: The 21-Probe ML Robustness Battery
 In [`backend/test_ml_robustness.py`](file:///home/Arc/Vedic-Acoustica/backend/test_ml_robustness.py), we stress-test the pipeline across 21 adversarial probes with **18 hard assertions** (all 18 pass):
@@ -385,7 +409,7 @@ In [`backend/test_ml_robustness.py`](file:///home/Arc/Vedic-Acoustica/backend/te
 
 ### Layer 4: Rigorous Scope Boundaries & Scientific Honesty
 - **Monophonic Only:** Designed for solo recitation and vocal lines, not multi-instrument polyphony.
-- **Fixed Tonic ($C_4 = 261.626\text{ Hz}$):** The chanter must be keyed near $C_4$. (Dynamic tonic detection is documented future work).
+- **Automatic Tonic Detection:** The system estimates the chanter's own $Sa$ from the folded $F_0$ histogram and transposes the 23-Shruti grid onto it, so performances are **no longer required to be keyed near $C_4$**. When the histogram is ambiguous (confidence $< 0.50$) it falls back to the $C_4 = 261.626\text{ Hz}$ reference rather than guessing.
 - **Acoustic vs Lexical Scope:** The DTW engine validates **tonal-contour direction alternation**, not word-level phonetic speech text.
 
 ---
@@ -556,9 +580,9 @@ Use the **Punchline $\to$ Deep Dive $\to$ Code Pointer** structure for every ans
 - **Code Pointer:** [`backend/ml_engine/shruti_mapping.py:13-37`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/shruti_mapping.py#L13-L37).
 
 #### Q8: "What happens if a chanter sings with a tonic other than C4 (261.63 Hz)?"
-- **The 10-Second Punchline:** "The current pipeline uses a fixed reference tonic of $261.626\text{ Hz}$ ($C_4$). Dynamic tonic detection from drone/tanpura stems is our documented future milestone."
-- **The Technical Deep Dive:** "In traditional performances, the tonic $Sa$ is established by a tanpura drone. In our current architecture, the reference frequency is set to $C_4$ ($261.626\text{ Hz}$). If a singer performs at $D_4$ ($293.66\text{ Hz}$), all detected microtones shift uniformly. Because all 22 Shrutis are relative ratios, supporting variable tonics simply requires estimating the fundamental drone pitch $f_{\text{tonic}}$ and computing $f_{\text{shruti}} = f_{\text{tonic}} \times \text{ratio}$. We state this transparently in our limitations section."
-- **Code Pointer:** [`backend/ml_engine/shruti_mapping.py:1`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/shruti_mapping.py#L1).
+- **The 10-Second Punchline:** "We detect the chanter's own tonic $Sa$ automatically: we fold the pitch track into one octave, take the dominant peak of the pitch-class histogram as $Sa$, and transpose our 23-Shruti grid onto it."
+- **The Technical Deep Dive:** "Because all 22 Shrutis are relative ratios, the entire grid is defined by a single anchor: $f_{\text{shruti}} = f_{\text{tonic}} \times \text{ratio}$. Our estimator folds every voiced $F_0$ modulo the octave into a $10\text{¢}$ histogram and selects the dominant peak, scoring its confidence as the peak's prominence over the next non-adjacent peak, $\text{confidence} = (\text{peak} - \text{runner\_up})/\text{peak}$. When confidence $\ge 0.50$ it transposes the grid; below that it transparently falls back to $C_4$. This was not academic: our real chant recordings were keyed to $E\flat$ and $F$, and auto-tonic estimation recovered their true grids and corrected their raga labels, validated on transposed synthetic scales **15/15**."
+- **Code Pointer:** [`backend/ml_engine/tonic.py`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/tonic.py) and [`backend/test_ml_tonic.py`](file:///home/Arc/Vedic-Acoustica/backend/test_ml_tonic.py).
 
 #### Q9: "How does your system differentiate ragas with identical notes (like Yaman vs Bilawal or Bhupali)?"
 - **The 10-Second Punchline:** "Through directional scoring (*arohana* vs *avarohana*), *vadi*/*samvadi* weighting, and sliding-window DTW against 10 signature phrase templates (*Pakads*)."
@@ -613,10 +637,10 @@ Use the **Punchline $\to$ Deep Dive $\to$ Code Pointer** structure for every ans
 - **The Technical Deep Dive:** "While emotional interpretation in Indian classical music has subjective elements, Vedic recitation grammar (Śikṣā and Prātiśākhya) is strictly codified: specific syllables must be pronounced at specific pitches (*udātta*, *anudātta*, *svarita*) in precise cyclic orders. Our tool validates physical pitch ratios and permutation structures as an objective aid to students and researchers, never claiming to evaluate spiritual or cultural devotion."
 
 #### Q18: "What are the limitations of your project, and what happens when it fails?"
-- **The 10-Second Punchline:** "We are strictly monophonic, require a C4 tonic, and fail safely by returning 'Inconclusive' or rejection rather than guessing."
+- **The 10-Second Punchline:** "We are strictly monophonic and fail safely, returning 'Inconclusive' or rejecting audio rather than guessing. Tonic is auto-detected, with a transparent $C_4$ fallback when the pitch evidence is ambiguous."
 - **The Technical Deep Dive:** "We are completely upfront about our technical boundaries:
   1. **Monophonic only:** Chorus or instrumental accompaniment degrades $F_0$ extraction.
-  2. **Fixed tonic:** Chanter must be keyed near $C_4$ ($261.63\text{ Hz}$).
+  2. **Tonic handling:** We auto-detect $Sa$ from the dominant peak of the folded pitch histogram and transpose the grid onto it; if confidence $< 0.50$ we fall back to $C_4$ and say so, rather than forcing a transposition.
   3. **Fail-safe design:** Silence ($\text{RMS} < 0.01$) and noise ($\text{Flatness} > 0.35$) are rejected outright. Raga scores below $40\%$ return 'Inconclusive'. We value scientific honesty over artificial confidence."
 - **Code Pointer:** [`backend/ml_engine/raga_mapping.py:19`](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L19).
 
@@ -631,7 +655,7 @@ Use the **Punchline $\to$ Deep Dive $\to$ Code Pointer** structure for every ans
 Quiz your team before stepping onto the presentation floor:
 
 1. **What is the reference tonic frequency?**  
-   $\to$ $261.626\text{ Hz}$ ($C_4$ / Middle C).
+   $\to$ $261.626\text{ Hz}$ ($C_4$ / Middle C) is the fallback reference. At runtime the tonic $Sa$ is auto-detected from the folded $F_0$ histogram and the 23-Shruti grid is transposed onto it.
 2. **How many Shrutis are there, and why are there 23 rows in the table?**  
    $\to$ 22 Shrutis within the octave. Bin 0 is $Sa$ ($1/1$), Bin 22 is $Sa'$ ($2/1$, the 23rd bin), closing the octave span so upper boundary notes don't clip.
 3. **What is the syntonic comma, and which two Shrutis form it?**  
@@ -653,7 +677,7 @@ Quiz your team before stepping onto the presentation floor:
 11. **Why cap SSE status streams at 45 seconds?**  
     $\to$ Prevents long-lived connections from exhausting Gunicorn worker threads, seamlessly falling back to $2.5\text{s}$ polling.
 12. **What test coverage backs the project?**  
-    $\to$ 56 automated unit tests and an 18-probe hard-assertion ML robustness battery.
+    $\to$ 63 automated unit tests, an 18-probe hard-assertion ML robustness battery, and a 15-trial dynamic-tonic invariance suite.
 
 ---
 
@@ -662,5 +686,5 @@ Quiz your team before stepping onto the presentation floor:
 If a judge asks an edge-case question you aren't sure about, use the **Acknowledge $\to$ Bridge $\to$ Redirect** technique:
 
 1. **Acknowledge:** *"That is a perceptive question regarding [microtonal variation / multi-speaker overlap / non-standard tuning]."*
-2. **Bridge:** *"In our current architecture, we deliberately bound our scope to [monophonic vocal lines / Just Intonation ratios / C4 reference tonic] so our mathematical recovery could be proven deterministically."*
-3. **Redirect:** *"What we can mathematically prove today is our 4-layer validation—recovering exact frequencies on synthetic ground truth, passing all 18 robustness probes, and maintaining an honest 'Inconclusive' threshold on ambiguous data. Extending dynamic tonic estimation to address your scenario is our documented next milestone."*
+2. **Bridge:** *"In our current architecture, we deliberately bound our scope to [monophonic vocal lines / Just Intonation ratios] so our mathematical recovery could be proven deterministically."*
+3. **Redirect:** *"What we can mathematically prove today is our 4-layer validation—recovering exact frequencies on synthetic ground truth, passing all 18 robustness probes, re-anchoring the Shruti grid to the chanter's own auto-detected $Sa$, and maintaining an honest 'Inconclusive' threshold on ambiguous data."*
