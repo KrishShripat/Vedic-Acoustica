@@ -132,6 +132,76 @@ class RagaDatabaseIntegrityTestCase(TestCase):
                 )
 
 
+class TonicEstimationTestCase(TestCase):
+    def test_recovers_reference_tonic(self):
+        """A sustained middle-C pitch track must resolve to the C4 reference."""
+        import numpy as np
+        from ml_engine.tonic import estimate_tonic_cents
+
+        f0 = np.full(200, 261.626)
+        cents, conf = estimate_tonic_cents(f0, np.ones(200, dtype=bool))
+        self.assertAlmostEqual(cents, 0.0, delta=15.0)
+        self.assertGreater(conf, 0.5)
+
+    def test_recovers_shifted_tonic(self):
+        """A sustained pitch a fourth below C4 (G3) must resolve to ~-500 cents."""
+        import numpy as np
+        from ml_engine.tonic import estimate_tonic_cents
+
+        sa = 261.626 * 2 ** (-5 / 12)   # G3
+        f0 = np.full(200, sa)
+        cents, conf = estimate_tonic_cents(f0, np.ones(200, dtype=bool))
+        self.assertAlmostEqual(cents, -500.0, delta=15.0)
+        self.assertGreater(conf, 0.5)
+
+    def test_flat_scale_is_ambiguous(self):
+        """An equal-weight scalar passage has no dominant pitch class: keep C4."""
+        import numpy as np
+        from ml_engine.tonic import estimate_tonic_cents
+
+        ratios = [1.0, 16 / 15, 9 / 8, 6 / 5, 3 / 2, 8 / 5, 15 / 8]
+        f0 = np.concatenate([np.full(30, 261.626 * r) for r in ratios])
+        cents, conf = estimate_tonic_cents(f0, np.ones(len(f0), dtype=bool))
+        self.assertEqual(cents, 0.0)
+        self.assertLess(conf, 0.5)
+
+    def test_too_few_frames_returns_reference(self):
+        """Estimation is not attempted below the voiced-frame floor."""
+        import numpy as np
+        from ml_engine.tonic import estimate_tonic_cents
+
+        f0 = np.full(5, 300.0)
+        cents, conf = estimate_tonic_cents(f0, np.ones(5, dtype=bool))
+        self.assertEqual(cents, 0.0)
+        self.assertEqual(conf, 0.0)
+
+
+class TonicTranspositionTestCase(TestCase):
+    def test_nearest_shruti_respects_tonic(self):
+        """The Shruti grid must rotate so the tonic maps to bin 0 (Sa)."""
+        from ml_engine.ml_engine import _nearest_shruti_from_f0
+
+        tonic = 293.664   # D4
+        self.assertEqual(_nearest_shruti_from_f0(tonic, tonic), 0)
+        self.assertEqual(_nearest_shruti_from_f0(tonic * (3 / 2), tonic), 13)
+        self.assertNotEqual(_nearest_shruti_from_f0(tonic, 261.626), 0)
+
+    def test_compute_pcp_transposes_bins(self):
+        """A tone at a non-C tonic must land on bin 0 when transposed."""
+        import numpy as np
+        from ml_engine.audio_processing import compute_pcp, SR
+
+        tonic = 293.664   # D4
+        t = np.linspace(0, 0.4, int(SR * 0.4), endpoint=False)
+        y = np.sin(2 * np.pi * tonic * t).astype(np.float32)
+
+        pcp_tonic, _ = compute_pcp(y, sr=SR, tonic_hz=tonic)
+        self.assertEqual(int(np.argmax(pcp_tonic.mean(axis=1))), 0)
+
+        pcp_c4, _ = compute_pcp(y, sr=SR)
+        self.assertNotEqual(int(np.argmax(pcp_c4.mean(axis=1))), 0)
+
+
 class ClusterFeatureScalingTestCase(TestCase):
     def test_run_clustering_output_structure(self):
         """run_clustering must return valid clusters, labels, and 35-D unscaled centroids."""

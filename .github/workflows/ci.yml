@@ -55,6 +55,11 @@ jobs:
         env:
           DJANGO_DEBUG: "True"
 
+      - name: ML dynamic tonic (transposed-scale invariance gate)
+        run: python test_ml_tonic.py
+        env:
+          DJANGO_DEBUG: "True"
+
   frontend:
     name: Frontend (React + Vite)
     runs-on: ubuntu-latest

@@ -8,4 +8,4 @@ Bump this string whenever a change to the feature/PCP/clustering/Ghana/raga
 stages would alter stored results.
 """
 
-PIPELINE_VERSION = 'r4-2026-09-22'
+PIPELINE_VERSION = 'r5-2026-10-10'

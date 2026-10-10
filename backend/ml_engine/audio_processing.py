@@ -1,7 +1,8 @@
 import librosa
 import numpy as np
 from scipy.signal import medfilt
-from .shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES
+from .shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES, REFERENCE_FREQ
+from .tonic import estimate_tonic_cents, tonic_hz_from_cents
 
 SR = 22050
 HOP_LENGTH = 512
@@ -72,7 +73,7 @@ def extract_f0(y, sr=SR, hop_length=HOP_LENGTH):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
-                f0=None, voiced_flag=None):
+                f0=None, voiced_flag=None, tonic_hz=REFERENCE_FREQ):
     """
     Compute a Pitch-Class Profile (PCP) over all 23 Shruti bins
     (the 22 canonical JI shruti ratios plus the octave Sa', exactly as listed
@@ -97,6 +98,8 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
     freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)  # (n_bins,)
 
     n_shruti = len(_SHRUTI_FREQS_ARR)
+    tonic_ratio = float(tonic_hz) / REFERENCE_FREQ
+    shruti_freqs = _SHRUTI_FREQS_ARR * tonic_ratio
     n_bins, n_frames = magnitude.shape
     pcp = np.zeros((n_shruti, n_frames), dtype=np.float32)
 
@@ -114,7 +117,7 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
         with np.errstate(divide='ignore', invalid='ignore'):
             cents_diff = np.abs(
                 1200.0 * np.log2(
-                    f_fundamental[:, None] / _SHRUTI_FREQS_ARR[None, :]
+                    f_fundamental[:, None] / shruti_freqs[None, :]
                 )
             )  # (n_valid_bins, n_shruti)
 
@@ -149,7 +152,7 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
             with np.errstate(divide='ignore', invalid='ignore'):
                 cents_f0 = np.abs(
                     1200.0 * np.log2(
-                        f0_voiced[:, None] / _SHRUTI_FREQS_ARR[None, :]
+                        f0_voiced[:, None] / shruti_freqs[None, :]
                     )
                 )  # (n_voiced, n_shruti)
 
@@ -179,9 +182,16 @@ def compute_pcp(y, sr=SR, hop_length=HOP_LENGTH, n_fft=4096,
 # Top-level feature extraction
 # ─────────────────────────────────────────────────────────────────────────────
 
-def extract_features(audio_path, progress_cb=None):
+def extract_features(audio_path, progress_cb=None, tonic_hz=None,
+                     auto_tonic=False):
     """Extract the full feature set. ``progress_cb(pct, detail)`` is optional and
-    fires at step boundaries so progress UIs can report sub-stage updates."""
+    fires at step boundaries so progress UIs can report sub-stage updates.
+
+    The 23-bin Shruti grid is anchored to ``REFERENCE_FREQ`` (C4 = 261.626 Hz).
+    Supply ``tonic_hz`` to transpose the whole grid onto a performance's own
+    tonic, or set ``auto_tonic=True`` to estimate it from the pitch track (see
+    :func:`ml_engine.tonic.estimate_tonic_cents`).  With neither, the C4
+    reference is used and behaviour is unchanged."""
     def _report(pct, detail):
         if progress_cb is not None:
             progress_cb(pct, detail)
@@ -224,11 +234,27 @@ def extract_features(audio_path, progress_cb=None):
     voiced_ratio = float(voiced_flag.mean()) if len(voiced_flag) > 0 else 0.0
     rms = float(np.sqrt(np.mean(np.square(y))))
 
+    # ── Tonic (Sa) resolution ────────────────────────────────────────────────
+    tonic_confidence = 1.0
+    if tonic_hz is not None:
+        tonic_source = 'manual'
+    elif auto_tonic:
+        _est_cents, tonic_confidence = estimate_tonic_cents(f0, voiced_flag)
+        tonic_hz = tonic_hz_from_cents(_est_cents)
+        tonic_source = 'auto' if abs(_est_cents) > 1e-6 else 'reference'
+    else:
+        tonic_hz = REFERENCE_FREQ
+        tonic_source = 'reference'
+
+    tonic_hz = float(tonic_hz)
+    tonic_cents = float(1200.0 * np.log2(tonic_hz / REFERENCE_FREQ))
+    _report(27, 'Estimating tonic…')
+
     # ── PCP with F0 fusion ───────────────────────────────────────────────────
     # Pass f0 and voiced_flag so the PCP is reinforced at voiced frames.
     pcp, _ = compute_pcp(
         y, sr=SR, hop_length=HOP_LENGTH,
-        f0=f0, voiced_flag=voiced_flag,
+        f0=f0, voiced_flag=voiced_flag, tonic_hz=tonic_hz,
     )
     mean_pcp = pcp.mean(axis=1)    # (23,) — recording-level tonal fingerprint
     _report(30, 'Building pitch-class profile…')
@@ -254,6 +280,11 @@ def extract_features(audio_path, progress_cb=None):
         'voiced_probs': voiced_probs,
         'voiced_ratio': voiced_ratio,
         'rms': rms,
+        # ── Tonic ────────────────────────────────────────────────────────────
+        'tonic_hz': tonic_hz,              # performance tonic used for binning
+        'tonic_cents': tonic_cents,        # offset from REFERENCE_FREQ (C4)
+        'tonic_confidence': tonic_confidence,
+        'tonic_source': tonic_source,      # 'reference' | 'auto' | 'manual'
         # ── Other ─────────────────────────────────────────────────────────────
         'tempo': tempo,
         'duration': duration,

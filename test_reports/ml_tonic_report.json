@@ -1,0 +1,220 @@
+{
+  "reference_tonic": 261.626,
+  "reference_ragas": {
+    "kalyani": "Yaman",
+    "bhairav": "Mayamalavagowla",
+    "malkauns": "Malkauns",
+    "bhupali": "Bhupali",
+    "shankara": "Shankara"
+  },
+  "tonic_trials": [
+    {
+      "scale": "kalyani",
+      "tonic": "D4",
+      "tonic_hz": 293.665,
+      "reference_raga": "Yaman",
+      "manual_raga": "Yaman",
+      "auto_raga": "Yaman",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.701,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "kalyani",
+      "tonic": "G3",
+      "tonic_hz": 195.998,
+      "reference_raga": "Yaman",
+      "manual_raga": "Yaman",
+      "auto_raga": "Yaman",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.698,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "kalyani",
+      "tonic": "F4",
+      "tonic_hz": 349.228,
+      "reference_raga": "Yaman",
+      "manual_raga": "Yaman",
+      "auto_raga": "Yaman",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.701,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "bhairav",
+      "tonic": "D4",
+      "tonic_hz": 293.665,
+      "reference_raga": "Mayamalavagowla",
+      "manual_raga": "Mayamalavagowla",
+      "auto_raga": "Mayamalavagowla",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.704,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "bhairav",
+      "tonic": "G3",
+      "tonic_hz": 195.998,
+      "reference_raga": "Mayamalavagowla",
+      "manual_raga": "Mayamalavagowla",
+      "auto_raga": "Mayamalavagowla",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.698,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "bhairav",
+      "tonic": "F4",
+      "tonic_hz": 349.228,
+      "reference_raga": "Mayamalavagowla",
+      "manual_raga": "Mayamalavagowla",
+      "auto_raga": "Mayamalavagowla",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.703,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "malkauns",
+      "tonic": "D4",
+      "tonic_hz": 293.665,
+      "reference_raga": "Malkauns",
+      "manual_raga": "Malkauns",
+      "auto_raga": "Malkauns",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.692,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "malkauns",
+      "tonic": "G3",
+      "tonic_hz": 195.998,
+      "reference_raga": "Malkauns",
+      "manual_raga": "Malkauns",
+      "auto_raga": "Malkauns",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.691,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "malkauns",
+      "tonic": "F4",
+      "tonic_hz": 349.228,
+      "reference_raga": "Malkauns",
+      "manual_raga": "Malkauns",
+      "auto_raga": "Malkauns",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.694,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "bhupali",
+      "tonic": "D4",
+      "tonic_hz": 293.665,
+      "reference_raga": "Bhupali",
+      "manual_raga": "Bhupali",
+      "auto_raga": "Bhupali",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.692,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "bhupali",
+      "tonic": "G3",
+      "tonic_hz": 195.998,
+      "reference_raga": "Bhupali",
+      "manual_raga": "Bhupali",
+      "auto_raga": "Bhupali",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.694,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "bhupali",
+      "tonic": "F4",
+      "tonic_hz": 349.228,
+      "reference_raga": "Bhupali",
+      "manual_raga": "Bhupali",
+      "auto_raga": "Bhupali",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.691,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "shankara",
+      "tonic": "D4",
+      "tonic_hz": 293.665,
+      "reference_raga": "Shankara",
+      "manual_raga": "Shankara",
+      "auto_raga": "Shankara",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.699,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "shankara",
+      "tonic": "G3",
+      "tonic_hz": 195.998,
+      "reference_raga": "Shankara",
+      "manual_raga": "Shankara",
+      "auto_raga": "Shankara",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.7,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    },
+    {
+      "scale": "shankara",
+      "tonic": "F4",
+      "tonic_hz": 349.228,
+      "reference_raga": "Shankara",
+      "manual_raga": "Shankara",
+      "auto_raga": "Shankara",
+      "tonic_error_cents": 5.0,
+      "tonic_confidence": 0.699,
+      "mechanism": "PASS",
+      "auto": "PASS"
+    }
+  ],
+  "real_recordings": [
+    {
+      "file": "isavasya_ghanam_60s.wav",
+      "tonic_hz": 304.9,
+      "tonic_cents": 265.0,
+      "tonic_confidence": 0.706,
+      "tonic_source": "auto"
+    },
+    {
+      "file": "rudram_60s.wav",
+      "tonic_hz": 346.22,
+      "tonic_cents": 485.0,
+      "tonic_confidence": 0.738,
+      "tonic_source": "auto"
+    },
+    {
+      "file": "test_10s.wav",
+      "tonic_hz": 303.14,
+      "tonic_cents": 255.0,
+      "tonic_confidence": 0.603,
+      "tonic_source": "auto"
+    }
+  ],
+  "hard_fails": 0,
+  "summary": {
+    "trials": 15,
+    "passed": 15
+  }
+}

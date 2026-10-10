@@ -119,6 +119,7 @@ def _run_pipeline(pk: int) -> dict:
             progress_cb=lambda pct, detail: _set_progress(
                 pk, 'Feature Extraction', pct, detail=detail,
             ),
+            auto_tonic=True,
         )
         _set_progress(pk, 'Feature Extraction', 30)
     except Exception as exc:
@@ -168,6 +169,11 @@ def _run_pipeline(pk: int) -> dict:
             'mean_pcp':                     clustering_results['mean_pcp'],
             # pYIN scalars
             'voiced_ratio':                 features['voiced_ratio'],
+            # Dynamic tonic (Sa) used to transpose the Shruti grid
+            'tonic_hz':                     features.get('tonic_hz'),
+            'tonic_cents':                  features.get('tonic_cents'),
+            'tonic_confidence':             features.get('tonic_confidence'),
+            'tonic_source':                 features.get('tonic_source'),
             # spectral_centroid_timeline intentionally omitted — per-frame floats, unused
             # Ghana Patha scalars
             'ghana_patha_valid':            ghana_result['is_valid'],

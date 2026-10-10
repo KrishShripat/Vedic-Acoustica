@@ -1,22 +1,30 @@
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from .shruti_mapping import SHRUTI_FREQUENCIES, SHRUTI_NAMES, assign_shruti
+from .shruti_mapping import (
+    SHRUTI_FREQUENCIES, SHRUTI_NAMES, REFERENCE_FREQ, assign_shruti,
+)
 from .audio_processing import _SHRUTI_FREQS_ARR, _THRESHOLD_CENTS
 
 N_CLUSTERS = 22
 
 
-def _nearest_shruti_from_f0(f0_hz):
+def _nearest_shruti_from_f0(f0_hz, tonic_hz=REFERENCE_FREQ):
     """
     Return the index (0-based) of the closest Shruti to a given Hz value,
     using log-frequency (cents) distance instead of absolute Hz distance.
     Returns None when f0_hz is NaN, zero, or outside the threshold.
+
+    ``tonic_hz`` transposes the Shruti grid onto the performance's own tonic so
+    that ``tonic_hz`` maps to bin 0 (Sa) instead of the fixed C4 reference.
     """
     if f0_hz is None or np.isnan(f0_hz) or f0_hz <= 0:
         return None
+    tonic_ratio = float(tonic_hz) / REFERENCE_FREQ
     with np.errstate(divide='ignore', invalid='ignore'):
-        cents = np.abs(1200.0 * np.log2(f0_hz / _SHRUTI_FREQS_ARR))
+        cents = np.abs(
+            1200.0 * np.log2(f0_hz / (_SHRUTI_FREQS_ARR * tonic_ratio))
+        )
     best = int(np.argmin(cents))
     return best if cents[best] < _THRESHOLD_CENTS else None
 
@@ -53,6 +61,7 @@ def run_clustering(features):
     mean_pcp = features['mean_pcp']               # (23,)
     f0 = features.get('f0')                       # (n_f0,) or None
     voiced_flag = features.get('voiced_flag')     # (n_f0,) bool or None
+    tonic_hz = features.get('tonic_hz', REFERENCE_FREQ)
 
     n_frames = pcp.shape[1]
     freq_assignments = []
@@ -67,7 +76,7 @@ def run_clustering(features):
         if (f0 is not None and voiced_flag is not None
                 and frame_idx < len(f0)
                 and bool(voiced_flag[frame_idx])):
-            shruti_idx = _nearest_shruti_from_f0(f0[frame_idx])
+            shruti_idx = _nearest_shruti_from_f0(f0[frame_idx], tonic_hz)
             if shruti_idx is not None:
                 assigned = SHRUTI_NAMES[shruti_idx]
 

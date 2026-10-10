@@ -84,12 +84,14 @@ def assign_shruti(centroid, features, cluster_frames=None):
     # dominant chroma bin only when the cluster has no F0 energy.
     f0 = features.get('f0')
     voiced = features.get('voiced_flag')
+    tonic_hz = float(features.get('tonic_hz', REFERENCE_FREQ))
+    shruti_freqs = _SHRUTI_FREQS_ARR * (tonic_hz / REFERENCE_FREQ)
     if f0 is not None and voiced is not None and cluster_frames is not None:
         f0_voiced = np.asarray(f0, dtype=np.float64)[np.asarray(voiced, dtype=bool)]
         if f0_voiced.size:
             median = float(np.nanmedian(f0_voiced))
             if np.isfinite(median):
-                cents = np.abs(1200.0 * np.log2(median / _SHRUTI_FREQS_ARR))
+                cents = np.abs(1200.0 * np.log2(median / shruti_freqs))
                 best = int(np.argmin(cents))
                 if cents[best] < _THRESHOLD_CENTS:
                     return SHRUTI_NAMES[best]

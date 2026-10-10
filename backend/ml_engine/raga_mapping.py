@@ -2,7 +2,7 @@ import logging
 import re
 import numpy as np
 from collections import Counter
-from .shruti_mapping import SHRUTI_NAMES
+from .shruti_mapping import SHRUTI_NAMES, REFERENCE_FREQ
 
 logger = logging.getLogger(__name__)
 
@@ -853,7 +853,8 @@ SWARA_PRESENCE_THRESHOLD = 0.012
 
 
 def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
-                                         presence_threshold=SWARA_PRESENCE_THRESHOLD):
+                                         presence_threshold=SWARA_PRESENCE_THRESHOLD,
+                                         tonic_hz=REFERENCE_FREQ):
     """
     Duration/salience-gated swara detection from the melodic pitch track.
 
@@ -903,7 +904,7 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
             continue
         assigned = None
         if f0_arr is not None and i < len(f0_arr) and not np.isnan(f0_arr[i]):
-            assigned = _nearest_shruti_from_f0(f0_arr[i])
+            assigned = _nearest_shruti_from_f0(f0_arr[i], tonic_hz)
         if assigned is None:
             assigned = int(pcp[:, i].argmax())
         if 0 <= assigned < pcp.shape[0]:
@@ -918,7 +919,8 @@ def _extract_detected_swaras_by_salience(pcp, voiced_flag, f0=None,
 
 
 def _extract_directional_swaras(pcp, f0, voiced_flag,
-                                presence_threshold=SWARA_PRESENCE_THRESHOLD):
+                                presence_threshold=SWARA_PRESENCE_THRESHOLD,
+                                tonic_hz=REFERENCE_FREQ):
     """
     Split F0-dominant Shruti occupancy into arohana (rising F0) and avarohana
     (falling F0) maps, using the same salience gating as the overall detector.
@@ -967,7 +969,7 @@ def _extract_directional_swaras(pcp, f0, voiced_flag,
             continue
         assigned = None
         if not np.isnan(f0_a[i]):
-            assigned = _nearest_shruti_from_f0(f0_a[i])
+            assigned = _nearest_shruti_from_f0(f0_a[i], tonic_hz)
         if assigned is None:
             assigned = int(pcp[:, i].argmax())
         if not (0 <= assigned < len(aro_counts)):
@@ -1151,7 +1153,8 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
             and features.get('voiced_flag') is not None):
         detected_swaras = _extract_detected_swaras_by_salience(
             features['pcp'], features['voiced_flag'],
-            f0=features.get('f0'))
+            f0=features.get('f0'),
+            tonic_hz=features.get('tonic_hz', REFERENCE_FREQ))
         source = 'salience'
     elif mean_pcp is not None:
         detected_swaras = _extract_detected_swaras_from_pcp(mean_pcp)
@@ -1199,7 +1202,8 @@ def detect_raga(clustering_results, features=None, min_confidence=0.25):
         n_voiced = int(voiced_flag.sum())
         if n_voiced >= 10:                # need enough voiced frames to be meaningful
             arohana_swaras, avarohana_swaras = _extract_directional_swaras(
-                pcp, f0, voiced_flag
+                pcp, f0, voiced_flag,
+                tonic_hz=features.get('tonic_hz', REFERENCE_FREQ),
             )
             directional_available = bool(arohana_swaras or avarohana_swaras)
             logger.info(
