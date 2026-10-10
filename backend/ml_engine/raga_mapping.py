@@ -347,9 +347,9 @@ RAGA_DATABASE = [
     {
         'name': 'Sri Raga',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
         'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],          # Ga, Dha omitted in ascent
-        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
         'samvadi': {'grade': 'Ni-k', 'name': 'Ni'},
         'time': 'Evening',
@@ -394,9 +394,9 @@ RAGA_DATABASE = [
     {
         'name': 'Kambhoji',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-s'],
+        'swaras': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
         'arohana': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s'],
-        'avarohana': ['Sa', 'Ni-s', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Pa', 'name': 'Pa'},
         'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Evening',
@@ -405,9 +405,9 @@ RAGA_DATABASE = [
     {
         'name': 'Abhogi',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-k'],        # no Pa, no Ni
-        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-k'],
-        'avarohana': ['Sa', 'Dha-k', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-s'],        # no Pa, no Ni
+        'arohana': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-s'],
+        'avarohana': ['Sa', 'Dha-s', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Ma-s', 'name': 'Ma'},
         'samvadi': {'grade': 'Sa', 'name': 'Sa'},
         'time': 'Any time',
@@ -427,9 +427,9 @@ RAGA_DATABASE = [
     {
         'name': 'Chakravakam',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
-        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
-        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
         'vadi': {'grade': 'Pa', 'name': 'Pa'},
         'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
         'time': 'Morning',
@@ -527,9 +527,9 @@ RAGA_DATABASE = [
     {
         'name': 'Madhyamavati',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-s'],           # pentatonic, no Ga, no Dha
-        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-s'],
-        'avarohana': ['Sa', 'Ni-s', 'Pa', 'Ma-s', 'Re-s', 'Sa'],
+        'swaras': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],           # pentatonic, no Ga, no Dha
+        'arohana': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Pa', 'Ma-s', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Pa', 'name': 'Pa'},
         'samvadi': {'grade': 'Re-s', 'name': 'Re'},
         'time': 'Any time',
@@ -571,11 +571,11 @@ RAGA_DATABASE = [
     {
         'name': 'Ritigowla',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
-        'arohana': ['Sa', 'Ga-s', 'Re-k', 'Ma-s', 'Pa', 'Dha-k', 'Ni-k'],
-        'avarohana': ['Sa', 'Ni-k', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
+        'swaras': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'arohana': ['Sa', 'Ga-k', 'Re-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        'avarohana': ['Sa', 'Ni-k', 'Dha-s', 'Pa', 'Ma-s', 'Ga-k', 'Re-s', 'Sa'],
         'vadi': {'grade': 'Pa', 'name': 'Pa'},
-        'samvadi': {'grade': 'Ga-s', 'name': 'Ga'},
+        'samvadi': {'grade': 'Ga-k', 'name': 'Ga'},
         'time': 'Any time',
         'mood': 'Devotional, tender, deeply moving',
     },

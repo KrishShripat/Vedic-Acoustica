@@ -53,12 +53,12 @@ if os.system("python manage.py seed_samples --analyze") != 0:
 
 # 4. Start Celery Worker
 print("Starting Celery...")
-celery_log = open("celery.log", "a")
-subprocess.Popen(
-    ["celery", "-A", "vedic_acoustica", "worker", "--loglevel=info", "--concurrency=2"],
-    stdout=celery_log,
-    stderr=subprocess.STDOUT,
-)
+with open("celery.log", "a") as celery_log:
+    subprocess.Popen(
+        ["celery", "-A", "vedic_acoustica", "worker", "--loglevel=info", "--concurrency=2"],
+        stdout=celery_log,
+        stderr=subprocess.STDOUT,
+    )
 
 # 5. Real Gradio app with a GPU decoy bound to a real event handler.
 # ZeroGPU's startup scan walks Gradio's registered handlers for @spaces.GPU

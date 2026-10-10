@@ -26,6 +26,8 @@
 
 **Overall Verdict:** A technically ambitious and well-executed project with a **sound scientific core**. All 20 identified findings across musicology (F-01..F-03, F-14, F-20), machine learning (F-04, F-17), frontend performance (F-05), application security (F-06..F-10, F-15, F-16, F-18), concurrency/reliability (F-11, F-12, F-19), and methodology documentation (F-13) have been systematically resolved, verified with 56 automated tests, and deployed to production.
 
+**Post-audit re-verification (2026-10-10):** An independent code-vs-report pass confirmed F-01..F-18 and F-20 as genuinely resolved. It additionally uncovered **6 janya-raga grade-encoding errors not caught by the original audit** (Abhogi, Chakravakam, Kambhoji, Madhyamavati, Sri Raga, Ritigowla) — the database test only asserted vadi/samvadi *membership*, so wrong dhaivata/nishada/rishabha/gandhara grades slipped through — and found **F-19 had been reverted** when the ZeroGPU launcher was restored. All are now fixed, and a new regression test (`test_carnatic_janya_scale_grades_canonical`) guards the corrected scales.
+
 ---
 
 ## 2. Project Snapshot
@@ -86,7 +88,7 @@ graph LR
 | 9 | DTW with cosine cost for Ghana Patha comparison | **TRUE** | `1 - cosine_similarity` as DTW local cost is a valid approach. The implementation is a correct O(n²) DTW with traceback normalisation. The forward/reverse template design is reasonable. | Müller, *Fundamentals of Music Processing* (2015) ch. 7 | [ghana_patha.py:119-189](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L119-L189) |
 | 10 | Ghana Pāṭha is the pattern `12, 21, 123, 321, 123` and is the most advanced Vedic path | **TRUE (SCOPE CLARIFIED)** | The word-level pattern `1-2, 2-1, 1-2-3, 3-2-1, 1-2-3` is correct per authoritative sources (vedavms.in). **Remediated in F-13:** An explicit methodology scope disclaimer was added to [GhanaPathaViz.jsx](file:///home/Arc/Vedic-Acoustica/frontend/src/components/GhanaPathaViz.jsx) and presentation documentation clarifying that DTW validates acoustic tonal-contour direction alternation rather than lexical word-level phonetic permutations. | vedavms.in/ghana-patham; kamakoti.org | [ghana_patha.py:103-104](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/ghana_patha.py#L103-L104); verified via UI scope card |
 | 11 | Raga scoring weights are musically defensible; 40% threshold and Pakad tiebreak are reasonable | **TRUE (RESOLVED)** | The weight breakdown (0.25 Jaccard + 0.25 aro + 0.25 ava − 0.20 extraneous + 0.10 vadi + 0.05 samvadi − 0.10 direction) is conceptually sound. The 40% threshold prevents random matches. Pakad tiebreak solves the Yaman vs Bilawal dilemma. **Abhogi's vadi bug is fully resolved (vadi set to Ma-s in F-01).** | Conceptually sound MIR scoring | [raga_mapping.py:987-1106](file:///home/Arc/Vedic-Acoustica/backend/ml_engine/raga_mapping.py#L987-L1106) |
-| 12 | DB contains 44 ragas with correct metadata | **TRUE (RESOLVED)** | Confirmed 44 entries via grep. **All identified bugs resolved:** **Yaman** ✅ (time updated to 6 PM - 9 PM, F-14). **Bhairav** ✅ (vadi Dha-k, samvadi Re-k). **Malkauns** ✅ (vadi Ma, samvadi Sa). **Abhogi** ✅ (vadi=Ma-s, samvadi=Sa, F-01). **Shankarabharanam** ✅ (arohana/avarohana correctly ordered, F-02). **Kambhoji** ✅ (arohana omits Ni, F-03). **Carnatic Bhairavi** ✅ (canonical bhashanga scale with Chatushruti Dhaivata in ascent, Shuddha Dhaivata in descent, F-20). | Confirmed via musicological sources & automated test suite | See F-01..F-03, F-14, F-20 |
+| 12 | DB contains 44 ragas with correct metadata | **PARTLY TRUE → RESOLVED after post-audit correction** | Confirmed 44 entries via grep. **F-01..F-03, F-14, F-20 resolved.** **Post-audit re-verification (2026-10-10)** additionally found **6 janya ragas with wrong swara-grade encodings** (missed because the test only checked vadi/samvadi membership) — now corrected: **Abhogi** ✅ (`Dha-k`→`Dha-s` / D2), **Chakravakam** ✅ (`Dha-k`→`Dha-s` / D2), **Kambhoji** ✅ (`Ni-s`→`Ni-k` / N2), **Madhyamavati** ✅ (`Ni-s`→`Ni-k` / N2), **Sri Raga** ✅ (`Ga-s`→`Ga-k` / G2, `Dha-k`→`Dha-s` / D2), **Ritigowla** ✅ (`Re-k`→`Re-s` / R2, `Ga-s`→`Ga-k` / G2, `Dha-k`→`Dha-s` / D2). | Confirmed via Wikipedia / Darbar / karnatik / raagawheel & new test `test_carnatic_janya_scale_grades_canonical` | See F-01..F-03, F-14, F-19, F-20 |
 
 ### Robustness / Thresholds
 
@@ -410,11 +412,11 @@ graph LR
 #### F-19: `app.py` (HF launcher) opens celery.log file handle and never closes it
 - **Area:** Code Quality
 - **Severity:** Low
-- **Status:** ✅ **RESOLVED** (Verified 2026-10-10)
-- **Evidence:** [app.py:38](file:///home/Arc/Vedic-Acoustica/backend/app.py#L38): Previously `celery_log = open("celery.log", "a")` without closing, leaving an unmanaged file handle in the launcher process.
+- **Status:** ✅ **RESOLVED** (Re-applied to launcher, 2026-10-10)
+- **Evidence:** The Gradio/ZeroGPU launcher previously used `celery_log = open("celery.log", "a")` without closing, leaving an unmanaged file handle in the launcher process.
 - **Impact:** Technically a resource leak.
-- **Fix:** Wrapped worker spawn in a `with open("celery.log", "a") as celery_log:` context manager in [app.py](file:///home/Arc/Vedic-Acoustica/backend/app.py#L38-L43). On POSIX, `subprocess.Popen` duplicates the file descriptor for the worker process, allowing the parent Python process to safely and immediately close its file handle upon block exit.
-- **Verification & Proof:** Verified process launch syntax and file descriptor lifecycle.
+- **Fix:** Wrapped the worker spawn in a `with open("celery.log", "a") as celery_log:` context manager in [backend/app.py:56-62](file:///home/Arc/Vedic-Acoustica/backend/app.py#L56-L62), and synced the identical change to the HF Space copy (`hf-deploy/app.py:56-62`). On POSIX, `subprocess.Popen` duplicates the file descriptor for the worker process, allowing the parent Python process to safely and immediately close its file handle upon block exit.
+- **Verification & Proof:** Verified process launch syntax and file descriptor lifecycle. **Note:** the original fix lived in a non-launcher `app.py`; restoring the Gradio/ZeroGPU launcher (`6ae340d`) briefly reverted it, so it was re-applied to the launcher during this re-verification pass.
 - **Effort:** S | **Priority:** P3
 
 #### F-20: `Carnatic Bhairavi` has different swaras from canonical

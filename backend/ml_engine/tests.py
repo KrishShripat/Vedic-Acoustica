@@ -62,7 +62,10 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         )
         self.assertNotIn('Ni-s', kb['arohana'])
         self.assertNotIn('Ni-k', kb['arohana'])
-        self.assertIn('Ni-s', kb['avarohana'])
+        # Descent nishada is kaisiki (N2 / Ni-k); N3 (Ni-s) is only an anya
+        # swara in the phrase S N3 P D2 S, so it must not drive the scale.
+        self.assertIn('Ni-k', kb['avarohana'])
+        self.assertNotIn('Ni-s', kb['avarohana'])
         # Ni bins (18..21) must be absent from arohana_bins
         ni_bins = {18, 19, 20, 21}
         self.assertTrue(set(kb['arohana_bins']).isdisjoint(ni_bins))
@@ -98,6 +101,35 @@ class RagaDatabaseIntegrityTestCase(TestCase):
         dha_k_bins = {14, 15}
         self.assertTrue(dha_s_bins.issubset(set(cb['arohana_bins'])))
         self.assertTrue(dha_k_bins.issubset(set(cb['avarohana_bins'])))
+
+    def test_carnatic_janya_scale_grades_canonical(self):
+        """Regression guard for janya-raga grade encoding.
+
+        Six ragas previously encoded the wrong rishabha/gandhara/dhaivata/
+        nishada grade, silently shifting their Shruti bins and corrupting
+        scoring. Each expected scale is the canonical janya scale of the
+        stated parent melakarta (verified against Wikipedia / Darbar /
+        karnatik / raagawheel).
+        """
+        expected = {
+            # 22 Kharaharapriya: R2 G2 M1 D2 N2
+            'Abhogi': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Dha-s'],
+            'Madhyamavati': ['Sa', 'Re-s', 'Ma-s', 'Pa', 'Ni-k'],
+            'Sri Raga': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+            'Ritigowla': ['Sa', 'Re-s', 'Ga-k', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+            # 16 Chakravakam: R1 G3 M1 D2 N2
+            'Chakravakam': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+            # 28 Harikambhoji: R2 G3 M1 D2 N2
+            'Kambhoji': ['Sa', 'Re-s', 'Ga-s', 'Ma-s', 'Pa', 'Dha-s', 'Ni-k'],
+        }
+        for name, scale in expected.items():
+            raga = next(r for r in RAGA_DATABASE if r['name'] == name)
+            self.assertEqual(raga['swaras'], scale, f"{name}: wrong swara grades")
+            for grade in raga['arohana'] + raga['avarohana']:
+                self.assertIn(
+                    grade, scale,
+                    f"{name}: direction uses {grade}, not in scale {scale}"
+                )
 
 
 class ClusterFeatureScalingTestCase(TestCase):
