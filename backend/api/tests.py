@@ -642,3 +642,189 @@ class GoogleLoginAPITestCase(TestCase):
         self.assertEqual(response.status_code, 503)
 
 
+
+
+class ProfileAccountAPITestCase(TestCase):
+    """Profile edit (PATCH /api/auth/me/) and account deletion tests.
+
+    Ownership uses the ``uploaded_by`` FK (main branch's isolation field).
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def register(self, **overrides):
+        payload = {
+            'username': 'alice',
+            'email': 'alice@example.com',
+            'password': 'supersecret123',
+        }
+        payload.update(overrides)
+        return self.client.post(reverse('auth_register'), payload, format='json')
+
+    def test_register_stores_hashed_password_and_is_active(self):
+        response = self.register()
+        self.assertEqual(response.status_code, 201)
+        user = get_user_model().objects.get(username='alice')
+        self.assertNotEqual(user.password, 'supersecret123')
+        self.assertTrue(user.check_password('supersecret123'))
+        self.assertTrue(user.is_active)
+
+    def test_register_rejects_invalid_username_without_mutating_it(self):
+        response = self.register(username='Alice Smith')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(get_user_model().objects.filter(username='AliceSmith').exists())
+
+    def test_registration_login_and_token_auth_keep_submitted_username(self):
+        register_response = self.register(username='Alice.Mixed-Case')
+        self.assertEqual(register_response.status_code, 201)
+        registered_username = register_response.data['user']['username']
+        self.assertEqual(registered_username, 'Alice.Mixed-Case')
+
+        login_response = self.client.post(
+            reverse('auth_login'),
+            {'username': 'Alice.Mixed-Case', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.assertEqual(login_response.status_code, 200)
+        self.assertTrue(login_response.data['token'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Token {login_response.data['token']}"
+        )
+        me_response = self.client.get(reverse('auth_me'))
+        self.assertEqual(me_response.status_code, 200)
+        self.assertEqual(me_response.data['user']['username'], registered_username)
+
+    def test_me_payload_includes_is_active(self):
+        user = get_user_model().objects.create_user(username='bob', password='password123')
+        self.client.force_authenticate(user=user)
+        response = self.client.get(reverse('auth_me'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('is_active', response.data['user'])
+
+    def test_me_updates_username_and_name(self):
+        user = get_user_model().objects.create_user(
+            username='bob', password='password123', first_name='Bob'
+        )
+        self.client.force_authenticate(user=user)
+        response = self.client.patch(
+            reverse('auth_me'),
+            {'username': 'bobby', 'first_name': 'Bobby', 'last_name': 'Smith'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['user']['username'], 'bobby')
+        self.assertEqual(response.data['user']['first_name'], 'Bobby')
+        self.assertEqual(response.data['user']['last_name'], 'Smith')
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'bobby')
+
+    def test_me_rejects_duplicate_username_case_insensitively(self):
+        user = get_user_model().objects.create_user(username='bob', password='password123')
+        get_user_model().objects.create_user(username='taken', password='password123')
+        self.client.force_authenticate(user=user)
+        response = self.client.patch(
+            reverse('auth_me'), {'username': 'TAKEN'}, format='json'
+        )
+        self.assertEqual(response.status_code, 400)
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'bob')
+
+    def test_me_rejects_empty_editable_values_and_privileged_fields(self):
+        user = get_user_model().objects.create_user(username='bob', password='password123')
+        self.client.force_authenticate(user=user)
+        for payload in (
+            {'username': '   '},
+            {'username': 'not a valid username'},
+            {'first_name': '', 'last_name': ' '},
+            {'is_staff': True},
+            {'email': 'attacker@example.com'},
+        ):
+            with self.subTest(payload=payload):
+                response = self.client.patch(
+                    reverse('auth_me'), payload, format='json'
+                )
+                self.assertEqual(response.status_code, 400)
+        user.refresh_from_db()
+        self.assertFalse(user.is_staff)
+        self.assertEqual(user.email, '')
+
+    def test_me_rejects_non_object_update(self):
+        user = get_user_model().objects.create_user(username='bob', password='password123')
+        self.client.force_authenticate(user=user)
+        response = self.client.patch(
+            reverse('auth_me'), ['changed'], format='json'
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_me_update_requires_authentication(self):
+        response = self.client.patch(
+            reverse('auth_me'), {'username': 'changed'}, format='json'
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_account_deletion_removes_owned_data_but_preserves_unassigned_recordings(self):
+        import tempfile
+        from django.core.files.base import ContentFile
+        from django.test import override_settings
+        from api.models import AudioRecording
+
+        user = get_user_model().objects.create_user(
+            username='delete-me', password='password123'
+        )
+        token = Token.objects.create(user=user)
+        self.client.force_authenticate(user=user)
+
+        with tempfile.TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            owned = AudioRecording.objects.create(
+                title='Owned', uploaded_by=user, matrices_file='analysis_matrices/1_matrices.npz'
+            )
+            owned.audio_file.save('owned.wav', ContentFile(b'RIFF'), save=True)
+            audio_path = owned.audio_file.path
+            playback_path = os.path.splitext(audio_path)[0] + '.mp3'
+            with open(playback_path, 'wb') as playback:
+                playback.write(b'ID3')
+            matrix_path = os.path.join(media_root, owned.matrices_file)
+            os.makedirs(os.path.dirname(matrix_path), exist_ok=True)
+            with open(matrix_path, 'wb') as matrices:
+                matrices.write(b'matrices')
+
+            shared = AudioRecording.objects.create(title='Unassigned shared recording')
+            owned_id = owned.pk
+            shared_id = shared.pk
+
+            response = self.client.delete(
+                reverse('auth_delete_account'),
+                {'confirmation': 'DELETE'},
+                format='json',
+            )
+
+            self.assertEqual(response.status_code, 204)
+            self.assertFalse(get_user_model().objects.filter(pk=user.pk).exists())
+            self.assertFalse(Token.objects.filter(pk=token.pk).exists())
+            self.assertFalse(AudioRecording.objects.filter(pk=owned_id).exists())
+            self.assertTrue(AudioRecording.objects.filter(pk=shared_id, uploaded_by=None).exists())
+            self.assertFalse(os.path.exists(audio_path))
+            self.assertFalse(os.path.exists(playback_path))
+            self.assertFalse(os.path.exists(matrix_path))
+
+    def test_account_deletion_requires_authentication(self):
+        response = self.client.delete(reverse('auth_delete_account'))
+        self.assertEqual(response.status_code, 401)
+
+    def test_account_deletion_requires_exact_confirmation(self):
+        user = get_user_model().objects.create_user(
+            username='keep-me', password='password123'
+        )
+        token = Token.objects.create(user=user)
+        self.client.force_authenticate(user=user)
+        for confirmation in ('', 'delete', ' DELETE '):
+            with self.subTest(confirmation=confirmation):
+                response = self.client.delete(
+                    reverse('auth_delete_account'),
+                    {'confirmation': confirmation},
+                    format='json',
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertTrue(get_user_model().objects.filter(pk=user.pk).exists())
+                self.assertTrue(Token.objects.filter(pk=token.pk).exists())

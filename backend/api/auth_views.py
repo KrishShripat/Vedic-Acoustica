@@ -14,12 +14,17 @@ JSON (no large analysis matrices), so they are cheap for the frontend to poll.
 """
 
 import os
+import posixpath
 import re
 import secrets
+from collections.abc import Mapping
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db import transaction
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
@@ -64,6 +69,7 @@ def _user_payload(user) -> dict:
         'last_name':   user.last_name,
         'is_staff':    user.is_staff,
         'is_superuser': user.is_superuser,
+        'is_active':   user.is_active,
         'date_joined': user.date_joined.isoformat(),
     }
 
@@ -99,6 +105,20 @@ def register(request):
     if not re.match(r'^[\w.@+-]+$', username):
         return Response(
             {'error': 'Username contains invalid characters.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    username_field = User._meta.get_field('username')
+    if len(username) > username_field.max_length:
+        return Response(
+            {'error': f'Username must be {username_field.max_length} characters or fewer.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        username_field.run_validators(username)
+    except ValidationError as exc:
+        return Response(
+            {'error': ' '.join(exc.messages)},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -276,7 +296,27 @@ def google_login(request):
     return Response({'token': token.key, 'user': _user_payload(user)})
 
 
-@api_view(['GET'])
+def _delete_owned_recording_files(recording):
+    """Remove a recording's media (audio + playback mp3 + matrices + progress)."""
+    if recording.audio_file:
+        storage = recording.audio_file.storage
+        audio_name = recording.audio_file.name
+        storage.delete(audio_name)
+        storage.delete(f'{posixpath.splitext(audio_name)[0]}.mp3')
+
+    if recording.matrices_file:
+        media_root = Path(settings.MEDIA_ROOT).resolve()
+        matrices_root = (media_root / 'analysis_matrices').resolve()
+        matrices_path = (media_root / recording.matrices_file).resolve()
+        if matrices_path.is_relative_to(matrices_root) and matrices_path != matrices_root:
+            if matrices_path.is_file():
+                matrices_path.unlink()
+
+    from .views import _delete_progress
+    _delete_progress(recording.pk)
+
+
+@api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def me(request):
     """
@@ -284,8 +324,126 @@ def me(request):
 
     Returns the current user.  Used by the frontend to validate a stored
     token on page load and to learn the user's role (is_staff).
+
+    PATCH /api/auth/me/
+
+    Body: { username?, first_name?, last_name? }
+    Updates only the authenticated user's username and name fields.
     """
+    if request.method == 'PATCH':
+        if not isinstance(request.data, Mapping):
+            return Response(
+                {'error': 'Profile updates must be a JSON object.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        allowed_fields = {'username', 'first_name', 'last_name'}
+        unexpected_fields = set(request.data) - allowed_fields
+        if unexpected_fields:
+            return Response(
+                {'error': 'Only username and name can be changed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not request.data:
+            return Response(
+                {'error': 'Provide a username or name to update.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        updates = {}
+        for field in allowed_fields.intersection(request.data):
+            value = request.data[field]
+            if not isinstance(value, str):
+                return Response(
+                    {'error': f'{field} must be text.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            updates[field] = value.strip()
+
+        if 'username' in updates:
+            username = updates['username']
+            if not username:
+                return Response(
+                    {'error': 'Username cannot be empty.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            username_field = User._meta.get_field('username')
+            if len(username) > username_field.max_length:
+                return Response(
+                    {'error': f'Username must be {username_field.max_length} characters or fewer.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                username_field.run_validators(username)
+            except ValidationError as exc:
+                return Response(
+                    {'error': ' '.join(exc.messages)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if User.objects.filter(username__iexact=username).exclude(
+                pk=request.user.pk
+            ).exists():
+                return Response(
+                    {'error': 'A user with that username already exists.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        name_fields = {'first_name', 'last_name'}.intersection(updates)
+        if name_fields:
+            first_name = updates.get('first_name', request.user.first_name)
+            last_name = updates.get('last_name', request.user.last_name)
+            if not f'{first_name} {last_name}'.strip():
+                return Response(
+                    {'error': 'Name cannot be empty.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            for field_name, value in (
+                ('first_name', first_name),
+                ('last_name', last_name),
+            ):
+                max_length = User._meta.get_field(field_name).max_length
+                if max_length and len(value) > max_length:
+                    return Response(
+                        {'error': f'{field_name.replace("_", " ").title()} must be {max_length} characters or fewer.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            updates.update(first_name=first_name, last_name=last_name)
+
+        for field, value in updates.items():
+            setattr(request.user, field, value)
+        request.user.save(update_fields=list(updates))
+        return Response({'user': _user_payload(request.user)})
+
     return Response({'user': _user_payload(request.user)})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    """
+    DELETE /api/auth/delete-account/
+
+    Permanently deletes the authenticated user's account and explicitly owned
+    recordings after an explicit confirmation. Historical recordings without
+    an owner are left untouched.
+    """
+    if (
+        not isinstance(request.data, Mapping)
+        or request.data.get('confirmation') != 'DELETE'
+    ):
+        return Response(
+            {'error': 'Type DELETE to confirm permanent account deletion.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    with transaction.atomic():
+        owned_recordings = list(
+            AudioRecording.objects.select_for_update().filter(uploaded_by=request.user)
+        )
+        for recording in owned_recordings:
+            _delete_owned_recording_files(recording)
+            recording.delete()
+        request.user.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
