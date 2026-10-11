@@ -10,9 +10,12 @@ Vedic Acoustica is a full-stack web application that analyzes audio recordings o
 
 | Layer | Where it runs |
 |-------|---------------|
-| Frontend (React UI) | [Vercel](https://vercel.com) |
-| Backend API (Django + ML) | [Hugging Face Space](https://huggingface.co) — `krish-shripat-vedic-backend.hf.space` |
+| Frontend (React SPA) | [vedic-acoustica.vercel.app](https://vedic-acoustica.vercel.app/) — Vercel edge CDN |
+| Backend API (Django + ML) | [krish-shripat-vedic-backend.hf.space](https://krish-shripat-vedic-backend.hf.space) — Hugging Face Space (Gunicorn on `:7860`) |
 | Kubernetes | Local Minikube (demo) |
+
+> The deployed backend lives in the Hugging Face Space repo (`Krish-Shripat/vedic-backend`,
+> checked out locally at `~/hf-deploy`); the GitHub repo's `backend/` directory mirrors it.
 
 > The monitoring stack (see [Monitoring](#monitoring)) pulls live metrics from both the
 > local Compose stack and the hosted HF backend side by side.
@@ -21,9 +24,9 @@ Vedic Acoustica is a full-stack web application that analyzes audio recordings o
 
 The system combines modern machine learning with Indian Knowledge Systems (IKS) to automate three core tasks:
 
-1. **22 Shruti Detection** — Maps audio frequencies onto the 22 ancient Indian microtonal scale (Shrutis) rather than the standard Western 12-semitone scale, using pYIN F0 tracking + PCP analysis + K-Means clustering.
+1. **22 Shruti Detection** — Maps audio frequencies onto the 22 ancient Indian microtonal scale (Shrutis) rather than the standard Western 12-semitone scale, using pYIN F0 tracking + a 23-bin Pitch-Class Profile + K-Means clustering, with **dynamic tonic (Sa) estimation** that transposes the grid onto the performer's own key.
 2. **Ghana Patha Validation** — Detects whether a chant follows the rigid recursive recitation pattern (1-2, 2-1, 1-2-3, 3-2-1, 1-2-3) used by ancient Vedic scholars as an oral error-correction mechanism, using Dynamic Time Warping (DTW).
-3. **Raga Detection** — Identifies the raga of a musical performance by analyzing swara sets, Arohana (ascending) and Avarohana (descending) directional patterns, and Vadi/Samvadi weighting across a database of 33 ragas (20 Hindustani + 13 Carnatic).
+3. **Raga Detection** — Identifies the raga of a musical performance by analyzing swara sets, Arohana (ascending) and Avarohana (descending) directional patterns, and Vadi/Samvadi weighting across a database of 44 ragas (22 Hindustani + 21 Carnatic + 1 Rajasthani folk).
 
 ---
 
@@ -122,11 +125,13 @@ The algorithm validates this using Dynamic Time Warping (DTW):
 
 ### Raga Detection (Directional Scoring)
 
-The system contains a database of **33 ragas**:
+The system contains a database of **44 ragas** (`CONFIDENCE_THRESHOLD = 0.40`):
 
-**Hindustani (20):** Yaman, Bilawal, Bhupali, Bhairav, Malkauns, Darbari Kanada, Khamaj, Kafi, Asavari, Poorvi, Todi, Puriya, Marwa, Bhairavi, Kedar, Megh, Jhinjhoti, Rageshree, Bihag, Sindhi Bhairavi
+**Hindustani (22):** Yaman, Bilawal, Bhupali, Bhairav, Malkauns, Darbari Kanada, Khamaj, Kafi, Asavari, Poorvi, Todi, Puriya, Marwa, Bhairavi, Kedar, Megh, Jhinjhoti, Rageshree, Bihag, Sindhi Bhairavi, Durga, Shankara
 
-**Carnatic (13):** Shankarabharanam, Kharaharapriya, Mayamalavagowla, Sri Raga, Kalyani, Todi, Bhairavi, Kambhoji, Abhogi, Hamsadhwani, Chakravakam, Kapi, Latangi, Mechakalyani
+**Carnatic (21):** Shankarabharanam, Kharaharapriya, Mayamalavagowla, Sri Raga, Kalyani, Todi (Carnatic), Bhairavi (Carnatic), Kambhoji, Abhogi, Hamsadhwani, Chakravakam, Kapi, Latangi, Mechakalyani, Charukeshi, Nata Bhairavi, Madhyamavati, Vasanta, Panthuvarali, Saveri, Ritigowla
+
+**Rajasthani folk (1):** Mand
 
 Each raga is defined by:
 - **Swaras** — The set of notes (Sa, Re, Ga, Ma, Pa, Dha, Ni) with specific variants
@@ -135,20 +140,25 @@ Each raga is defined by:
 - **Vadi** — The most prominent note (king note)
 - **Samvadi** — The second most prominent note (minister note)
 
-The detection uses **5-component scoring**:
-| Component | Weight | Description |
-|-----------|--------|-------------|
-| Total swara overlap (Jaccard) | 0.25 | How many of the detected swaras match this raga's set |
-| Arohana coverage | 0.25 | How many ascending-direction swaras match this raga's ascending scale |
-| Avarohana coverage | 0.25 | How many descending-direction swaras match this raga's descending scale |
-| Direction penalty | 0.10 | Penalty for swaras appearing in wrong direction |
-| Vadi/Samvadi bonus | 0.15 | Bonus if the most prominent notes match |
+The detection uses a **6-term directional score** (`_score_raga`). When the asc/desc swara sets differ, the score is:
+
+| Term | Weight | Description |
+|------|--------|-------------|
+| Swara-set overlap (Jaccard) | +0.25 | Overlap between the detected swara set and the raga's swara set |
+| Arohana coverage | +0.25 | Fraction of the raga's ascending scale seen in rising frames |
+| Avarohana coverage | +0.25 | Fraction of the raga's descending scale seen in falling frames |
+| Directional consistency | +0.10 | Full credit when no swara is used in a direction the raga forbids (asymmetric ragas) |
+| Vadi prominence | +0.10 | Bonus when the raga's vadi (king note) carries energy |
+| Samvadi prominence | +0.05 | Bonus when the raga's samvadi (minister note) carries energy |
+| Extraneous-swara penalty | −0.20 | Subtracted for detected swaras that lie entirely outside the raga's scale |
+
+The final score is clamped to `[0, 1]`; if the best score is below `0.40` the result is reported as **Inconclusive** rather than guessing.
 
 ---
 
 ## Machine Learning Pipeline
 
-The ML pipeline flows through five stages:
+The ML pipeline flows from feature extraction through tonic estimation to three analysis stages:
 
 ```
 Audio Input
@@ -162,11 +172,17 @@ Audio Input
 │  • PCP computation               │──→ 23-bin Pitch-Class Profile
 │  • MFCC extraction               │──→ Timbre features
 │  • Spectral centroid             │──→ Spectral shape
-│  • STFT spectrogram             │──→ Time-frequency matrix
+│  • STFT spectrogram              │──→ Time-frequency matrix
+└──────────────┬──────────────────┘
+               ▼
+┌─────────────────────────────────┐
+│  Stage 1b: Dynamic Tonic (Sa)    │
+│  (tonic.py)                      │──→ transposes the 23-bin grid onto the
+│  • Folded F0 pitch-class hist.   │     performance's own tonic
+│  • Dominant peak = Sa            │
 └──────────────┬──────────────────┘
                │
     ┌──────────┼──────────┐
-    │          │          │
     ▼          ▼          ▼
 ┌────────┐ ┌────────┐ ┌────────┐
 │ Stage 2│ │ Stage 3│ │ Stage 4│
@@ -176,7 +192,6 @@ Audio Input
 └───┬────┘ └───┬────┘ └───┬────┘
     │          │          │
     └──────────┼──────────┘
-               │
                ▼
     ┌─────────────────┐
     │   API Response   │
@@ -211,39 +226,72 @@ For each frame:
 
 This hybrid approach ensures accurate pitch detection for voiced speech while maintaining graceful degradation for unvoiced frames.
 
+### Stage 1b: Dynamic Tonic (Sa) Estimation (`ml_engine/tonic.py`)
+
+Real performances are not keyed to C4, so the fixed 23-bin grid must be transposed
+to each recording's own tonic before any pitch can be named:
+
+1. **Folded pitch-class histogram** — every voiced F0 is reduced modulo the octave
+   into 10-cent bins and smoothed with a 2-bin moving average; the dominant peak is
+   the performance's own **Sa**.
+2. **Confidence** — peak prominence over the runner-up: `(peak − runner_up) / peak`.
+3. **Transposition** — when confidence ≥ `0.50` (`min_confidence`) and at least 20
+   voiced frames exist, all 23 Shruti frequencies are re-anchored to the detected
+   tonic; otherwise the pipeline transparently falls back to the C4 reference
+   (261.626 Hz). A manual `tonic_hz` override is also supported.
+
+On the sample recordings the auto-detected tonics were **E♭ (≈305 Hz, conf 0.71)**
+for the Isāvāsya Ghanam clip and **F (≈346 Hz, conf 0.74)** for the Rudram clip —
+neither is C4.
+
 ### Stage 2: Shruti Clustering & Assignment (`ml_engine/ml_engine.py`)
 
 **K-Means Clustering:**
 
-The combined MFCC + Chroma feature vectors are passed to **scikit-learn's KMeans** with `n_clusters=22`:
+The combined 35-D MFCC + Chroma feature vectors are standardized with a
+`StandardScaler`, then passed to **scikit-learn's KMeans** with `n_clusters=22`:
 
 ```python
 KMeans(n_clusters=22, random_state=42, n_init=10)
 ```
 
-**Per-Frame Shruti Assignment:**
+**Cluster → Shruti naming:** each cluster is labelled from the **median voiced F0**
+of its constituent frames mapped onto the (tonic-transposed) grid; only when a
+cluster has no F0 energy does it fall back to the dominant chroma bin.
 
-For each audio frame, the system assigns a Shruti using a priority-based approach:
-1. **Voiced frames (F0 available):** Map F0 frequency to the nearest Shruti bin
-2. **Unvoiced/silent frames (no F0):** Use PCP argmax (highest energy bin) as fallback
+**Per-Frame Shruti Assignment** (priority-based):
+1. **Voiced frames (F0 available):** transposed-F0 → nearest Shruti bin (log-frequency/cents distance)
+2. **Unvoiced/silent frames (no F0):** PCP argmax (highest-energy bin) as fallback
 
 Output:
 - Cluster labels for every audio frame
-- Cluster centroids (the "average" frequency profile of each Shruti)
+- Cluster centroids (unscaled, via inverse transform)
 - Per-frame Shruti assignments
-- Mean PCP vector (22-element energy profile)
+- Mean PCP vector (23-element energy profile)
 
 ### Stage 3: Ghana Patha Validation (`ml_engine/ghana_patha.py`)
 
 Uses **Dynamic Time Warping (DTW)** for tempo-invariant pattern matching:
 
-1. **PCP Segmentation** — Audio is divided into 1-second segments, each with a 22-element PCP vector
+1. **PCP Segmentation** — audio is split into `n_segments = max(int(duration), 6)` slices (≈ one phrase per second), each a 23-bin PCP vector
 2. **Phrase Templates** — Idealized PCP unit vectors represent forward (ascending) and reverse (descending) Ghana phrases
 3. **DTW Matching** — Each segment is compared against forward/reverse templates using normalized DTW with cosine similarity cost
 4. **Cycle Scoring** — The expected Ghana cycle `[fwd, rev, fwd, rev, fwd]` is slid over detected segment labels
 5. **Repetition Score** — Pairwise DTW similarity between non-adjacent segments measures repetition strength
+6. **Direction Alternation** — fraction of adjacent segments that flip forward↔reverse
 
-**Combined Confidence** = 0.45 * Repetition Score + 0.55 * Pattern Match Score
+**Combined Confidence** = 0.40 × repetition + 0.40 × pattern-match + 0.20 × direction-alternation
+
+A clip is **valid** only when all three gates pass:
+
+```
+repetition_score > 0.35   AND   pattern_match > 0.25   AND   direction_alternation ≥ 0.40
+```
+
+**Four hard rejection gates** short-circuit to an invalid verdict before DTW:
+near-silence (`RMS < 0.01`), broadband noise (`spectral flatness > 0.35`),
+too short (`< 2.0 s`), or too few segments (`< 5`). The alternation gate specifically
+rejects monotone ascending/descending runs that self-repeat trivially without cycling.
 
 **Key advantage over cosine similarity:** DTW handles tempo variations, so a Ghana Patha chant that is faster or slower than the template will still match correctly.
 
@@ -255,17 +303,19 @@ Uses **Dynamic Time Warping (DTW)** for tempo-invariant pattern matching:
 2. Split audio frames into ascending (F0 rising) and descending (F0 falling) segments
 3. Extract swara energy maps separately for ascending and descending directions
 
-**5-Component Raga Scoring:**
+**6-term directional scoring** (full formula in [Raga Detection](#raga-detection-directional-scoring)):
 
-| Component | Weight | How it works |
-|-----------|--------|--------------|
-| Total swara overlap | 0.25 | Jaccard similarity between detected swara set and raga's swara set |
-| Arohana coverage | 0.25 | Fraction of raga's ascending scale present in ascending frames |
-| Avarohana coverage | 0.25 | Fraction of raga's descending scale present in descending frames |
-| Direction penalty | 0.10 | Penalizes swaras that appear in the wrong direction |
-| Vadi/Samvadi bonus | 0.15 | Bonus when the most prominent detected notes match the raga's key notes |
+| Term | Weight | How it works |
+|------|--------|--------------|
+| Swara-set overlap (Jaccard) | +0.25 | Overlap between the detected and raga swara sets |
+| Arohana coverage | +0.25 | Fraction of the raga's ascending scale seen in rising frames |
+| Avarohana coverage | +0.25 | Fraction of the raga's descending scale seen in falling frames |
+| Directional consistency | +0.10 | Full credit when swaras avoid directions the raga forbids |
+| Vadi prominence | +0.10 | Bonus when the raga's vadi (king note) carries energy |
+| Samvadi prominence | +0.05 | Bonus when the raga's samvadi (minister note) carries energy |
+| Extraneous-swara penalty | −0.20 | Penalty for detected swaras outside the raga's scale |
 
-Returns **top 5 raga matches** with confidence scores, along with arohana/avarohana scale strips showing which swaras were detected.
+Returns the best match plus **top-5 candidates** with confidence scores, along with arohana/avarohana scale strips showing which swaras were detected. Scores below `0.40` are reported as **Inconclusive**.
 
 ---
 
@@ -275,7 +325,7 @@ Returns **top 5 raga matches** with confidence scores, along with arohana/avaroh
 ┌─────────────────────────────────────────────────────────┐
 │                     USER BROWSER                        │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │        React Frontend (Port 80 via Nginx)         │  │
+│  │   React SPA (Vercel edge; Nginx :80 locally)      │  │
 │  │                                                   │  │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐          │  │
 │  │  │ Audio    │ │ Spectro- │ │ Cluster  │          │  │
@@ -295,33 +345,39 @@ Returns **top 5 raga matches** with confidence scores, along with arohana/avaroh
                           │ /api/ requests
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│           Nginx Reverse Proxy (Port 80)                 │
-│         Proxies /api/ → Backend Container               │
+│   Edge / reverse proxy (Vercel rewrites; Nginx :80)     │
+│         Proxies /api/ → Backend                         │
 └──────────────────────────┬──────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────┐
-│     Django Backend (Port 8000, Gunicorn + 2 workers)    │
+│  Django Backend — Gunicorn :8000 (compose/K8s)          │
+│                   or :7860 (HF Space)                   │
 │  ┌─────────────┐  ┌──────────────────────────────────┐ │
 │  │ DRF API     │  │         ML Engine                  │ │
-│  │ /api/upload │  │  ┌──────────────┐                 │ │
-│  │ /api/list   │→│  │ Feature Ext. │ pYIN + PCP      │ │
-│  │ /api/analyze│  │  └──────┬───────┘                 │ │
-│  │             │  │         ▼                          │ │
-│  │ SQLite DB   │  │  ┌──────────────┐                 │ │
-│  │             │  │  │ K-Means      │ K=22 Clusters   │ │
-│  │             │  │  └──────┬───────┘                 │ │
-│  │             │  │         ▼                          │ │
-│  │             │  │  ┌──────────────┐                 │ │
-│  │             │  │  │ Ghana Patha  │ DTW Matching    │ │
-│  │             │  │  └──────┬───────┘                 │ │
-│  │             │  │         ▼                          │ │
-│  │             │  │  ┌──────────────┐                 │ │
-│  │             │  │  │ Raga Detect  │ Directional     │ │
-│  │             │  │  └──────────────┘                 │ │
+│  │ /auth       │  │  Feature Ext.  pYIN + 23-bin PCP  │ │
+│  │ /upload     │→│        │                           │ │
+│  │ /recordings │  │        ▼                           │ │
+│  │ /analyze    │  │  Tonic (Sa) → K-Means (K=22)       │ │
+│  │  /status    │  │        ▼                           │ │
+│  │ SQLite (WAL)│  │  Ghana Patha (DTW) → Raga (Dir.)   │ │
 │  └─────────────┘  └──────────────────────────────────┘ │
+│              Celery worker + Redis broker               │
 └─────────────────────────────────────────────────────────┘
 ```
+
+**Deployment topology.** Locally the React build is served by Nginx (:80) which
+proxies `/api/` to the Gunicorn backend (:8000). In production the React SPA is
+served from the **Vercel edge CDN** and `frontend/vercel.json` rewrites the API
+namespaces straight to the **Hugging Face Space** (Gunicorn bound to `:7860`),
+which also runs Redis and a Celery worker in-container. See
+[`ARCHITECTURE.md`](ARCHITECTURE.md) for the full breakdown.
+
+**Per-user data isolation.** `list_recordings`, `recording_detail`, and
+`analyze_audio` all scope results to `uploaded_by=request.user`; staff (`is_staff`)
+see everything. Uploads always attach `uploaded_by=request.user`, so a regular user
+can only list, view, or analyze their own recordings (anonymous/legacy
+`uploaded_by=NULL` rows are staff-only).
 
 ---
 
@@ -330,18 +386,20 @@ Returns **top 5 raga matches** with confidence scores, along with arohana/avaroh
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **Frontend UI** | React 19 + Vite 8 | User interface, drag-drop upload, interactive charts |
-| **Charts** | Plotly.js (react-plotly.js) | Spectrogram heatmap, cluster bar chart, PCP energy map, raga confidence bars |
+| **Charts** | Plotly.js (`plotly.js-cartesian-dist-min` + `react-plotly.js`) | Spectrogram heatmap, cluster bar chart, PCP energy map, raga confidence bars |
 | **Audio Player** | WaveSurfer.js 7 | Waveform visualization with play/pause controls |
 | **PDF Export** | jsPDF | Landscape A4 reports with embedded chart screenshots |
-| **HTTP Client** | Axios / Fetch | API communication between React and Django |
-| **Reverse Proxy** | Nginx | Serves React build, proxies /api/ and /media/ to backend |
-| **Backend API** | Django 6 + Django REST Framework 3.17 | REST endpoints for upload, list, analyze |
-| **ML Engine** | librosa 0.11, scikit-learn 1.9 | Audio feature extraction, pYIN F0, PCP, K-Means clustering, DTW |
+| **HTTP Client** | Fetch API (native) | API communication between React and Django |
+| **Reverse Proxy** | Nginx (local) / Vercel rewrites (prod) | Serves React build, proxies `/api/` and `/media/` to backend |
+| **Backend API** | Django 6 + Django REST Framework 3.17 | REST endpoints for auth, upload, list, analyze |
+| **Async Tasks** | Celery 5.4 + Redis 5.2 | Background ML analysis + SSE/polling progress |
+| **ML Engine** | librosa 0.11, scikit-learn | Feature extraction, pYIN F0, 23-bin PCP, K-Means, DTW, tonic estimation |
 | **Scientific Computing** | numpy 2.4, scipy 1.18 | Numerical operations, STFT computation, DTW cost matrices |
-| **Database** | SQLite (development) | Stores recordings and analysis results |
+| **Database** | SQLite (WAL mode) | Stores recordings and analysis results |
 | **Linting** | Oxlint | Frontend linting with React rules |
 | **Containerization** | Docker + Docker Compose | Isolated environments for all services |
 | **Orchestration** | Kubernetes (Minikube) | Container orchestration with monitoring |
+| **Deployment** | Vercel (frontend) + Hugging Face Spaces (backend) | Production hosting |
 | **CI/CD** | GitHub Actions | Automated build, test, and Docker image push |
 | **Monitoring** | Prometheus + Grafana | Server metrics, CPU usage, request latency, API rate |
 
@@ -360,17 +418,26 @@ Vedic-Acoustica/
 │   ├── api/                            # Django app — REST API
 │   │   ├── models.py                   # AudioRecording model
 │   │   ├── serializers.py              # DRF serializers
-│   │   ├── views.py                    # Upload, list, analyze endpoints
+│   │   ├── auth_views.py               # register / login / logout / me / admin overview
+│   │   ├── views.py                    # Upload, list, detail, analyze endpoints
+│   │   ├── tasks.py                    # Celery task: run the ML pipeline
+│   │   ├── metrics.py                  # Prometheus metrics + middleware
 │   │   ├── urls.py                     # API URL routes
-│   │   ├── tests.py                    # API tests (3 tests)
-│   │   └── metrics.py                  # Prometheus metrics middleware
+│   │   └── tests.py                    # API test suite (50 tests)
 │   ├── ml_engine/                      # Django app — ML Pipeline
-│   │   ├── audio_processing.py         # pYIN F0 + PCP + MFCC extraction
+│   │   ├── audio_processing.py         # pYIN F0 + 23-bin PCP + MFCC extraction
+│   │   ├── tonic.py                    # Dynamic tonic (Sa) estimation + grid transposition
 │   │   ├── ml_engine.py                # K-Means clustering + Shruti assignment
 │   │   ├── shruti_mapping.py           # 23-bin Shruti frequency table (Sa…Sa')
 │   │   ├── ghana_patha.py              # DTW-based Ghana Patha validation
-│   │   └── raga_mapping.py             # Directional Raga detection (33 ragas)
-│   ├── datasets/                       # Processed audio samples
+│   │   ├── raga_mapping.py             # Directional Raga detection (44 ragas)
+│   │   └── tests.py                    # ML unit tests (14 tests)
+│   ├── test_ml_audit.py                # ML audit battery (15/15)
+│   ├── test_ml_pipeline.py             # Full-pipeline validation (19 clips)
+│   ├── test_ml_quick.py                # Quick pipeline battery (15 clips)
+│   ├── test_ml_robustness.py           # 18-probe robustness battery
+│   ├── test_ml_tonic.py                # Dynamic-tonic invariance battery (15/15)
+│   ├── app.py + entrypoint.sh          # HF Space launcher (redis → migrate → celery → gunicorn :7860)
 │   ├── requirements.txt                # Python dependencies
 │   ├── Dockerfile                      # Backend container (python:3.13-slim)
 │   └── .dockerignore
@@ -378,14 +445,21 @@ Vedic-Acoustica/
 ├── frontend/                           # React + Vite
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── AudioUploader.jsx       # Drag-drop file upload (50MB max)
-│   │   │   ├── AudioPlayer.jsx         # WaveSurfer.js waveform player
+│   │   │   ├── AuthScreen.jsx          # Register / login gate
+│   │   │   ├── AudioUploader.jsx       # Drag-drop "Acoustic Chamber" upload (50MB max)
+│   │   │   ├── AnalysisProgress.jsx    # SSE/polling analysis progress
 │   │   │   ├── SpectrogramView.jsx     # Plotly time-frequency heatmap
 │   │   │   ├── ClusterPlot.jsx         # K-Means cluster bar chart
 │   │   │   ├── ShrutiMap.jsx           # 23-bin Shruti PCP energy bars/heatmap
 │   │   │   ├── GhanaPathaViz.jsx       # Ghana Patha validation + DTW scores
-│   │   │   └── RagaViz.jsx             # Raga detection + scale strips
+│   │   │   ├── RagaViz.jsx             # Raga detection + scale strips
+│   │   │   ├── ShrutiInstrument.jsx    # Interactive Shruti explorer
+│   │   │   ├── SoundExplorer.jsx       # "explorer" tab
+│   │   │   ├── AdminOverview.jsx       # Staff admin dashboard
+│   │   │   ├── AudioPlayer.jsx         # WaveSurfer.js waveform player
+│   │   │   └── Plot.jsx                # Shared Plotly wrapper
 │   │   ├── utils/
+│   │   │   ├── auth.js                 # Token / credential helpers
 │   │   │   └── exportReport.js         # PDF report generator (jsPDF)
 │   │   ├── App.jsx                     # Main app — state management, API calls
 │   │   ├── App.css                     # Component styles
@@ -428,13 +502,14 @@ Vedic-Acoustica/
 │   └── grafana-dashboard.json          # Grafana dashboard (10 panels)
 │
 ├── test_audio/                         # Sample recordings
-│   ├── isavasya_ghanam_60s.wav         # Ghana Patha recording (60s)
-│   ├── isavasya_ghanam.ogg             # Same chant, OGG format
-│   ├── rudram_60s.wav                  # Samhita Patha recording (60s)
-│   ├── rudram.mp3                      # Same chant, MP3 format
-│   └── test_10s.wav                    # Quick test clip (10s)
+│   ├── isavasya_ghanam_60s.wav         # Real Ghana Patha recording (60s)
+│   ├── rudram_60s.wav                  # Real Samhita Patha recording (60s)
+│   ├── test_10s.wav                    # Quick test clip (10s)
+│   └── synthetic/                      # Generated ground-truth clips used by the ML batteries
 │
-├── docker-compose.yml                  # Full stack orchestration (5 services)
+├── test_reports/                       # ML validation outputs (JSON / Markdown reports)
+│
+├── docker-compose.yml                  # Full stack: redis, backend, celery, frontend, prometheus, node-exporter, grafana
 ├── .github/workflows/
 │   ├── ci.yml                          # CI: backend test + frontend lint/build
 │   └── cd.yml                          # CD: Docker build + push to GHCR
@@ -464,7 +539,9 @@ Windows/Mac: Download [Docker Desktop](https://www.docker.com/products/docker-de
 ```bash
 git clone <repo-url>
 cd Vedic-Acoustica
-docker compose up -d backend frontend
+docker compose up -d          # redis, backend, celery, frontend (+ monitoring if desired)
+# or a minimal app-only stack:
+docker compose up -d backend celery redis frontend
 ```
 
 Open **http://localhost** in your browser.
@@ -476,7 +553,7 @@ docker compose down
 
 ### Option 2: Development Mode
 
-**Prerequisites:** Python 3.11+, Node.js 18+
+**Prerequisites:** Python 3.13+ (Django 6 requires ≥ 3.12), Node.js 20+
 
 **Backend:**
 ```bash
@@ -528,24 +605,46 @@ WAV, MP3, FLAC, OGG (anything librosa can load)
 
 ## API Reference
 
-| Method | Endpoint | Body | Response |
-|--------|----------|------|----------|
-| `POST` | `/api/upload/` | `audio_file` (file), `title` (string) | Recording object with ID |
-| `GET` | `/api/recordings/` | — | Array of all recordings |
-| `GET` | `/api/recordings/<id>/` | — | Single recording with analysis |
-| `POST` | `/api/analyze/<id>/` | — | Full ML analysis JSON |
-| `GET` | `/metrics` | — | Prometheus metrics (text format) |
+| Method | Endpoint | Auth | Body | Response |
+|--------|----------|------|------|----------|
+| `POST` | `/api/auth/register/` | — | `username`, `password` | Auth token + user |
+| `POST` | `/api/auth/login/` | — | `username`, `password` | Auth token + user |
+| `POST` | `/api/auth/logout/` | Token | — | `204` |
+| `GET` | `/api/auth/me/` | Token | — | Current user |
+| `GET` | `/api/admin/overview/` | Staff | — | Counts, recordings, users |
+| `POST` | `/api/upload/` | Token | `audio_file`, `title` | Recording object (attaches `uploaded_by`) |
+| `GET` | `/api/recordings/` | Token | `?page=&page_size=` | Paginated list — **own uploads only** (all for staff) |
+| `GET` | `/api/recordings/<id>/` | Token | — | Single recording + `analysis_result` |
+| `POST` | `/api/analyze/<id>/` | Token | — | `202` queued (Celery background task) |
+| `GET` | `/api/analyze/<id>/status/` | — | — | SSE progress stream (45 s cap) |
+| `GET` | `/api/analyze/<id>/progress/` | — | — | JSON progress snapshot |
+| `GET` | `/metrics/` | Bearer | — | Prometheus metrics (text format) |
 
-**Example: Upload**
+**Access control.** `list_recordings`, `recording_detail`, and `analyze_audio` return only the
+caller's own recordings; another user's (or an anonymous/legacy `uploaded_by=NULL`) ID returns
+`404` rather than `403`, so record existence is never revealed. Staff users see all records.
+The two progress endpoints carry no recording content and are intentionally public, because
+`EventSource` cannot send `Authorization` headers.
+
+**Example: Register, then upload**
 ```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"username":"kavi","password":"s3cret-pass"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
+
 curl -X POST http://localhost:8000/api/upload/ \
+  -H "Authorization: Token $TOKEN" \
   -F "audio_file=@test_audio/test_10s.wav" \
   -F "title=My Test Recording"
 ```
 
-**Example: Analyze**
+**Example: Analyze (queues a Celery task, returns 202)**
 ```bash
-curl -X POST http://localhost:8000/api/analyze/1/
+curl -X POST http://localhost:8000/api/analyze/1/ -H "Authorization: Token $TOKEN"
+# then stream/poll progress:
+curl -N http://localhost:8000/api/analyze/1/status/          # SSE
+curl    http://localhost:8000/api/analyze/1/progress/        # JSON snapshot
 ```
 
 **Analysis Response Schema:**
@@ -562,21 +661,26 @@ curl -X POST http://localhost:8000/api/analyze/1/
   "mean_pcp": [0.12, 0.08, "..."],
   "f0_track": [261.5, 263.1, "null", "..."],
   "voiced_ratio": 0.72,
+  "tonic_hz": 305.2,
+  "tonic_cents": 266.9,
+  "tonic_confidence": 0.71,
+  "tonic_source": "auto",
   "spectral_centroid_timeline": [1523.4, 1601.2, "..."],
   "ghana_patha_valid": true,
   "ghana_patha_confidence": 0.73,
   "ghana_patha_repetition_score": 0.81,
   "ghana_patha_n_segments": 15,
   "ghana_patha_segments": [
-    { "segment": 0, "dtw_forward": 0.85, "dtw_reverse": 0.32, "label": "forward" }
+    { "index": 0, "phrase_type": "forward", "dtw_similarity": 0.85, "dtw_costs": [0.15, 0.68] }
   ],
   "ghana_patha_detected_pattern": ["forward", "reverse", "forward", "reverse", "forward"],
   "ghana_patha_dtw_details": { "...": "..." },
   "raga_detection": {
-    "best_match": { "name": "Yaman", "tradition": "Hindustani", "confidence": 0.72 },
-    "all_scores": [ { "name": "...", "confidence": 0.65 } ],
-    "arohana_detected": ["Sa", "Re", "Ga", "Ma"],
-    "avarohana_detected": ["Pa", "Dha", "Ni", "Sa"]
+    "best_match": { "raga_name": "Yaman", "tradition": "Hindustani", "confidence": 0.72,
+                    "vadi": "Ga", "samvadi": "Ni", "time": "Evening", "mood": "Devotional" },
+    "top_3_matches": [ { "raga_name": "...", "confidence": 0.65 } ],
+    "is_inconclusive": false,
+    "detection_source": "salience"
   },
   "spectrogram_data": [[...], "..."],
   "mfcc_data": [[...], "..."],
@@ -663,25 +767,30 @@ WaveSurfer.js-based waveform player for listening to the uploaded audio.
 
 | Suite | Result |
 |-------|--------|
-| Backend API tests (`manage.py test`) | 28/28 pass |
+| Backend test suite (`manage.py test`) | **63/63 pass** (50 API + 14 ML, minus 1 shared helper) |
 | Frontend `npm run lint` (oxlint) | Clean |
 | Frontend `npm run build` (Vite) | Passes (one >500 kB chunk warning — Plotly bundle) |
 | ML audit (`test_ml_audit.py`) | 15/15 (pitch 7/7, raga 7/7, Ghana sim valid) |
-| ML validation suite (`test_ml_pipeline.py`) | 19/19 runs × 4 stages OK |
+| ML robustness battery (`test_ml_robustness.py`) | 18/18 probes (noise stress, vibrato margins, gate assertions) |
+| ML validation suite (`test_ml_pipeline.py`) | 19/19 clips × 4 stages OK |
 | ML quick suite (`test_ml_quick.py`) | 15/15 clips × 4 stages OK |
+| Dynamic-tonic invariance (`test_ml_tonic.py`) | 15/15 (same raga re-keyed to D4/G3/F4 recovers identically) |
 
-### ML Validation Matrix (verified after the 23-bin rewrite, 2026-09-21)
+### ML Validation Matrix (23-bin rewrite + dynamic tonic, 2026-10-11)
+
+Source: `test_reports/pipeline_results.json` (`test_ml_pipeline.py`).
 
 | Audio | Ghana Patha | Raga Detection |
 |-------|-------------|----------------|
-| `isavasya_ghanam_60s.wav` (real Ghana Patha) | Valid @ 0.75 | Todi (Carnatic) @ 0.80 |
-| `rudram_60s.wav` (real Vedic) | Valid @ 0.79 | Kapi @ 0.47 |
-| `test_10s.wav` (real Vedic) | Valid @ 0.70 | Todi (Carnatic) @ 0.73 |
-| `ascending_scale` (synthetic major) | Invalid | Mand @ 0.58 (major family) |
+| `isavasya_ghanam_60s.wav` (real Ghana Patha) | Valid @ 0.73 | Todi (Carnatic) @ 0.80 |
+| `rudram_60s.wav` (real Vedic) | Valid @ 0.78 | Kapi @ 0.47 |
+| `test_10s.wav` (real Vedic) | Valid @ 0.71 | Todi (Carnatic) @ 0.73 |
+| `ascending_scale` / `descending_scale` (synthetic) | Invalid | Mand @ 0.58 / Shankarabharanam @ 0.83 |
 | `bilawal_scale` (synthetic major ×3) | Invalid | Mand @ 0.58 (major family) |
 | `kalyani_scale` (synthetic Lydian ×3) | Invalid | Yaman @ 0.53 (Lydian family) |
 | `bhairav_scale` (synthetic Bhairav ×3) | Invalid | Mayamalavagowla @ 0.57 (Bhairav family) |
-| `malkauns_3x` (synthetic Malkauns) | Invalid | **Malkauns** (exact) |
+| `vibrato_scale` / `gamaka_scale` (ornamented) | Invalid | Mand @ 0.71 / Shankarabharanam @ 0.57 |
+| `malkauns_3x` (synthetic Malkauns, quick suite) | Invalid | **Malkauns** (exact) |
 | `silence_5s` (near-silence noise floor) | Invalid (energy-gated) | **Inconclusive** — rejected as "essentially silent or pure noise" |
 
 Notes:
@@ -707,6 +816,14 @@ Notes:
    `audio_processing.py`) rejects noise in both `detect_raga` and `validate_ghana_patha`.
 5. **Directional coverage desaturated** — `_extract_directional_swaras` now uses F0-dominance +
    salience gating so harmonic bleed can no longer saturate the arohana/avarohana coverage terms.
+6. **Dynamic tonic (Sa) detection** — `ml_engine/tonic.py` folds the voiced F0 into a
+   pitch-class histogram and transposes the 23-bin grid onto the performance's own Sa
+   (confidence-gated with a C4 fallback); this recovered the true tonics of the real clips
+   (E♭ and F, not C4).
+7. **Per-user data isolation hardened** — `list_recordings`, `recording_detail`, and
+   `analyze_audio` now scope to `uploaded_by=request.user`; anonymous/legacy
+   (`uploaded_by=NULL`) rows are staff-only. Stale isolation tests were updated to assert
+   the stricter policy.
 
 Full changelog: `POST_DEPLOYMENT_AUDIT.md → "23-Bin Shruti & Raga Database Correction (2026-09-21)"`.
 
@@ -715,6 +832,12 @@ Full changelog: `POST_DEPLOYMENT_AUDIT.md → "23-Bin Shruti & Raga Database Cor
 Ghana recordings still validate correctly. This is a segmentation-granularity artifact, not a
 detection error.  The audit's `ghana_sim` clip (1-second phrases aligned to the segment grid)
 validates `True` @ 0.77.
+
+### Dynamic Tonic Invariance Test (`test_ml_tonic.py`)
+
+The same raga, rendered at `Sa = D4`, `G3`, and `F4`, is analyzed with both manually
+supplied and auto-detected tonics — all 15/15 trials recover the identical raga,
+confirming the 23-bin grid re-anchors to whatever key the performer uses.
 
 ### DTW Tempo Invariance Test
 
@@ -747,7 +870,9 @@ Four ragas with similar swara sets but different arohana/avarohana patterns were
 
 ```yaml
 services:
-  backend:      # Django + ML engine on port 8000 (2GB mem limit)
+  redis:        # Celery broker on port 6379
+  backend:      # Django + ML engine (Gunicorn) on port 8000 (2GB mem limit)
+  celery:       # Celery worker running the ML pipeline
   frontend:     # React + Nginx on port 80
   prometheus:   # Metrics collection on port 9090
   node-exporter:# Host metrics on port 9100
@@ -1020,7 +1145,7 @@ kubectl port-forward service/grafana 3000:3000      # Grafana (admin/admin)
 ### Running Tests
 
 ```bash
-# Backend (28 API tests)
+# Backend suite (63 tests: 50 API + 14 ML)
 cd backend
 DJANGO_DEBUG=True DJANGO_SECRET_KEY=test .venv/bin/python manage.py test
 
@@ -1029,9 +1154,13 @@ cd frontend
 npm run lint
 npm run build
 
-# ML validation suite (synthetic + real recordings → test_reports/pipeline_results.json)
+# ML batteries (synthetic + real recordings → test_reports/)
 cd backend
-.venv/bin/python test_ml_pipeline.py
+.venv/bin/python test_ml_pipeline.py      # 19 clips
+.venv/bin/python test_ml_audit.py         # 15/15
+.venv/bin/python test_ml_robustness.py    # 18/18
+.venv/bin/python test_ml_tonic.py         # 15/15 tonic invariance
+.venv/bin/python test_ml_quick.py         # 15 clips
 
 # End-to-end (Docker stack)
 docker compose up -d --build backend frontend
