@@ -265,9 +265,10 @@ function App() {
     )
   }
 
-  const isResetLink = typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('reset') === '1'
-  if (!user || isResetLink) {
+  const query = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const isResetLink = query?.get('reset') === '1'
+  const isVerifyLink = query?.get('verify') === '1'
+  if (!user || isResetLink || isVerifyLink) {
     return <AuthScreen apiBase={API_BASE} onAuthed={setUser} />
   }
 

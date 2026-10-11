@@ -203,6 +203,7 @@ REST_FRAMEWORK = {
         'login_anon':   '30/minute',   # per-IP limit on login attempts
         'google_anon':  '30/minute',   # per-IP limit on Google OAuth exchanges
         'password_reset_anon': '5/hour',  # per-IP limit on password-reset requests
+        'verify_anon':  '10/hour',     # per-IP limit on email-verification resends
     },
 }
 
@@ -233,6 +234,9 @@ FRONTEND_BASE_URL = os.environ.get(
 
 # Reset tokens are valid for one hour (Django's default is 3 days).
 PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '3600'))
+
+# Email-verification links are valid for 24 hours by default.
+EMAIL_VERIFICATION_TIMEOUT = int(os.environ.get('EMAIL_VERIFICATION_TIMEOUT', '86400'))
 
 # ---------------------------------------------------------------------------
 # Celery

@@ -36,6 +36,14 @@ export default function AuthScreen({ apiBase, onAuthed }) {
     if (params.get('reset') && uid && token) return { uid, token }
     return null
   }
+  const readVerifyParams = () => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    const uid = params.get('uid')
+    const token = params.get('token')
+    if (params.get('verify') && uid && token) return { uid, token }
+    return null
+  }
   const [forgotMode, setForgotMode] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [resetParams, setResetParams] = useState(readResetParams)
@@ -43,7 +51,17 @@ export default function AuthScreen({ apiBase, onAuthed }) {
   const [resetConfirm, setResetConfirm] = useState('')
   const [resetVisibility, setResetVisibility] = useState({ password: false, confirm: false })
 
-  const clearResetUrl = () => {
+  // Email verification: `verifyParams` comes from the emailed link; the
+  // `pendingEmail` panel is shown after a successful sign-up (and after a
+  // blocked login) to prompt the user to confirm their address.
+  const [verifyParams, setVerifyParams] = useState(readVerifyParams)
+  const [verifyStatus, setVerifyStatus] = useState(verifyParams ? 'checking' : 'idle')
+  const [showVerifyPanel, setShowVerifyPanel] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [resendStatus, setResendStatus] = useState(null)
+  const [resendLoading, setResendLoading] = useState(false)
+
+  const clearUrlParams = () => {
     if (typeof window !== 'undefined' && window.location.search) {
       window.history.replaceState({}, '', window.location.pathname)
     }
@@ -56,6 +74,37 @@ export default function AuthScreen({ apiBase, onAuthed }) {
       loginFieldRef.current?.focus()
     }
   }, [authTab, authSuccess])
+
+  // Verify the emailed link automatically when the app loads with ?verify=1.
+  useEffect(() => {
+    if (!verifyParams) return
+    let cancelled = false
+    const run = async () => {
+      setVerifyStatus('checking')
+      try {
+        const res = await fetch(`${apiBase}/auth/verify-email/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: verifyParams.uid, token: verifyParams.token }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (cancelled) return
+        if (res.ok) {
+          setVerifyStatus('ok')
+        } else {
+          setVerifyStatus('error')
+          setAuthError(data.error || 'This verification link is invalid or has expired.')
+        }
+      } catch {
+        if (!cancelled) {
+          setVerifyStatus('error')
+          setAuthError('Connection error while verifying your email.')
+        }
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [verifyParams, apiBase])
 
   const googleButtonRef = useRef(null)
   const handleGoogleCredentialRef = useRef(null)
@@ -139,7 +188,7 @@ export default function AuthScreen({ apiBase, onAuthed }) {
   }
 
   const handleResetCancel = () => {
-    clearResetUrl()
+    clearUrlParams()
     setResetParams(null)
     setAuthTab('login')
     setAuthError(null)
@@ -197,7 +246,7 @@ export default function AuthScreen({ apiBase, onAuthed }) {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'This reset link is invalid or has expired.')
-      clearResetUrl()
+      clearUrlParams()
       setResetParams(null)
       setResetPassword('')
       setResetConfirm('')
@@ -243,6 +292,11 @@ export default function AuthScreen({ apiBase, onAuthed }) {
         setAuthLoading(false)
         return
       }
+      if (!email.trim()) {
+        setAuthError('Email is required to create an account.')
+        setAuthLoading(false)
+        return
+      }
       if (password.length < 8) {
         setAuthError('Password must be at least 8 characters long.')
         setAuthLoading(false)
@@ -283,6 +337,14 @@ export default function AuthScreen({ apiBase, onAuthed }) {
 
       const data = await res.json()
       if (!res.ok) {
+        if (data.verification_required) {
+          const id = username.trim()
+          setPendingEmail(id.includes('@') ? id : '')
+          setShowVerifyPanel(true)
+          setAuthError('')
+          setAuthSuccess('')
+          return
+        }
         const msg = data.error || data.detail || Object.values(data).flat().join(' ') || 'Authentication failed'
         setAuthError(msg)
         return
@@ -294,18 +356,59 @@ export default function AuthScreen({ apiBase, onAuthed }) {
         return
       }
 
+      // Registration succeeded: the account is locked until the emailed link
+      // is opened, so surface the "verify your email" panel instead.
       setFullName('')
       setEmail('')
       setPassword('')
       setConfirmPassword('')
       setUsername(data.user?.username || username.trim())
-      setAuthSuccess('Registration successful. Please sign in to continue.')
-      setAuthTab('login')
+      setAuthSuccess('')
+      setPendingEmail(email.trim())
+      setShowVerifyPanel(true)
     } catch (err) {
       setAuthError(`Connection error: ${err.message}`)
     } finally {
       setAuthLoading(false)
     }
+  }
+
+  const handleResendVerification = async (e) => {
+    e?.preventDefault?.()
+    setAuthError(null)
+    setResendStatus(null)
+    const target = (pendingEmail || '').trim()
+    if (!target) {
+      setAuthError('Please enter your email address.')
+      return
+    }
+    setResendLoading(true)
+    try {
+      const res = await fetch(`${apiBase}/auth/verify-email/resend/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: target }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Could not resend the verification email.')
+      setResendStatus(data.message || 'Verification email sent.')
+    } catch (err) {
+      setAuthError(err.message)
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
+  const handleLeaveVerification = () => {
+    clearUrlParams()
+    setVerifyParams(null)
+    setVerifyStatus('idle')
+    setShowVerifyPanel(false)
+    setPendingEmail('')
+    setResendStatus(null)
+    setAuthTab('login')
+    setAuthError(null)
+    setAuthSuccess('')
   }
 
   return (
@@ -338,22 +441,34 @@ export default function AuthScreen({ apiBase, onAuthed }) {
         <section className="auth-clean-card" aria-labelledby="auth-title">
           <div className="auth-card-head">
             <h2 id="auth-title">
-              {resetParams
-                ? 'Set a new password'
-                : forgotMode
-                  ? 'Reset your password'
-                  : authTab === 'login'
-                    ? 'Researcher Sign In'
-                    : 'Create your account'}
+              {verifyParams
+                ? (verifyStatus === 'ok' ? 'Email verified' : verifyStatus === 'error' ? 'Verification failed' : 'Verifying your email…')
+                : resetParams
+                  ? 'Set a new password'
+                  : showVerifyPanel
+                    ? 'Verify your email'
+                    : forgotMode
+                      ? 'Reset your password'
+                      : authTab === 'login'
+                        ? 'Researcher Sign In'
+                        : 'Create your account'}
             </h2>
             <p>
-              {resetParams
+              {verifyParams
+                ? (verifyStatus === 'ok'
+                  ? 'Your account is active. You can sign in now.'
+                  : verifyStatus === 'error'
+                    ? 'This link may have expired — request a new one below.'
+                    : 'Just a moment.')
+                : resetParams
                 ? 'Choose a new password for your account.'
-                : forgotMode
-                  ? 'Enter your email and we’ll send you a reset link.'
-                  : authTab === 'login'
-                    ? 'Sign in to continue your acoustic research.'
-                    : 'Create an account to upload audio and run analysis.'}
+                : showVerifyPanel
+                  ? 'We sent a confirmation link to your inbox. Click it to activate your account.'
+                  : forgotMode
+                    ? 'Enter your email and we’ll send you a reset link.'
+                    : authTab === 'login'
+                      ? 'Sign in to continue your acoustic research.'
+                      : 'Create an account to upload audio and run analysis.'}
             </p>
           </div>
 
@@ -369,7 +484,42 @@ export default function AuthScreen({ apiBase, onAuthed }) {
             </div>
           )}
 
-          {resetParams ? (
+          {verifyParams ? (
+            <div className="clean-form">
+              {verifyStatus === 'checking' && (
+                <div className="clean-success-alert" role="status">Verifying your email…</div>
+              )}
+              {verifyStatus === 'ok' && (
+                <div className="clean-success-alert" role="status">
+                  ✓ Your email is verified. You can sign in now.
+                </div>
+              )}
+              {verifyStatus === 'error' && (
+                <div className="clean-error-alert" role="alert">
+                  ⚠️ {authError || 'This verification link is invalid or has expired.'}
+                </div>
+              )}
+              <button type="button" className="btn btn-submit-clean" onClick={handleLeaveVerification}>
+                Go to sign in
+              </button>
+              <div className="auth-form-row">
+                <button
+                  type="button"
+                  className="clean-link-button"
+                  onClick={() => {
+                    clearUrlParams()
+                    setVerifyParams(null)
+                    setVerifyStatus('idle')
+                    setAuthError(null)
+                    setPendingEmail('')
+                    setShowVerifyPanel(true)
+                  }}
+                >
+                  Resend verification email
+                </button>
+              </div>
+            </div>
+          ) : resetParams ? (
             <form onSubmit={handleResetSubmit} className="clean-form">
               <div className="clean-form-group">
                 <label htmlFor="reset-pass">New password</label>
@@ -425,6 +575,38 @@ export default function AuthScreen({ apiBase, onAuthed }) {
 
               <div className="auth-form-row">
                 <button type="button" className="clean-link-button" onClick={handleResetCancel}>
+                  Back to sign in
+                </button>
+              </div>
+            </form>
+          ) : showVerifyPanel ? (
+            <form onSubmit={handleResendVerification} className="clean-form">
+              <div className="clean-success-alert" role="status">
+                ✓ We sent a verification link to your email. Open it to activate your account.
+              </div>
+              <div className="clean-form-group">
+                <label htmlFor="verify-email">Email</label>
+                <input
+                  id="verify-email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={pendingEmail}
+                  onChange={(e) => setPendingEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+
+              {resendStatus && (
+                <div className="clean-success-alert" role="status">✓ {resendStatus}</div>
+              )}
+
+              <button type="submit" className="btn btn-submit-clean" disabled={resendLoading}>
+                {resendLoading ? 'Sending…' : 'Resend verification email'}
+              </button>
+
+              <div className="auth-form-row">
+                <button type="button" className="clean-link-button" onClick={handleLeaveVerification}>
                   Back to sign in
                 </button>
               </div>
@@ -513,6 +695,7 @@ export default function AuthScreen({ apiBase, onAuthed }) {
                     <input
                       id="auth-email"
                       type="email"
+                      required
                       placeholder="researcher@university.edu"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}

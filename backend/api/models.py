@@ -45,3 +45,25 @@ class AudioRecording(models.Model):
 
     def __str__(self):
         return self.title or f"Recording {self.pk}"
+
+
+class EmailVerification(models.Model):
+    """Tracks whether a user has confirmed their email address.
+
+    A row is created at sign-up with ``verified=False``; the account stays
+    locked (``is_active=False``) and cannot sign in until the emailed link is
+    opened.  Users created by other means (superusers, Google sign-in) have no
+    row and are treated as already verified.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='email_verification',
+    )
+    verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.user} verified={self.verified}'

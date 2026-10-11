@@ -10,6 +10,8 @@ from django.utils.http import urlsafe_base64_encode
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
+from api.auth_views import email_verification_generator
+
 
 class RecordingAPITestCase(TestCase):
     def setUp(self):
@@ -187,6 +189,12 @@ class AuthAPITestCase(TestCase):
         from django.core.cache import cache
         cache.clear()
         self.client = APIClient()
+        self._email_configured = patch('api.auth_views.email_configured', return_value=True)
+        self._send_email = patch('api.auth_views.send_email', return_value=True)
+        self._email_configured.start()
+        self.send_email = self._send_email.start()
+        self.addCleanup(self._email_configured.stop)
+        self.addCleanup(self._send_email.stop)
 
     def register(self, **overrides):
         payload = {
@@ -197,16 +205,52 @@ class AuthAPITestCase(TestCase):
         payload.update(overrides)
         return self.client.post(reverse('auth_register'), payload, format='json')
 
-    def test_register_returns_token_and_user(self):
+    def register_and_verify(self, **overrides):
+        response = self.register(**overrides)
+        self.assertEqual(response.status_code, 201)
+        username = response.data['user']['username']
+        user = get_user_model().objects.get(username=username)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = email_verification_generator.make_token(user)
+        verify = self.client.post(
+            reverse('auth_verify_email'), {'uid': uid, 'token': token}, format='json'
+        )
+        self.assertEqual(verify.status_code, 200)
+        return response
+
+    def test_register_creates_inactive_account_and_sends_email(self):
         response = self.register()
         self.assertEqual(response.status_code, 201)
-        self.assertIn('token', response.data)
+        self.assertNotIn('token', response.data)
+        self.assertTrue(response.data['verification_required'])
         self.assertEqual(response.data['user']['username'], 'alice')
         self.assertFalse(response.data['user']['is_staff'])
+        user = get_user_model().objects.get(username='alice')
+        self.assertFalse(user.is_active)
+        self.assertTrue(hasattr(user, 'email_verification'))
+        self.assertFalse(user.email_verification.verified)
+        self.send_email.assert_called()
+
+    def test_register_blocked_when_email_not_configured(self):
+        with patch('api.auth_views.email_configured', return_value=False):
+            response = self.register(username='noconfig', email='nc@example.com')
+        self.assertEqual(response.status_code, 503)
+        self.assertFalse(
+            get_user_model().objects.filter(username='noconfig').exists()
+        )
+
+    def test_register_requires_email(self):
+        response = self.register(email='')
+        self.assertEqual(response.status_code, 400)
+
+    def test_register_duplicate_email_rejected(self):
+        self.register()
+        response = self.register(username='different', email='ALICE@example.com')
+        self.assertEqual(response.status_code, 400)
 
     def test_register_duplicate_username_rejected(self):
         self.register()
-        response = self.register(username='ALICE')
+        response = self.register(username='ALICE', email='other@example.com')
         self.assertEqual(response.status_code, 400)
 
     def test_register_requires_fields(self):
@@ -240,8 +284,18 @@ class AuthAPITestCase(TestCase):
         throttled_res = self.register(username='user_11', email='user_11@example.com')
         self.assertEqual(throttled_res.status_code, 429)
 
-    def test_login_with_username(self):
+    def test_login_blocked_until_email_verified(self):
         self.register()
+        response = self.client.post(
+            reverse('auth_login'),
+            {'username': 'alice', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(response.data.get('verification_required'))
+
+    def test_login_with_username_after_verification(self):
+        self.register_and_verify()
         response = self.client.post(
             reverse('auth_login'),
             {'username': 'alice', 'password': 'supersecret123'},
@@ -250,8 +304,8 @@ class AuthAPITestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('token', response.data)
 
-    def test_login_with_email(self):
-        self.register()
+    def test_login_with_email_after_verification(self):
+        self.register_and_verify()
         response = self.client.post(
             reverse('auth_login'),
             {'email': 'alice@example.com', 'password': 'supersecret123'},
@@ -260,7 +314,7 @@ class AuthAPITestCase(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_login_wrong_password_rejected(self):
-        self.register()
+        self.register_and_verify()
         response = self.client.post(
             reverse('auth_login'),
             {'username': 'alice', 'password': 'wrongpass'},
@@ -281,9 +335,13 @@ class AuthAPITestCase(TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_logout_revokes_token(self):
-        response = self.register()
-        token = response.data['token']
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token}')
+        self.register_and_verify()
+        login = self.client.post(
+            reverse('auth_login'),
+            {'username': 'alice', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {login.data['token']}")
         logout_resp = self.client.post(reverse('auth_logout'))
         self.assertEqual(logout_resp.status_code, 200)
         me_resp = self.client.get(reverse('auth_me'))
@@ -622,6 +680,20 @@ class GoogleLoginAPITestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['user']['username'], 'reva')
 
+    def test_google_login_activates_pending_unverified_account(self):
+        from django.contrib.auth import get_user_model
+        from api.models import EmailVerification
+        user = get_user_model().objects.create_user(
+            username='pending', email='researcher@gmail.com',
+            password='hashed123', is_active=False,
+        )
+        EmailVerification.objects.create(user=user, verified=False)
+        response = self._google({'credential': 'fake.jwt.token'})
+        self.assertEqual(response.status_code, 200)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertTrue(user.email_verification.verified)
+
     def test_google_login_invalid_credential_rejected(self):
         def bad_verify(*args, **kwargs):
             raise ValueError('Bad signature')
@@ -655,7 +727,15 @@ class ProfileAccountAPITestCase(TestCase):
     """
 
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.client = APIClient()
+        self._email_configured = patch('api.auth_views.email_configured', return_value=True)
+        self._send_email = patch('api.auth_views.send_email', return_value=True)
+        self._email_configured.start()
+        self._send_email.start()
+        self.addCleanup(self._email_configured.stop)
+        self.addCleanup(self._send_email.stop)
 
     def register(self, **overrides):
         payload = {
@@ -666,12 +746,22 @@ class ProfileAccountAPITestCase(TestCase):
         payload.update(overrides)
         return self.client.post(reverse('auth_register'), payload, format='json')
 
-    def test_register_stores_hashed_password_and_is_active(self):
+    def verify(self, user):
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = email_verification_generator.make_token(user)
+        return self.client.post(
+            reverse('auth_verify_email'), {'uid': uid, 'token': token}, format='json'
+        )
+
+    def test_register_stores_hashed_password_inactive_until_verified(self):
         response = self.register()
         self.assertEqual(response.status_code, 201)
         user = get_user_model().objects.get(username='alice')
         self.assertNotEqual(user.password, 'supersecret123')
         self.assertTrue(user.check_password('supersecret123'))
+        self.assertFalse(user.is_active)
+        self.assertEqual(self.verify(user).status_code, 200)
+        user.refresh_from_db()
         self.assertTrue(user.is_active)
 
     def test_register_rejects_invalid_username_without_mutating_it(self):
@@ -684,6 +774,9 @@ class ProfileAccountAPITestCase(TestCase):
         self.assertEqual(register_response.status_code, 201)
         registered_username = register_response.data['user']['username']
         self.assertEqual(registered_username, 'Alice.Mixed-Case')
+
+        user = get_user_model().objects.get(username=registered_username)
+        self.assertEqual(self.verify(user).status_code, 200)
 
         login_response = self.client.post(
             reverse('auth_login'),
@@ -950,3 +1043,132 @@ class PasswordResetAPITestCase(TestCase):
             format='json',
         )
         self.assertEqual(second.status_code, 400)
+
+
+class EmailVerificationAPITestCase(TestCase):
+    """Sign-up email verification: locked account until the link is opened."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.client = APIClient()
+
+    def register(self, **overrides):
+        payload = {
+            'username': 'verifyme',
+            'email': 'verify@example.com',
+            'password': 'supersecret123',
+        }
+        payload.update(overrides)
+        with patch('api.auth_views.email_configured', return_value=True), \
+                patch('api.auth_views.send_email', return_value=True) as send:
+            response = self.client.post(reverse('auth_register'), payload, format='json')
+        return response, send
+
+    def test_register_creates_locked_account_and_sends_link(self):
+        response, send = self.register()
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data['verification_required'])
+        user = get_user_model().objects.get(username='verifyme')
+        self.assertFalse(user.is_active)
+        self.assertFalse(user.email_verification.verified)
+        send.assert_called_once()
+        text = send.call_args.args[2]
+        self.assertIn('verify=1', text)
+        self.assertIn('uid=', text)
+        self.assertIn('token=', text)
+
+    def test_register_unavailable_without_email_provider(self):
+        with patch('api.auth_views.email_configured', return_value=False):
+            response = self.client.post(
+                reverse('auth_register'),
+                {'username': 'noconfig', 'email': 'x@example.com', 'password': 'supersecret123'},
+                format='json',
+            )
+        self.assertEqual(response.status_code, 503)
+
+    def test_verify_activates_locked_account(self):
+        response, _ = self.register()
+        user = get_user_model().objects.get(username='verifyme')
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = email_verification_generator.make_token(user)
+        verify = self.client.post(
+            reverse('auth_verify_email'), {'uid': uid, 'token': token}, format='json'
+        )
+        self.assertEqual(verify.status_code, 200)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertTrue(user.email_verification.verified)
+
+    def test_verify_rejects_bad_token(self):
+        self.register()
+        user = get_user_model().objects.get(username='verifyme')
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        verify = self.client.post(
+            reverse('auth_verify_email'), {'uid': uid, 'token': 'bad-token'}, format='json'
+        )
+        self.assertEqual(verify.status_code, 400)
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+
+    def test_verify_requires_fields(self):
+        verify = self.client.post(reverse('auth_verify_email'), {}, format='json')
+        self.assertEqual(verify.status_code, 400)
+
+    def test_login_locked_then_unlocked_after_verify(self):
+        self.register()
+        locked = self.client.post(
+            reverse('auth_login'),
+            {'username': 'verifyme', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.assertEqual(locked.status_code, 403)
+        self.assertTrue(locked.data.get('verification_required'))
+
+        user = get_user_model().objects.get(username='verifyme')
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = email_verification_generator.make_token(user)
+        self.client.post(
+            reverse('auth_verify_email'), {'uid': uid, 'token': token}, format='json'
+        )
+        unlocked = self.client.post(
+            reverse('auth_login'),
+            {'username': 'verifyme', 'password': 'supersecret123'},
+            format='json',
+        )
+        self.assertEqual(unlocked.status_code, 200)
+        self.assertIn('token', unlocked.data)
+
+    def test_resend_is_generic_for_unknown_email(self):
+        with patch('api.auth_views.email_configured', return_value=True), \
+                patch('api.auth_views.send_email', return_value=True) as send:
+            response = self.client.post(
+                reverse('auth_resend_verification'),
+                {'email': 'nobody@example.com'}, format='json',
+            )
+        self.assertEqual(response.status_code, 200)
+        send.assert_not_called()
+
+    def test_resend_sends_for_unverified_account(self):
+        self.register()
+        with patch('api.auth_views.email_configured', return_value=True), \
+                patch('api.auth_views.send_email', return_value=True) as send:
+            response = self.client.post(
+                reverse('auth_resend_verification'),
+                {'email': 'verify@example.com'}, format='json',
+            )
+        self.assertEqual(response.status_code, 200)
+        send.assert_called_once()
+
+    def test_resend_does_not_send_for_verified_account(self):
+        user = get_user_model().objects.create_user(
+            username='active', email='active@example.com', password='supersecret123'
+        )
+        with patch('api.auth_views.email_configured', return_value=True), \
+                patch('api.auth_views.send_email', return_value=True) as send:
+            response = self.client.post(
+                reverse('auth_resend_verification'),
+                {'email': 'active@example.com'}, format='json',
+            )
+        self.assertEqual(response.status_code, 200)
+        send.assert_not_called()

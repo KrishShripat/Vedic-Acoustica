@@ -22,12 +22,14 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
-from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.tokens import PasswordResetTokenGenerator, default_token_generator
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.utils import timezone
+from django.utils.crypto import constant_time_compare
 from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.http import base36_to_int, urlsafe_base64_decode, urlsafe_base64_encode
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
@@ -42,10 +44,53 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
-from .models import AudioRecording
+from .models import AudioRecording, EmailVerification
 from .emails import email_configured, send_email
 
 User = get_user_model()
+
+
+class EmailVerificationTokenGenerator(PasswordResetTokenGenerator):
+    """Stateless, single-use token for the sign-up email-confirmation link.
+
+    The hash includes ``is_active`` so that once the account is activated the
+    token no longer validates.  Expiry uses ``EMAIL_VERIFICATION_TIMEOUT``
+    (24 h) rather than the shorter password-reset window.
+    """
+
+    key_salt = 'api.tokens.EmailVerificationTokenGenerator'
+
+    def _make_hash_value(self, user, timestamp):
+        return f'{user.pk}{timestamp}{user.email}{user.is_active}'
+
+    def check_token(self, user, token):
+        if not (user and token):
+            return False
+        try:
+            ts_b36, _ = token.split('-')
+            ts = base36_to_int(ts_b36)
+        except (ValueError, AttributeError):
+            return False
+        for secret in [self.secret, *self.secret_fallbacks]:
+            if constant_time_compare(
+                self._make_token_with_timestamp(user, ts, secret), token
+            ):
+                break
+        else:
+            return False
+        timeout = getattr(settings, 'EMAIL_VERIFICATION_TIMEOUT', 86400)
+        if (self._num_seconds(self._now()) - ts) > timeout:
+            return False
+        return True
+
+
+email_verification_generator = EmailVerificationTokenGenerator()
+
+
+def _is_email_verified(user) -> bool:
+    """Users without an EmailVerification row are considered verified."""
+    record = getattr(user, 'email_verification', None)
+    return record is None or record.verified
 
 
 class RegisterAnonThrottle(AnonRateThrottle):
@@ -66,6 +111,11 @@ class GoogleAnonThrottle(AnonRateThrottle):
 class PasswordResetAnonThrottle(AnonRateThrottle):
     """Per-IP rate limit on password-reset requests to prevent email bombing."""
     scope = 'password_reset_anon'
+
+
+class VerifyAnonThrottle(AnonRateThrottle):
+    """Per-IP rate limit on email-verification resend requests."""
+    scope = 'verify_anon'
 
 
 def _user_payload(user) -> dict:
@@ -90,8 +140,10 @@ def register(request):
     """
     POST /api/auth/register/
 
-    Body: { username, email?, password, first_name?, last_name? }
-    Returns: { token, user } on success (201); { error } on failure (400).
+    Body: { username, email, password, first_name?, last_name? }
+    Returns: { user, verification_required: true } on success (201); the
+    account is created locked (inactive) and a verification email is sent.
+    { error } on failure (400); 503 when email is not configured.
     """
     username   = (request.data.get('username') or '').strip()
     email      = (request.data.get('email') or '').strip()
@@ -131,18 +183,28 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if email:
-        try:
-            validate_email(email)
-        except ValidationError:
-            return Response(
-                {'error': 'Invalid email address format.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    if not email:
+        return Response(
+            {'error': 'Email is required to create an account.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    try:
+        validate_email(email)
+    except ValidationError:
+        return Response(
+            {'error': 'Invalid email address format.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     if User.objects.filter(username__iexact=username).exists():
         return Response(
             {'error': 'A user with that username already exists.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if User.objects.filter(email__iexact=email).exists():
+        return Response(
+            {'error': 'An account with that email already exists.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -158,16 +220,35 @@ def register(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    user = User.objects.create_user(
-        username=username,
-        email=email,
-        password=password,
-        first_name=first_name,
-        last_name=last_name,
-    )
-    token, _ = Token.objects.get_or_create(user=user)
+    # Without a working mail provider the user could never verify, so refuse to
+    # create an unusable account.
+    if not email_configured():
+        return Response(
+            {'error': 'Account creation is temporarily unavailable because email '
+                      'delivery is not configured. Please try again later.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    with transaction.atomic():
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=False,
+        )
+        EmailVerification.objects.create(user=user, verified=False)
+
+    sent = _send_verification_email(user)
     return Response(
-        {'token': token.key, 'user': _user_payload(user)},
+        {
+            'user': _user_payload(user),
+            'verification_required': True,
+            'message': 'Account created. Check your email to verify your address '
+                       'before signing in.',
+            'email_sent': sent,
+        },
         status=status.HTTP_201_CREATED,
     )
 
@@ -180,13 +261,13 @@ def login(request):
     POST /api/auth/login/
 
     Body: { username | email, password }
-    Returns: { token, user } on success (200); { error } on failure (401).
+    Returns: { token, user } on success (200); { error } on failure.
+    Unverified accounts are refused with 403 until they confirm their email.
     """
     identifier = request.data.get('username') or request.data.get('email') or ''
     password   = request.data.get('password') or ''
     identifier = str(identifier).strip()
 
-    user = None
     if not identifier or not password:
         return Response(
             {'error': 'username/email and password are required.'},
@@ -194,21 +275,30 @@ def login(request):
         )
 
     if '@' in identifier:
-        try:
-            candidate = User.objects.get(email__iexact=identifier)
-            if candidate.check_password(password):
-                user = candidate
-        except User.DoesNotExist:
-            user = None
+        candidate = User.objects.filter(email__iexact=identifier).first()
     else:
-        user = authenticate(request, username=identifier, password=password)
+        candidate = User.objects.filter(username=identifier).first()
 
-    if user is None:
+    if candidate is None or not candidate.check_password(password):
         return Response(
             {'error': 'Invalid credentials.'},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
+    if _needs_verification(candidate):
+        return Response(
+            {'error': 'Please verify your email address before signing in.',
+             'verification_required': True},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if not candidate.is_active:
+        return Response(
+            {'error': 'This account has been disabled.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    user = candidate
     token, _ = Token.objects.get_or_create(user=user)
     return Response({'token': token.key, 'user': _user_payload(user)})
 
@@ -254,6 +344,134 @@ def _send_password_reset_email(user, reset_link: str) -> bool:
   <p style="font-size:13px;color:#6b6157">— Vedic Acoustica</p>
 </div>"""
     return send_email(user.email, subject, text_body, html_body)
+
+
+def _verification_link(user) -> str:
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = email_verification_generator.make_token(user)
+    base = getattr(settings, 'FRONTEND_BASE_URL', '').rstrip('/')
+    return f'{base}/?verify=1&uid={uid}&token={token}'
+
+
+def _send_verification_email(user) -> bool:
+    """Send the sign-up verification email; returns True when accepted."""
+    link = _verification_link(user)
+    name = (user.first_name or user.username or 'there').strip()
+    subject = 'Verify your Vedic Acoustica email'
+    text_body = (
+        f'Hello {name},\n\n'
+        'Welcome to Vedic Acoustica. Confirm your email address to activate '
+        'your account by opening the link below:\n\n'
+        f'{link}\n\n'
+        'This link expires in 24 hours. If you did not create an account, you '
+        'can ignore this email.\n\n'
+        '— Vedic Acoustica'
+    )
+    html_body = f"""\
+<div style="font-family:Segoe UI,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#231f1a">
+  <h2 style="font-weight:600">Verify your email</h2>
+  <p>Hello {name},</p>
+  <p>Welcome to <strong>Vedic Acoustica</strong>. Confirm your email address to activate your account.</p>
+  <p style="margin:28px 0">
+    <a href="{link}" style="background:#b8860b;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;display:inline-block">Verify email address</a>
+  </p>
+  <p style="font-size:13px;color:#6b6157">Or paste this link into your browser:<br>
+    <a href="{link}" style="color:#8a6d1f;word-break:break-all">{link}</a>
+  </p>
+  <p style="font-size:13px;color:#6b6157">This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>
+  <p style="font-size:13px;color:#6b6157">— Vedic Acoustica</p>
+</div>"""
+    return send_email(user.email, subject, text_body, html_body)
+
+
+def _user_from_uid(uid: str):
+    try:
+        user_id = urlsafe_base64_decode(uid).decode()
+        return User.objects.get(pk=user_id)
+    except (User.DoesNotExist, ValueError, TypeError, OverflowError,
+            UnicodeDecodeError):
+        return None
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([VerifyAnonThrottle])
+def verify_email(request):
+    """
+    POST /api/auth/verify-email/
+
+    Body: { uid, token }
+
+    Activates a pending sign-up once the emailed link's token is verified.
+    """
+    uid = (request.data.get('uid') or '').strip()
+    token = (request.data.get('token') or '').strip()
+    if not uid or not token:
+        return Response(
+            {'error': 'This verification link is invalid or incomplete.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = _user_from_uid(uid)
+    if user is None or not email_verification_generator.check_token(user, token):
+        return Response(
+            {'error': 'This verification link is invalid or has expired. '
+                      'You can request a new one.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    record, _ = EmailVerification.objects.get_or_create(user=user)
+    if not record.verified:
+        record.verified = True
+        record.verified_at = timezone.now()
+        record.save(update_fields=['verified', 'verified_at'])
+    if not user.is_active:
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+
+    return Response({'message': 'Email verified. You can now sign in.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([VerifyAnonThrottle])
+def resend_verification(request):
+    """
+    POST /api/auth/verify-email/resend/
+
+    Body: { email }
+
+    Re-sends the verification link.  Always answers 200 so it never reveals
+    whether an account exists.
+    """
+    if not email_configured():
+        return Response(
+            {'error': 'Email delivery is not configured. Please try again later.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    email = (request.data.get('email') or '').strip()
+    if not email:
+        return Response(
+            {'error': 'Please enter your email address.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    generic = {
+        'message': 'If your account still needs verification, a new link is on '
+                   'its way. Check your inbox and spam folder.'
+    }
+
+    user = User.objects.filter(email__iexact=email).first()
+    if user is not None and _needs_verification(user):
+        _send_verification_email(user)
+
+    return Response(generic)
+
+
+def _needs_verification(user) -> bool:
+    record = getattr(user, 'email_verification', None)
+    return record is not None and not record.verified
 
 
 @api_view(['POST'])
@@ -421,6 +639,17 @@ def google_login(request):
             first_name=(info.get('given_name') or '').strip()[:150],
             last_name=(info.get('family_name') or '').strip()[:150],
         )
+
+    record = getattr(user, 'email_verification', None)
+    if record is not None and not record.verified:
+        # Google has already verified ownership of this email address, so a
+        # pending sign-up can be activated without a separate confirmation.
+        record.verified = True
+        record.verified_at = timezone.now()
+        record.save(update_fields=['verified', 'verified_at'])
+        if not user.is_active:
+            user.is_active = True
+            user.save(update_fields=['is_active'])
 
     if not user.is_active:
         return Response(
