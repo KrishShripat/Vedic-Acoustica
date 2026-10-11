@@ -3,7 +3,11 @@ import { setAuth } from '../utils/auth'
 import './AuthScreen.css'
 import './AuthObservatory.css'
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+// Google OAuth client IDs are public (shipped to the browser), so a fallback
+// is safe.  Override per-environment with VITE_GOOGLE_CLIENT_ID when needed.
+const googleClientId =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  '358793622628-pfi05ejcf4pqpr2lu51qdga8n7eo8fuv.apps.googleusercontent.com'
 
 export default function AuthScreen({ apiBase, onAuthed }) {
   const [authTab, setAuthTab] = useState('login')
