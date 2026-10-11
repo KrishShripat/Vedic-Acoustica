@@ -500,7 +500,6 @@ def list_recordings(request):
         "results":  [ ... ]
     }
     """
-    from django.db.models import Q  # noqa: PLC0415
     from rest_framework.pagination import PageNumberPagination  # noqa: PLC0415
 
     paginator = PageNumberPagination()
@@ -512,7 +511,7 @@ def list_recordings(request):
         qs = AudioRecording.objects.all().order_by('-uploaded_at')
     else:
         qs = AudioRecording.objects.filter(
-            Q(uploaded_by=request.user) | Q(uploaded_by__isnull=True)
+            uploaded_by=request.user
         ).order_by('-uploaded_at')
 
     page = paginator.paginate_queryset(qs, request)
