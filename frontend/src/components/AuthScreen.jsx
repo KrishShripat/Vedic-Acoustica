@@ -92,12 +92,9 @@ export default function AuthScreen({ apiBase, onAuthed }) {
       : (() => {
         const [firstName, ...rest] = fullName.trim().split(/\s+/)
         const lastName = rest.join(' ')
-        const usernameBase = username.trim()
-          .replace(/[^a-zA-Z0-9._-]+/g, '')
-          .toLowerCase() || 'vedic-user'
 
         return {
-          username: usernameBase,
+          username: username.trim(),
           email: email.trim(),
           password,
           first_name: firstName || '',
@@ -129,7 +126,7 @@ export default function AuthScreen({ apiBase, onAuthed }) {
       setEmail('')
       setPassword('')
       setConfirmPassword('')
-      setUsername('')
+      setUsername(data.user?.username || username.trim())
       setAuthSuccess('Registration successful. Please sign in to continue.')
       setAuthTab('login')
     } catch (err) {

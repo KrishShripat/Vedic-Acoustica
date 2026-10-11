@@ -7,6 +7,7 @@ urlpatterns = [
     path('auth/login/', auth_views.login, name='auth_login'),
     path('auth/logout/', auth_views.logout, name='auth_logout'),
     path('auth/me/', auth_views.me, name='auth_me'),
+    path('auth/delete-account/', auth_views.delete_account, name='auth_delete_account'),
     path('admin/overview/', auth_views.admin_overview, name='admin_overview'),
     path('upload/', views.upload_audio, name='upload_audio'),
     path('recordings/', views.list_recordings, name='list_recordings'),

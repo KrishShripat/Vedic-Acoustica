@@ -424,7 +424,7 @@ def _build_analysis_response(recording: 'AudioRecording') -> dict | None:
 def upload_audio(request):
     serializer = AudioRecordingSerializer(data=request.data)
     if serializer.is_valid():
-        recording = serializer.save()
+        recording = serializer.save(owner=request.user)
         # Transcode to MP3 in the background — ffmpeg can run up to 120 s and
         # would otherwise race gunicorn's --timeout 120 inside this request.
         from .tasks import build_playback_file_task  # noqa: PLC0415

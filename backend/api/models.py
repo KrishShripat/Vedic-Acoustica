@@ -8,6 +8,13 @@ class AudioRecording(models.Model):
     title = models.CharField(max_length=255, blank=True)
     audio_file = models.FileField(upload_to='recordings/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='audio_recordings',
+    )
 
     @property
     def playback_file(self):

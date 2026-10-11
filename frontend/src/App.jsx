@@ -11,8 +11,9 @@ import ShrutiInstrument from './components/ShrutiInstrument'
 import SoundExplorer from './components/SoundExplorer'
 import AuthScreen from './components/AuthScreen'
 import AdminOverview from './components/AdminOverview'
+import ProfileModal from './components/ProfileModal'
 import exportReport from './utils/exportReport'
-import { getUser, clearAuth, authFetch } from './utils/auth'
+import { getUser, clearAuth, authFetch, setAuth } from './utils/auth'
 import './observatory.css'
 
 const API_BASE = '/api'
@@ -42,6 +43,7 @@ function App() {
   const [user, setUser] = useState(() => getUser())
   const [authLoading, setAuthLoading] = useState(true)
   const [showAdmin, setShowAdmin] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
 
   const getDisplayName = useCallback((userData) => {
     if (!userData) return 'Researcher'
@@ -97,6 +99,20 @@ function App() {
     setUser(null)
     setAnalysis(null)
     setSelectedRecording(null)
+  }, [])
+
+  const handleUserUpdated = useCallback((updatedUser) => {
+    setAuth({ user: updatedUser })
+    setUser(updatedUser)
+  }, [])
+
+  const handleAccountDeleted = useCallback(() => {
+    clearAuth()
+    setUser(null)
+    setRecordings([])
+    setSelectedRecording(null)
+    setAnalysis(null)
+    setShowProfile(false)
   }, [])
 
   const markChartReady = useCallback(() => {
@@ -277,7 +293,21 @@ function App() {
           {analysis && activeSection === 'upload' && <a href="#research-folio">Research</a>}
         </nav>
         <div className="nav-identity">
-          <span className="auth-badge">Welcome back, {displayName}</span>
+          <button
+            type="button"
+            className="profile-trigger"
+            onClick={() => setShowProfile(true)}
+            aria-haspopup="dialog"
+            aria-label={`Open profile for ${displayName}`}
+          >
+            <span className="profile-trigger-avatar" aria-hidden="true">
+              {displayName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}
+            </span>
+            <span className="profile-trigger-copy">
+              <strong>{displayName}</strong>
+              <small>{user.is_superuser ? 'Administrator' : user.is_staff ? 'Staff' : 'User'}</small>
+            </span>
+          </button>
           {user.is_staff && (
             <button type="button" className="engraved-button small" onClick={() => setShowAdmin(s => !s)}>
               {showAdmin ? 'Close ledger' : 'Admin ledger'}
@@ -558,6 +588,15 @@ function App() {
         <span>VEDIC ACŪSTICA</span>
         <span>AN INSTRUMENT FOR THE STUDY OF SACRED SOUND</span>
       </footer>
+      {showProfile && (
+        <ProfileModal
+          user={user}
+          apiBase={API_BASE}
+          onClose={() => setShowProfile(false)}
+          onUserUpdated={handleUserUpdated}
+          onAccountDeleted={handleAccountDeleted}
+        />
+      )}
     </div>
   )
 }
