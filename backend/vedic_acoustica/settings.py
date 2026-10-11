@@ -202,8 +202,37 @@ REST_FRAMEWORK = {
         'register_anon': '10/hour',    # per-IP limit on account registrations
         'login_anon':   '30/minute',   # per-IP limit on login attempts
         'google_anon':  '30/minute',   # per-IP limit on Google OAuth exchanges
+        'password_reset_anon': '5/hour',  # per-IP limit on password-reset requests
     },
 }
+
+# ---------------------------------------------------------------------------
+# Transactional email / password reset
+# ---------------------------------------------------------------------------
+# Password-reset emails are sent through a provider HTTP API (not SMTP) because
+# the Space's container networking is friendlier to outbound HTTPS than to
+# SMTP, and API providers give far better inbox placement than a raw Gmail
+# account.  Selection is by EMAIL_PROVIDER:
+#
+#   resend (default) → RESEND_API_KEY, from RESEND_FROM_EMAIL
+#   brevo            → BREVO_API_KEY, from BREVO_FROM_EMAIL / BREVO_FROM_NAME
+#
+# When no key is configured the reset endpoint returns 503 and the flow is
+# simply reported as unavailable, mirroring the Google sign-in behaviour.
+EMAIL_PROVIDER = os.environ.get('EMAIL_PROVIDER', 'resend').strip().lower()
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'DEFAULT_FROM_EMAIL', 'Vedic Acoustica <onboarding@resend.dev>'
+)
+DEFAULT_FROM_NAME = os.environ.get('DEFAULT_FROM_NAME', 'Vedic Acoustica')
+
+# Where reset links point.  The SPA is served from the frontend origin; the
+# confirm step is handled client-side off these query params.
+FRONTEND_BASE_URL = os.environ.get(
+    'FRONTEND_BASE_URL', 'https://vedic-acoustica.vercel.app'
+).rstrip('/')
+
+# Reset tokens are valid for one hour (Django's default is 3 days).
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '3600'))
 
 # ---------------------------------------------------------------------------
 # Celery

@@ -22,9 +22,12 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from google.auth.exceptions import GoogleAuthError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
@@ -40,6 +43,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
 from .models import AudioRecording
+from .emails import email_configured, send_email
 
 User = get_user_model()
 
@@ -57,6 +61,11 @@ class LoginAnonThrottle(AnonRateThrottle):
 class GoogleAnonThrottle(AnonRateThrottle):
     """Per-IP rate limit on Google OAuth token exchanges."""
     scope = 'google_anon'
+
+
+class PasswordResetAnonThrottle(AnonRateThrottle):
+    """Per-IP rate limit on password-reset requests to prevent email bombing."""
+    scope = 'password_reset_anon'
 
 
 def _user_payload(user) -> dict:
@@ -215,6 +224,133 @@ def logout(request):
     """
     Token.objects.filter(user=request.user).delete()
     return Response({'message': 'Logged out.'})
+
+
+def _send_password_reset_email(user, reset_link: str) -> bool:
+    """Send the reset email; returns True when the provider accepted it."""
+    name = (user.first_name or user.username or 'there').strip()
+    subject = 'Reset your Vedic Acoustica password'
+    text_body = (
+        f'Hello {name},\n\n'
+        'We received a request to reset the password for your Vedic Acoustica '
+        'account. Open the link below to choose a new password:\n\n'
+        f'{reset_link}\n\n'
+        'This link expires in 1 hour. If you did not request a password reset, '
+        'you can safely ignore this email — your password will not change.\n\n'
+        '— Vedic Acoustica'
+    )
+    html_body = f"""\
+<div style="font-family:Segoe UI,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#231f1a">
+  <h2 style="font-weight:600">Reset your password</h2>
+  <p>Hello {name},</p>
+  <p>We received a request to reset the password for your <strong>Vedic Acoustica</strong> account.</p>
+  <p style="margin:28px 0">
+    <a href="{reset_link}" style="background:#b8860b;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;display:inline-block">Choose a new password</a>
+  </p>
+  <p style="font-size:13px;color:#6b6157">Or paste this link into your browser:<br>
+    <a href="{reset_link}" style="color:#8a6d1f;word-break:break-all">{reset_link}</a>
+  </p>
+  <p style="font-size:13px;color:#6b6157">This link expires in 1 hour. If you did not request a reset, you can ignore this email.</p>
+  <p style="font-size:13px;color:#6b6157">— Vedic Acoustica</p>
+</div>"""
+    return send_email(user.email, subject, text_body, html_body)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([PasswordResetAnonThrottle])
+def password_reset(request):
+    """
+    POST /api/auth/password-reset/
+
+    Body: { email }
+
+    Always answers 200 with a generic message so the response never reveals
+    whether an account exists.  When the email matches an active user, a
+    one-time reset link is emailed.  Returns 503 when no email provider is
+    configured on the server.
+    """
+    if not email_configured():
+        return Response(
+            {'error': 'Password reset is not available right now. '
+                      'Please contact the administrator.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    email = (request.data.get('email') or '').strip()
+    if not email:
+        return Response(
+            {'error': 'Please enter your email address.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    generic = {
+        'message': 'If an account exists for that email, a reset link is on '
+                   'its way. Check your inbox and spam folder.'
+    }
+
+    user = User.objects.filter(email__iexact=email, is_active=True).first()
+    if user is not None:
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        base = getattr(settings, 'FRONTEND_BASE_URL', '').rstrip('/')
+        reset_link = f'{base}/?reset=1&uid={uid}&token={token}'
+        _send_password_reset_email(user, reset_link)
+
+    return Response(generic)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([PasswordResetAnonThrottle])
+def password_reset_confirm(request):
+    """
+    POST /api/auth/password-reset/confirm/
+
+    Body: { uid, token, password }
+
+    Validates the one-time token and sets the new password.  All existing
+    DRF tokens for the user are revoked so old sessions must sign in again.
+    """
+    uid = (request.data.get('uid') or '').strip()
+    token = (request.data.get('token') or '').strip()
+    password = request.data.get('password') or ''
+
+    if not uid or not token:
+        return Response(
+            {'error': 'This reset link is invalid or incomplete.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if len(password) < 8:
+        return Response(
+            {'error': 'Password must be at least 8 characters long.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if len(password) > 128:
+        return Response(
+            {'error': 'Password must not exceed 128 characters.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        user_id = urlsafe_base64_decode(uid).decode()
+        user = User.objects.get(pk=user_id)
+    except (User.DoesNotExist, ValueError, TypeError, OverflowError,
+            UnicodeDecodeError):
+        user = None
+
+    if user is None or not user.is_active or not default_token_generator.check_token(user, token):
+        return Response(
+            {'error': 'This reset link is invalid or has expired. '
+                      'Please request a new one.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user.set_password(password)
+    user.save(update_fields=['password'])
+    Token.objects.filter(user=user).delete()
+    return Response({'message': 'Password updated. Please sign in.'})
 
 
 @api_view(['POST'])

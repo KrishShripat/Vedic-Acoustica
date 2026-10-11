@@ -25,6 +25,30 @@ export default function AuthScreen({ apiBase, onAuthed }) {
     confirm: false,
   })
 
+  // Password reset.  `forgotMode` shows the "enter your email" panel; a reset
+  // link opened from email (?reset=1&uid=..&token=..) shows the "choose a new
+  // password" panel instead of the usual sign-in form.
+  const readResetParams = () => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    const uid = params.get('uid')
+    const token = params.get('token')
+    if (params.get('reset') && uid && token) return { uid, token }
+    return null
+  }
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [resetParams, setResetParams] = useState(readResetParams)
+  const [resetPassword, setResetPassword] = useState('')
+  const [resetConfirm, setResetConfirm] = useState('')
+  const [resetVisibility, setResetVisibility] = useState({ password: false, confirm: false })
+
+  const clearResetUrl = () => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }
+
   const loginFieldRef = useRef(null)
 
   useEffect(() => {
@@ -102,8 +126,88 @@ export default function AuthScreen({ apiBase, onAuthed }) {
   }
 
   const handleForgotPasswordClick = () => {
-    setAuthError('Password reset is not currently available in this project. No backend password-reset endpoint is configured, so this flow cannot be completed safely.')
+    setForgotMode(true)
+    setForgotEmail(username.trim())
+    setAuthError(null)
     setAuthSuccess('')
+  }
+
+  const exitForgotMode = () => {
+    setForgotMode(false)
+    setAuthError(null)
+    setAuthSuccess('')
+  }
+
+  const handleResetCancel = () => {
+    clearResetUrl()
+    setResetParams(null)
+    setAuthTab('login')
+    setAuthError(null)
+    setAuthSuccess('')
+  }
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError(null)
+    setAuthSuccess('')
+    const email = forgotEmail.trim()
+    if (!email) {
+      setAuthError('Please enter your email address.')
+      return
+    }
+    setAuthLoading(true)
+    try {
+      const res = await fetch(`${apiBase}/auth/password-reset/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Could not send the reset email.')
+      setAuthSuccess(data.message || 'If an account exists for that email, a reset link is on its way.')
+    } catch (err) {
+      setAuthError(err.message)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault()
+    setAuthError(null)
+    setAuthSuccess('')
+    if (resetPassword.length < 8) {
+      setAuthError('Password must be at least 8 characters long.')
+      return
+    }
+    if (resetPassword !== resetConfirm) {
+      setAuthError('The passwords do not match.')
+      return
+    }
+    setAuthLoading(true)
+    try {
+      const res = await fetch(`${apiBase}/auth/password-reset/confirm/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: resetParams?.uid,
+          token: resetParams?.token,
+          password: resetPassword,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'This reset link is invalid or has expired.')
+      clearResetUrl()
+      setResetParams(null)
+      setResetPassword('')
+      setResetConfirm('')
+      setAuthTab('login')
+      setAuthSuccess('Password updated. Please sign in with your new password.')
+    } catch (err) {
+      setAuthError(err.message)
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   const togglePasswordVisibility = (field) => {
@@ -233,33 +337,24 @@ export default function AuthScreen({ apiBase, onAuthed }) {
 
         <section className="auth-clean-card" aria-labelledby="auth-title">
           <div className="auth-card-head">
-            <h2 id="auth-title">{authTab === 'login' ? 'Researcher Sign In' : 'Create your account'}</h2>
+            <h2 id="auth-title">
+              {resetParams
+                ? 'Set a new password'
+                : forgotMode
+                  ? 'Reset your password'
+                  : authTab === 'login'
+                    ? 'Researcher Sign In'
+                    : 'Create your account'}
+            </h2>
             <p>
-              {authTab === 'login'
-                ? 'Sign in to continue your acoustic research.'
-                : 'Create an account to upload audio and run analysis.'}
+              {resetParams
+                ? 'Choose a new password for your account.'
+                : forgotMode
+                  ? 'Enter your email and we’ll send you a reset link.'
+                  : authTab === 'login'
+                    ? 'Sign in to continue your acoustic research.'
+                    : 'Create an account to upload audio and run analysis.'}
             </p>
-          </div>
-
-          <div className="clean-tabs" role="tablist" aria-label="Authentication">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authTab === 'login'}
-              className={`clean-tab-btn ${authTab === 'login' ? 'active' : ''}`}
-              onClick={() => switchTab('login')}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={authTab === 'register'}
-              className={`clean-tab-btn ${authTab === 'register' ? 'active' : ''}`}
-              onClick={() => switchTab('register')}
-            >
-              Register
-            </button>
           </div>
 
           {authError && (
@@ -274,133 +369,243 @@ export default function AuthScreen({ apiBase, onAuthed }) {
             </div>
           )}
 
-          <form onSubmit={handleAuthSubmit} className="clean-form">
-            {authTab === 'register' && (
+          {resetParams ? (
+            <form onSubmit={handleResetSubmit} className="clean-form">
               <div className="clean-form-group">
-                <label htmlFor="auth-full-name">Full Name</label>
-                <input
-                  id="auth-full-name"
-                  type="text"
-                  required
-                  placeholder="Your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  autoComplete="name"
-                />
-              </div>
-            )}
-
-            <div className="clean-form-group">
-              <label htmlFor="auth-user">{authTab === 'login' ? 'Email or username' : 'Username'}</label>
-              <input
-                id="auth-user"
-                type="text"
-                required
-                placeholder={authTab === 'login' ? 'Enter email or username' : 'Choose a username'}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                ref={authTab === 'login' ? loginFieldRef : null}
-              />
-            </div>
-
-            {authTab === 'register' && (
-              <div className="clean-form-group">
-                <label htmlFor="auth-email">Email</label>
-                <input
-                  id="auth-email"
-                  type="email"
-                  placeholder="researcher@university.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
-              </div>
-            )}
-
-            <div className="clean-form-group">
-              <label htmlFor="auth-pass">Password</label>
-              <div className="password-input-wrap">
-                <input
-                  id="auth-pass"
-                  type={passwordVisibility[authTab === 'login' ? 'login' : 'register'] ? 'text' : 'password'}
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={authTab === 'login' ? 'current-password' : 'new-password'}
-                />
-                <button
-                  type="button"
-                  className="password-toggle"
-                  aria-label={passwordVisibility[authTab === 'login' ? 'login' : 'register'] ? 'Hide password' : 'Show password'}
-                  onClick={() => togglePasswordVisibility(authTab === 'login' ? 'login' : 'register')}
-                >
-                  <span aria-hidden="true">{passwordVisibility[authTab === 'login' ? 'login' : 'register'] ? '🙈' : '👁'}</span>
-                </button>
-              </div>
-            </div>
-
-            {authTab === 'register' && (
-              <div className="clean-form-group">
-                <label htmlFor="auth-confirm-pass">Confirm password</label>
+                <label htmlFor="reset-pass">New password</label>
                 <div className="password-input-wrap">
                   <input
-                    id="auth-confirm-pass"
-                    type={passwordVisibility.confirm ? 'text' : 'password'}
+                    id="reset-pass"
+                    type={resetVisibility.password ? 'text' : 'password'}
                     required
-                    placeholder="Repeat password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    minLength={8}
+                    placeholder="••••••••"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
                     autoComplete="new-password"
                   />
                   <button
                     type="button"
                     className="password-toggle"
-                    aria-label={passwordVisibility.confirm ? 'Hide password' : 'Show password'}
-                    onClick={() => togglePasswordVisibility('confirm')}
+                    aria-label={resetVisibility.password ? 'Hide password' : 'Show password'}
+                    onClick={() => setResetVisibility((c) => ({ ...c, password: !c.password }))}
                   >
-                    <span aria-hidden="true">{passwordVisibility.confirm ? '🙈' : '👁'}</span>
+                    <span aria-hidden="true">{resetVisibility.password ? '🙈' : '👁'}</span>
                   </button>
                 </div>
               </div>
-            )}
 
-            {authTab === 'login' && (
+              <div className="clean-form-group">
+                <label htmlFor="reset-confirm">Confirm new password</label>
+                <div className="password-input-wrap">
+                  <input
+                    id="reset-confirm"
+                    type={resetVisibility.confirm ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    placeholder="Repeat new password"
+                    value={resetConfirm}
+                    onChange={(e) => setResetConfirm(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    aria-label={resetVisibility.confirm ? 'Hide password' : 'Show password'}
+                    onClick={() => setResetVisibility((c) => ({ ...c, confirm: !c.confirm }))}
+                  >
+                    <span aria-hidden="true">{resetVisibility.confirm ? '🙈' : '👁'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-submit-clean" disabled={authLoading}>
+                {authLoading ? 'Updating…' : 'Update password'}
+              </button>
+
               <div className="auth-form-row">
-                <button
-                  type="button"
-                  className="clean-link-button"
-                  onClick={handleForgotPasswordClick}
-                >
-                  Forgot password?
+                <button type="button" className="clean-link-button" onClick={handleResetCancel}>
+                  Back to sign in
                 </button>
               </div>
-            )}
-
-            <button type="submit" className="btn btn-submit-clean" disabled={authLoading}>
-              {authLoading ? (authTab === 'login' ? 'Signing In…' : 'Registering…') : (authTab === 'login' ? 'Sign In' : 'Create Account')}
-            </button>
-          </form>
-
-          <div className="auth-provider">
-            <div className="clean-divider"><span>OR</span></div>
-            {googleClientId ? (
-              <div className="google-auth-wrap">
-                <div ref={googleButtonRef} />
+            </form>
+          ) : forgotMode ? (
+            <form onSubmit={handleForgotSubmit} className="clean-form">
+              <div className="clean-form-group">
+                <label htmlFor="forgot-email">Email</label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  autoComplete="email"
+                />
               </div>
-            ) : (
-              <button type="button" className="google-auth-button" disabled title="Google OAuth is not configured">
-                <span className="google-mark" aria-hidden="true">G</span>
-                Continue with Google
+
+              <button type="submit" className="btn btn-submit-clean" disabled={authLoading}>
+                {authLoading ? 'Sending…' : 'Send reset link'}
               </button>
-            )}
-            <p className="oauth-note">
-              {googleClientId
-                ? 'Sign in securely with your Google account.'
-                : 'Google sign-in is not configured (set VITE_GOOGLE_CLIENT_ID).'}
-            </p>
-          </div>
+
+              <div className="auth-form-row">
+                <button type="button" className="clean-link-button" onClick={exitForgotMode}>
+                  Back to sign in
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <div className="clean-tabs" role="tablist" aria-label="Authentication">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={authTab === 'login'}
+                  className={`clean-tab-btn ${authTab === 'login' ? 'active' : ''}`}
+                  onClick={() => switchTab('login')}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={authTab === 'register'}
+                  className={`clean-tab-btn ${authTab === 'register' ? 'active' : ''}`}
+                  onClick={() => switchTab('register')}
+                >
+                  Register
+                </button>
+              </div>
+
+              <form onSubmit={handleAuthSubmit} className="clean-form">
+                {authTab === 'register' && (
+                  <div className="clean-form-group">
+                    <label htmlFor="auth-full-name">Full Name</label>
+                    <input
+                      id="auth-full-name"
+                      type="text"
+                      required
+                      placeholder="Your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      autoComplete="name"
+                    />
+                  </div>
+                )}
+
+                <div className="clean-form-group">
+                  <label htmlFor="auth-user">{authTab === 'login' ? 'Email or username' : 'Username'}</label>
+                  <input
+                    id="auth-user"
+                    type="text"
+                    required
+                    placeholder={authTab === 'login' ? 'Enter email or username' : 'Choose a username'}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    ref={authTab === 'login' ? loginFieldRef : null}
+                  />
+                </div>
+
+                {authTab === 'register' && (
+                  <div className="clean-form-group">
+                    <label htmlFor="auth-email">Email</label>
+                    <input
+                      id="auth-email"
+                      type="email"
+                      placeholder="researcher@university.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                    />
+                  </div>
+                )}
+
+                <div className="clean-form-group">
+                  <label htmlFor="auth-pass">Password</label>
+                  <div className="password-input-wrap">
+                    <input
+                      id="auth-pass"
+                      type={passwordVisibility[authTab === 'login' ? 'login' : 'register'] ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete={authTab === 'login' ? 'current-password' : 'new-password'}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      aria-label={passwordVisibility[authTab === 'login' ? 'login' : 'register'] ? 'Hide password' : 'Show password'}
+                      onClick={() => togglePasswordVisibility(authTab === 'login' ? 'login' : 'register')}
+                    >
+                      <span aria-hidden="true">{passwordVisibility[authTab === 'login' ? 'login' : 'register'] ? '🙈' : '👁'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {authTab === 'register' && (
+                  <div className="clean-form-group">
+                    <label htmlFor="auth-confirm-pass">Confirm password</label>
+                    <div className="password-input-wrap">
+                      <input
+                        id="auth-confirm-pass"
+                        type={passwordVisibility.confirm ? 'text' : 'password'}
+                        required
+                        placeholder="Repeat password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        aria-label={passwordVisibility.confirm ? 'Hide password' : 'Show password'}
+                        onClick={() => togglePasswordVisibility('confirm')}
+                      >
+                        <span aria-hidden="true">{passwordVisibility.confirm ? '🙈' : '👁'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {authTab === 'login' && (
+                  <div className="auth-form-row">
+                    <button
+                      type="button"
+                      className="clean-link-button"
+                      onClick={handleForgotPasswordClick}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+
+                <button type="submit" className="btn btn-submit-clean" disabled={authLoading}>
+                  {authLoading ? (authTab === 'login' ? 'Signing In…' : 'Registering…') : (authTab === 'login' ? 'Sign In' : 'Create Account')}
+                </button>
+              </form>
+
+              <div className="auth-provider">
+                <div className="clean-divider"><span>OR</span></div>
+                {googleClientId ? (
+                  <div className="google-auth-wrap">
+                    <div ref={googleButtonRef} />
+                  </div>
+                ) : (
+                  <button type="button" className="google-auth-button" disabled title="Google OAuth is not configured">
+                    <span className="google-mark" aria-hidden="true">G</span>
+                    Continue with Google
+                  </button>
+                )}
+                <p className="oauth-note">
+                  {googleClientId
+                    ? 'Sign in securely with your Google account.'
+                    : 'Google sign-in is not configured (set VITE_GOOGLE_CLIENT_ID).'}
+                </p>
+              </div>
+            </>
+          )}
         </section>
       </main>
     </div>

@@ -1,8 +1,12 @@
 import os
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 
@@ -828,3 +832,121 @@ class ProfileAccountAPITestCase(TestCase):
                 self.assertEqual(response.status_code, 400)
                 self.assertTrue(get_user_model().objects.filter(pk=user.pk).exists())
                 self.assertTrue(Token.objects.filter(pk=token.pk).exists())
+
+
+class PasswordResetAPITestCase(TestCase):
+    """Password-reset request + confirm flow (provider HTTP API mocked)."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()  # reset DRF throttle history shared across test methods
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            username='resetuser',
+            email='reset@example.com',
+            password='oldpassword123',
+        )
+
+    def _request_reset(self, email='reset@example.com'):
+        with patch('api.auth_views.email_configured', return_value=True), \
+                patch('api.auth_views.send_email', return_value=True) as send:
+            response = self.client.post(
+                reverse('auth_password_reset'), {'email': email}, format='json'
+            )
+        return response, send
+
+    def test_reset_request_unavailable_without_provider(self):
+        with patch('api.auth_views.email_configured', return_value=False):
+            response = self.client.post(
+                reverse('auth_password_reset'),
+                {'email': 'reset@example.com'},
+                format='json',
+            )
+        self.assertEqual(response.status_code, 503)
+
+    def test_reset_request_requires_email(self):
+        with patch('api.auth_views.email_configured', return_value=True):
+            response = self.client.post(
+                reverse('auth_password_reset'), {'email': ''}, format='json'
+            )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reset_request_sends_link_with_token(self):
+        response, send = self._request_reset()
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('reset@example.com', str(response.data))
+        send.assert_called_once()
+        to_email, subject, text, html = send.call_args.args
+        self.assertEqual(to_email, 'reset@example.com')
+        self.assertIn('reset=1', text)
+        self.assertIn('uid=', text)
+        self.assertIn('token=', text)
+        self.assertIn('reset', subject.lower())
+
+    def test_reset_request_does_not_reveal_unknown_email(self):
+        response, send = self._request_reset(email='nobody@example.com')
+        self.assertEqual(response.status_code, 200)
+        send.assert_not_called()
+
+    def test_reset_confirm_sets_new_password_and_revokes_tokens(self):
+        token = Token.objects.create(user=self.user)
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        reset_token = default_token_generator.make_token(self.user)
+
+        response = self.client.post(
+            reverse('auth_password_reset_confirm'),
+            {'uid': uid, 'token': reset_token, 'password': 'brandnewpass456'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('brandnewpass456'))
+        self.assertFalse(Token.objects.filter(pk=token.pk).exists())
+
+    def test_reset_confirm_rejects_bad_token(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        response = self.client.post(
+            reverse('auth_password_reset_confirm'),
+            {'uid': uid, 'token': 'not-a-real-token', 'password': 'brandnewpass456'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('oldpassword123'))
+
+    def test_reset_confirm_rejects_bad_uid(self):
+        reset_token = default_token_generator.make_token(self.user)
+        response = self.client.post(
+            reverse('auth_password_reset_confirm'),
+            {'uid': 'garbage', 'token': reset_token, 'password': 'brandnewpass456'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reset_confirm_rejects_short_password(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        reset_token = default_token_generator.make_token(self.user)
+        response = self.client.post(
+            reverse('auth_password_reset_confirm'),
+            {'uid': uid, 'token': reset_token, 'password': 'short'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('oldpassword123'))
+
+    def test_reset_token_is_single_use(self):
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        reset_token = default_token_generator.make_token(self.user)
+        first = self.client.post(
+            reverse('auth_password_reset_confirm'),
+            {'uid': uid, 'token': reset_token, 'password': 'brandnewpass456'},
+            format='json',
+        )
+        self.assertEqual(first.status_code, 200)
+        second = self.client.post(
+            reverse('auth_password_reset_confirm'),
+            {'uid': uid, 'token': reset_token, 'password': 'anotherpass789'},
+            format='json',
+        )
+        self.assertEqual(second.status_code, 400)

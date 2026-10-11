@@ -265,7 +265,9 @@ function App() {
     )
   }
 
-  if (!user) {
+  const isResetLink = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('reset') === '1'
+  if (!user || isResetLink) {
     return <AuthScreen apiBase={API_BASE} onAuthed={setUser} />
   }
 
