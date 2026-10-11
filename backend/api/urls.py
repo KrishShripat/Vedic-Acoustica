@@ -5,6 +5,7 @@ from . import auth_views
 urlpatterns = [
     path('auth/register/', auth_views.register, name='auth_register'),
     path('auth/login/', auth_views.login, name='auth_login'),
+    path('auth/google/', auth_views.google_login, name='auth_google'),
     path('auth/logout/', auth_views.logout, name='auth_logout'),
     path('auth/me/', auth_views.me, name='auth_me'),
     path('admin/overview/', auth_views.admin_overview, name='admin_overview'),

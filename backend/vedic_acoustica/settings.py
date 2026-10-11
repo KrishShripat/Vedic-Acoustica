@@ -201,6 +201,7 @@ REST_FRAMEWORK = {
         'analyze_anon': '10/hour',     # per-IP limit on ML analysis triggers
         'register_anon': '10/hour',    # per-IP limit on account registrations
         'login_anon':   '30/minute',   # per-IP limit on login attempts
+        'google_anon':  '30/minute',   # per-IP limit on Google OAuth exchanges
     },
 }
 

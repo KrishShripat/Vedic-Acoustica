@@ -1,3 +1,5 @@
+import os
+
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -33,7 +35,7 @@ class RecordingAPITestCase(TestCase):
 
     def test_recording_detail_authenticated(self):
         from api.models import AudioRecording
-        rec = AudioRecording.objects.create(title='test_rec')
+        rec = AudioRecording.objects.create(title='test_rec', uploaded_by=self.user)
         response = self.client.get(reverse('recording_detail', args=[rec.id]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['id'], rec.id)
@@ -72,23 +74,24 @@ class UserIsolationTestCase(TestCase):
         self.client = APIClient()
 
     def test_list_recordings_isolation(self):
-        # User A should only see rec_a and rec_public
+        # User A should only see rec_a — not rec_b, and not the anonymous
+        # (uploaded_by=NULL) recording, which must not leak to regular users.
         self.client.force_authenticate(user=self.user_a)
         resp = self.client.get(reverse('list_recordings'))
         self.assertEqual(resp.status_code, 200)
         ids = [item['id'] for item in resp.data['results']]
         self.assertIn(self.rec_a.id, ids)
-        self.assertIn(self.rec_public.id, ids)
         self.assertNotIn(self.rec_b.id, ids)
+        self.assertNotIn(self.rec_public.id, ids)
 
-        # User B should only see rec_b and rec_public
+        # User B should only see rec_b — not rec_a, not the anonymous recording.
         self.client.force_authenticate(user=self.user_b)
         resp = self.client.get(reverse('list_recordings'))
         self.assertEqual(resp.status_code, 200)
         ids = [item['id'] for item in resp.data['results']]
         self.assertIn(self.rec_b.id, ids)
-        self.assertIn(self.rec_public.id, ids)
         self.assertNotIn(self.rec_a.id, ids)
+        self.assertNotIn(self.rec_public.id, ids)
 
     def test_list_recordings_staff_sees_all(self):
         self.client.force_authenticate(user=self.admin)
@@ -109,9 +112,9 @@ class UserIsolationTestCase(TestCase):
         resp = self.client.get(reverse('recording_detail', args=[self.rec_a.id]))
         self.assertEqual(resp.status_code, 200)
 
-        # User A can view public recording
+        # User A cannot view an anonymous (uploaded_by=NULL) recording
         resp = self.client.get(reverse('recording_detail', args=[self.rec_public.id]))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 404)
 
     def test_recording_detail_staff_can_view_any(self):
         self.client.force_authenticate(user=self.admin)
@@ -122,6 +125,10 @@ class UserIsolationTestCase(TestCase):
         # User A cannot trigger analysis on user B's recording
         self.client.force_authenticate(user=self.user_a)
         resp = self.client.post(reverse('analyze_audio', args=[self.rec_b.id]))
+        self.assertEqual(resp.status_code, 404)
+
+        # User A cannot trigger analysis on an anonymous (uploaded_by=NULL) recording
+        resp = self.client.post(reverse('analyze_audio', args=[self.rec_public.id]))
         self.assertEqual(resp.status_code, 404)
 
     def test_upload_attaches_uploaded_by(self):
@@ -557,5 +564,81 @@ class PlaybackFileSubprocessSecurityTestCase(TestCase):
         mock_rec.audio_file.path = '/etc/passwd'
         # Must return safely without executing ffmpeg on external path
         _build_playback_file(mock_rec)
+
+
+class GoogleLoginAPITestCase(TestCase):
+    """Tests for POST /api/auth/google/ (Google Identity Services sign-in)."""
+
+    GOOGLE_CLIENT_ID = '123456-test-client.apps.googleusercontent.com'
+
+    def setUp(self):
+        from unittest import mock
+        self.google_env = mock.patch.dict(
+            os.environ,
+            {'GOOGLE_CLIENT_ID': self.GOOGLE_CLIENT_ID},
+        )
+        self.google_env.start()
+        self.addCleanup(self.google_env.stop)
+        self.client = APIClient()
+
+    def _google(self, payload=None, verifier=None):
+        from unittest import mock
+        patcher = mock.patch(
+            'api.auth_views.google_id_token.verify_oauth2_token',
+            side_effect=verifier or (lambda *a, **k: {
+                'email': 'researcher@gmail.com',
+                'email_verified': True,
+                'given_name': 'Reva',
+                'family_name': 'Garg',
+                'sub': 'gsub-123',
+            }),
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return self.client.post(
+            reverse('auth_google'), payload or {}, format='json',
+        )
+
+    def test_google_login_creates_user_and_returns_token(self):
+        from django.contrib.auth import get_user_model
+        response = self._google({'credential': 'fake.jwt.token'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('token', response.data)
+        user = get_user_model().objects.get(email='researcher@gmail.com')
+        self.assertEqual(response.data['user']['username'], user.username)
+        self.assertEqual(user.first_name, 'Reva')
+        self.assertEqual(user.last_name, 'Garg')
+
+    def test_google_login_existing_user_reuses_account(self):
+        from django.contrib.auth import get_user_model
+        get_user_model().objects.create_user(
+            username='reva', email='researcher@gmail.com', password='hashed123',
+        )
+        response = self._google({'credential': 'fake.jwt.token'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['user']['username'], 'reva')
+
+    def test_google_login_invalid_credential_rejected(self):
+        def bad_verify(*args, **kwargs):
+            raise ValueError('Bad signature')
+        response = self._google({'credential': 'garbage'}, verifier=bad_verify)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Invalid or expired Google credential.', response.data['error'])
+
+    def test_google_login_unverified_email_rejected(self):
+        def unverified(*args, **kwargs):
+            return {'email': 'troll@example.com', 'email_verified': False}
+        response = self._google({'credential': 'fake.jwt.token'}, verifier=unverified)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('not verified', response.data['error'])
+
+    def test_google_login_unconfigured_returns_503(self):
+        from unittest import mock
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop('GOOGLE_CLIENT_ID', None)
+            response = self.client.post(
+                reverse('auth_google'), {'credential': 'x'}, format='json',
+            )
+        self.assertEqual(response.status_code, 503)
 
 

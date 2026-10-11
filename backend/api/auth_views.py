@@ -13,10 +13,16 @@ All views here are light function-based API views that return only primitive
 JSON (no large analysis matrices), so they are cheap for the frontend to poll.
 """
 
+import os
 import re
+import secrets
+
 from django.contrib.auth import authenticate, get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from google.auth.exceptions import GoogleAuthError
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import (
@@ -41,6 +47,11 @@ class RegisterAnonThrottle(AnonRateThrottle):
 class LoginAnonThrottle(AnonRateThrottle):
     """Per-IP rate limit on login attempts to mitigate brute-force credential stuffing."""
     scope = 'login_anon'
+
+
+class GoogleAnonThrottle(AnonRateThrottle):
+    """Per-IP rate limit on Google OAuth token exchanges."""
+    scope = 'google_anon'
 
 
 def _user_payload(user) -> dict:
@@ -174,7 +185,7 @@ def login(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def logout(request):
     """
     POST /api/auth/logout/
@@ -184,6 +195,85 @@ def logout(request):
     """
     Token.objects.filter(user=request.user).delete()
     return Response({'message': 'Logged out.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([GoogleAnonThrottle])
+def google_login(request):
+    """
+    POST /api/auth/google/
+
+    Body: { credential: "<Google ID token JWT>" }
+
+    Verifies the ID token issued by Google Identity Services against the
+    GOOGLE_CLIENT_ID audience, then finds-or-creates the user by the verified
+    email address.  Returns the same { token, user } shape as username login so
+    the frontend can reuse its existing DRF token handling.  No password is ever
+    stored on Google-created accounts (login is exclusively via Google).
+    """
+    _google_client_id = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+    if not _google_client_id:
+        return Response(
+            {'error': 'Google OAuth is not configured on the server '
+                      '(GOOGLE_CLIENT_ID is unset).'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    credential = (request.data.get('credential') or '').strip()
+    if not credential:
+        return Response(
+            {'error': 'credential (Google ID token) is required.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        info = google_id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            _google_client_id,
+        )
+    except (ValueError, GoogleAuthError):
+        return Response(
+            {'error': 'Invalid or expired Google credential.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not info.get('email_verified'):
+        return Response(
+            {'error': 'The Google account email is not verified.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    email = (info.get('email') or '').strip().lower()
+    if not email:
+        return Response(
+            {'error': 'The Google account has no email address.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = User.objects.filter(email__iexact=email).first()
+    if user is None:
+        base = re.sub(r'[^a-z0-9._-]+', '', email.split('@')[0].lower()) or 'google'
+        username = base
+        while User.objects.filter(username__iexact=username).exists():
+            username = f'{base[:20]}_{secrets.token_hex(3)}'
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=None,
+            first_name=(info.get('given_name') or '').strip()[:150],
+            last_name=(info.get('family_name') or '').strip()[:150],
+        )
+
+    if not user.is_active:
+        return Response(
+            {'error': 'This account has been disabled.'},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    token, _ = Token.objects.get_or_create(user=user)
+    return Response({'token': token.key, 'user': _user_payload(user)})
 
 
 @api_view(['GET'])

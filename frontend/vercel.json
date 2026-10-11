@@ -6,7 +6,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://krish-shripat-vedic-backend.hf.space; media-src 'self' data: blob: https://krish-shripat-vedic-backend.hf.space; connect-src 'self' https://krish-shripat-vedic-backend.hf.space; worker-src 'self' blob:; frame-ancestors 'none';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://krish-shripat-vedic-backend.hf.space; media-src 'self' data: blob: https://krish-shripat-vedic-backend.hf.space; connect-src 'self' https://krish-shripat-vedic-backend.hf.space https://accounts.google.com; worker-src 'self' blob:; frame-src 'self' https://accounts.google.com; frame-ancestors 'none';"
         },
         {
           "key": "X-Content-Type-Options",

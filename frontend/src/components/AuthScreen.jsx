@@ -3,6 +3,8 @@ import { setAuth } from '../utils/auth'
 import './AuthScreen.css'
 import './AuthObservatory.css'
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
 export default function AuthScreen({ apiBase, onAuthed }) {
   const [authTab, setAuthTab] = useState('login')
   const [username, setUsername] = useState('')
@@ -26,6 +28,68 @@ export default function AuthScreen({ apiBase, onAuthed }) {
       loginFieldRef.current?.focus()
     }
   }, [authTab, authSuccess])
+
+  const googleButtonRef = useRef(null)
+  const handleGoogleCredentialRef = useRef(null)
+
+  useEffect(() => {
+    if (!googleClientId) return
+    const renderGoogleButton = () => {
+      if (!window.google?.accounts?.id || !googleButtonRef.current) return
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        auto_select: false,
+        callback: (response) => handleGoogleCredentialRef.current?.(response),
+      })
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'rectangular',
+        text: 'continue_with',
+        width: 260,
+        locale: 'en',
+      })
+    }
+    if (window.google?.accounts?.id) {
+      renderGoogleButton()
+      return
+    }
+    const script = document.createElement('script')
+    script.id = 'va-google-gsi'
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = renderGoogleButton
+    document.head.appendChild(script)
+    return () => {
+      const el = document.getElementById('va-google-gsi')
+      if (el) el.remove()
+    }
+  }, [])
+
+  const handleGoogleCredential = async (response) => {
+    if (!response?.credential) return
+    setAuthError(null)
+    setAuthSuccess('')
+    setAuthLoading(true)
+    try {
+      const res = await fetch(`${apiBase}/auth/google/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Google sign-in failed')
+      setAuth({ token: data.token, user: data.user })
+      onAuthed(data.user)
+    } catch (err) {
+      setAuthError(`Google sign-in failed: ${err.message}`)
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  handleGoogleCredentialRef.current = handleGoogleCredential
 
   const switchTab = (nextTab) => {
     setAuthTab(nextTab)
@@ -320,12 +384,20 @@ export default function AuthScreen({ apiBase, onAuthed }) {
 
           <div className="auth-provider">
             <div className="clean-divider"><span>OR</span></div>
-            <button type="button" className="google-auth-button" disabled title="Google OAuth is not configured">
-              <span className="google-mark" aria-hidden="true">G</span>
-              Continue with Google
-            </button>
+            {googleClientId ? (
+              <div className="google-auth-wrap">
+                <div ref={googleButtonRef} />
+              </div>
+            ) : (
+              <button type="button" className="google-auth-button" disabled title="Google OAuth is not configured">
+                <span className="google-mark" aria-hidden="true">G</span>
+                Continue with Google
+              </button>
+            )}
             <p className="oauth-note">
-              Google sign-in is not available: the existing backend has no configured Google OAuth provider.
+              {googleClientId
+                ? 'Sign in securely with your Google account.'
+                : 'Google sign-in is not configured (set VITE_GOOGLE_CLIENT_ID).'}
             </p>
           </div>
         </section>
