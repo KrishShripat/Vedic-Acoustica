@@ -8,7 +8,8 @@ import RagaViz from './components/RagaViz'
 import AudioPlayer from './components/AudioPlayer'
 import AnalysisProgress from './components/AnalysisProgress'
 import ShrutiInstrument from './components/ShrutiInstrument'
-import SoundExplorer from './components/SoundExplorer'
+import ShrutiAuditorium from './components/ShrutiAuditorium'
+import AnalyzedRecordingChips from './components/AnalyzedRecordingChips'
 import AuthScreen from './components/AuthScreen'
 import AdminOverview from './components/AdminOverview'
 import ProfileModal from './components/ProfileModal'
@@ -434,95 +435,157 @@ function App() {
         {activeSection === 'explorer' && (
           <section className="explorer-section" id="explorer">
             <div className="dashboard-tool-heading">
-              <span className="eyebrow">I · The acoustic explorer</span>
-              <h2>Study the architecture of sound</h2>
-              <p>Explore the 22 Śruti instrument and inspect real observations from your selected recording.</p>
+              <span className="eyebrow">II · The acoustic observatory</span>
+              <h2>{analysis ? 'Follow the voice through its own microtones' : 'Study the architecture of sacred sound'}</h2>
+              <p>
+                {analysis
+                  ? 'Every trace below is drawn from the recording you selected — its pitch contour, the śrutis it touched, the rāga it resembles and the recitation pattern it formed.'
+                  : 'Analyse a recording in the listening chamber, then return here to read its pitch contour, śruti body and rāga.'}
+              </p>
             </div>
 
-            <SoundExplorer
-              onOpenUpload={() => setActiveSection('upload')}
-              onSelectSwara={setSelectedSwara}
-            />
+            {analysis ? (
+              <>
+                <AnalyzedRecordingChips
+                  recordings={recordings}
+                  selectedId={selectedRecording?.id}
+                  onSelect={handleSelectRecording}
+                />
 
-            <div className="explorer-feature-grid">
-              <div className="folio-panel explorer-scale">
-                <div className="folio-heading">
-                  <h2>The 22-fold scale</h2>
-                  <span className="folio-number">ŚRUTI YANTRA</span>
-                </div>
-                <p>Select an engraved degree to focus it on the observatory instrument above.</p>
-                <div className="explorer-family-list" aria-label="Swara families">
-                  {['Sa', 'Re', 'Ga', 'Ma', 'Pa', 'Dha', 'Ni'].map((family) => (
-                    <button
-                      key={family}
-                      type="button"
-                      className={`engraved-button small ${selectedSwara.startsWith(family) ? 'selected' : ''}`}
-                      onClick={() => setSelectedSwara(family === 'Sa' || family === 'Pa' ? family : `${family}1`)}
-                      aria-pressed={selectedSwara.startsWith(family)}
-                    >
-                      {family}
-                    </button>
-                  ))}
-                </div>
-                <p className="instrument-note">
-                  Selected degree: <strong>{selectedSwara}</strong>
-                  {analysis?.raga_detection?.detected_swaras?.some(item => item.swara === selectedSwara)
-                    ? ' · present in the selected analysis'
-                    : ''}
-                </p>
-              </div>
-
-              <div className="folio-panel explorer-recordings">
-                <div className="folio-heading">
-                  <h2>Listening archive</h2>
-                  <span className="folio-number">{recordings.length.toString().padStart(2, '0')} ENTRIES</span>
-                </div>
-                {recordings.length ? (
-                  <div className="recording-list">
-                    {recordings.map((recording, index) => (
-                      <button
-                        type="button"
-                        key={recording.id}
-                        className={`recording-item ${selectedRecording?.id === recording.id ? 'active' : ''}`}
-                        onClick={() => handleSelectRecording(recording)}
-                        aria-pressed={selectedRecording?.id === recording.id}
-                      >
-                        <span className="recording-index">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="recording-title">{recording.title}</span>
-                        <span className={`recording-state ${recording.is_analyzed ? 'is-analyzed' : ''}`}>
-                          {recording.is_analyzed ? 'Examined' : 'Unexamined'}
-                        </span>
-                      </button>
-                    ))}
+                <div className="explorer-stat-strip">
+                  <div className="explorer-stat">
+                    <span>Recording</span>
+                    <strong>{selectedRecording?.title ?? 'Selected voice'}</strong>
                   </div>
-                ) : (
-                  <p className="archive-empty">
-                    {fetchError ? 'The archive is unavailable until its connection is restored.' : 'No recordings are held in this archive yet.'}
-                  </p>
-                )}
-              </div>
-            </div>
+                  <div className="explorer-stat">
+                    <span>Rāga</span>
+                    <strong>
+                      {analysis.raga_detection?.best_match
+                        ? `${analysis.raga_detection.best_match.raga_name} · ${(analysis.raga_detection.best_match.confidence * 100).toFixed(0)}%`
+                        : 'Inconclusive'}
+                    </strong>
+                  </div>
+                  <div className="explorer-stat">
+                    <span>Ghana Pāṭha</span>
+                    <strong className={analysis.ghana_patha_valid ? 'is-valid' : 'is-invalid'}>
+                      {analysis.ghana_patha_valid ? 'Valid' : 'Invalid'}
+                      {typeof analysis.ghana_patha_confidence === 'number'
+                        ? ` · ${(analysis.ghana_patha_confidence * 100).toFixed(0)}%`
+                        : ''}
+                    </strong>
+                  </div>
+                  <div className="explorer-stat">
+                    <span>Tonic Sa</span>
+                    <strong>{typeof analysis.tonic_hz === 'number' ? `${analysis.tonic_hz.toFixed(1)} Hz` : '—'}</strong>
+                  </div>
+                  <div className="explorer-stat">
+                    <span>Tempo</span>
+                    <strong>{typeof analysis.tempo === 'number' ? `${analysis.tempo.toFixed(1)} BPM` : '—'}</strong>
+                  </div>
+                  <div className="explorer-stat">
+                    <span>Duration</span>
+                    <strong>{typeof analysis.duration === 'number' ? `${analysis.duration.toFixed(1)} s` : '—'}</strong>
+                  </div>
+                </div>
 
-            <div className="explorer-feature-grid explorer-observations">
-              <div className="folio-panel">
-                <div className="folio-heading">
-                  <h2>Rāga observation</h2>
-                  <span className="folio-number">FROM ANALYSIS</span>
+                <div className="folio-panel explorer-panel-wide">
+                  <div className="folio-heading">
+                    <h2>Sound trace — spectrogram &amp; pitch contour</h2>
+                    <span className="folio-number">click to listen</span>
+                  </div>
+                  <SpectrogramView
+                    data={analysis.spectrogram_data}
+                    duration={analysis.duration}
+                    playbackTime={playbackTime}
+                    f0Track={analysis.f0_track}
+                    onSeek={(t) => playerRef.current?.seekTo(t)}
+                  />
+                  <p className="instrument-note">
+                    The warm line is the extracted F0 — the sung pitch over time. Click anywhere on
+                    the trace to jump the listening instrument to that instant; the red cursor follows playback.
+                  </p>
                 </div>
-                {analysis
-                  ? <RagaViz data={analysis} />
-                  : <p className="archive-empty">Select an analyzed recording in the Upload section to inspect its detected rāga.</p>}
-              </div>
-              <div className="folio-panel">
-                <div className="folio-heading">
-                  <h2>Ghana Patha observation</h2>
-                  <span className="folio-number">FROM ANALYSIS</span>
+
+                <div className="folio-panel explorer-panel-wide">
+                  <div className="folio-heading">
+                    <h2>Śruti body — the microtones your voice traced</h2>
+                    <span className="folio-number">Śruti Yantra</span>
+                  </div>
+                  <ShrutiAuditorium
+                    analysis={analysis}
+                    selected={selectedSwara}
+                    onSelectSwara={setSelectedSwara}
+                  />
                 </div>
-                {analysis
-                  ? <GhanaPathaViz data={analysis} duration={analysis.duration} playerRef={playerRef} />
-                  : <p className="archive-empty">Ghana Patha findings appear here after a recording has been analyzed.</p>}
-              </div>
-            </div>
+
+                <div className="explorer-feature-grid explorer-observations">
+                  <div className="folio-panel">
+                    <div className="folio-heading">
+                      <h2>Rāga observation</h2>
+                      <span className="folio-number">from analysis</span>
+                    </div>
+                    <RagaViz data={analysis} />
+                  </div>
+                  <div className="folio-panel">
+                    <div className="folio-heading">
+                      <h2>Ghana Pāṭha observation</h2>
+                      <span className="folio-number">from analysis</span>
+                    </div>
+                    <GhanaPathaViz data={analysis} duration={analysis.duration} playerRef={playerRef} />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="folio-panel explorer-panel-wide">
+                  <div className="folio-heading">
+                    <h2>The 22 Śruti — reference audition grid</h2>
+                    <span className="folio-number">Śruti Yantra</span>
+                  </div>
+                  <ShrutiAuditorium
+                    analysis={null}
+                    selected={selectedSwara}
+                    onSelectSwara={setSelectedSwara}
+                  />
+                </div>
+
+                <div className="folio-panel explorer-panel-wide">
+                  <div className="folio-heading">
+                    <h2>Listening archive</h2>
+                    <span className="folio-number">{recordings.length.toString().padStart(2, '0')} entries</span>
+                  </div>
+                  {recordings.length ? (
+                    <div className="recording-list">
+                      {recordings.map((recording, index) => (
+                        <button
+                          type="button"
+                          key={recording.id}
+                          className={`recording-item ${selectedRecording?.id === recording.id ? 'active' : ''}`}
+                          onClick={() => handleSelectRecording(recording)}
+                          aria-pressed={selectedRecording?.id === recording.id}
+                        >
+                          <span className="recording-index">{String(index + 1).padStart(2, '0')}</span>
+                          <span className="recording-title">{recording.title}</span>
+                          <span className={`recording-state ${recording.is_analyzed ? 'is-analyzed' : ''}`}>
+                            {recording.is_analyzed ? 'Examined' : 'Unexamined'}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="archive-empty">
+                      {fetchError ? 'The archive is unavailable until its connection is restored.' : 'No recordings are held in this archive yet.'}
+                    </p>
+                  )}
+                  <div className="explorer-cta-row">
+                    <p>Offer a recording in the listening chamber to map its voice here.</p>
+                    <button type="button" className="engraved-button" onClick={() => setActiveSection('upload')}>
+                      Open the listening chamber →
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </section>
         )}
 
