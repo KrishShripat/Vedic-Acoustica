@@ -80,7 +80,7 @@ export default async function exportReport(recording, analysis) {
   pdf.text(`Generated: ${new Date().toLocaleString()}`, pageW - margin, pageH - 8, { align: 'right' })
 
   let y = 31
-  pdf.setTextColor(238, 238, 238)
+  pdf.setTextColor(30, 30, 40)
   pdf.setFontSize(10)
   pdf.setFont('helvetica', 'bold')
   pdf.text('Summary', margin, y)
@@ -92,9 +92,9 @@ export default async function exportReport(recording, analysis) {
   rows.forEach(([label, value], i) => {
     const col = Math.floor(i / half)
     const row = i % half
-    pdf.setTextColor(136, 136, 136)
+    pdf.setTextColor(120, 120, 135)
     pdf.text(label, margin + col * 90, y + row * 5.5)
-    pdf.setTextColor(238, 238, 238)
+    pdf.setTextColor(20, 20, 30)
     pdf.text(String(value), margin + col * 90 + 45, y + row * 5.5)
   })
 
@@ -124,7 +124,7 @@ export default async function exportReport(recording, analysis) {
       throw new Error(`Failed to embed "${CHART_DEFS[i].title}" image in the PDF: ${imgErr.message}`)
     }
 
-    pdf.setTextColor(200, 200, 210)
+    pdf.setTextColor(50, 50, 70)
     pdf.setFontSize(9)
     pdf.setFont('helvetica', 'bold')
     pdf.text(CHART_DEFS[i].title, x, yPos + imgH + 5)
