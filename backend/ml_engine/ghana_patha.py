@@ -42,7 +42,6 @@ Ghana pattern encoding
 
 import logging
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 from .shruti_mapping import SHRUTI_NAMES
 
 logger = logging.getLogger(__name__)
@@ -116,6 +115,25 @@ GHANA_PATTERNS = {
 # DTW core
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _cosine_similarity(a, b):
+    """Row-wise cosine similarity of two 2-D arrays.
+
+    A direct numpy implementation of ``sklearn.metrics.pairwise
+    .cosine_similarity``.  The sklearn call was ~30 % of the Ghana runtime
+    purely in input validation (``check_array`` / ``normalize`` / narwhals
+    introspection) — pointless overhead when the input is already a clean
+    float array and the matrices are tiny.
+    """
+    a = np.asarray(a, dtype=np.float64)
+    b = np.asarray(b, dtype=np.float64)
+    a_norm = np.linalg.norm(a, axis=1, keepdims=True)
+    b_norm = np.linalg.norm(b, axis=1, keepdims=True)
+    a_norm[a_norm == 0.0] = 1.0
+    b_norm[b_norm == 0.0] = 1.0
+    sim = (a / a_norm) @ (b / b_norm).T
+    return np.clip(sim, -1.0, 1.0)
+
+
 def dtw_distance(seq_a, seq_b):
     """
     Compute the normalised DTW distance between two PCP sequences.
@@ -140,37 +158,43 @@ def dtw_distance(seq_a, seq_b):
         return 1.0, 0
 
     # Local cost matrix: 1 − cosine_similarity ∈ [0, 1]
-    # cosine_similarity returns (T_a, T_b); clip for numerical safety
-    cos_sim = cosine_similarity(seq_a, seq_b)          # (T_a, T_b)
-    cost = np.clip(1.0 - cos_sim, 0.0, 1.0).astype(np.float64)
+    cos_sim = _cosine_similarity(seq_a, seq_b)         # (T_a, T_b)
+    cost = np.clip(1.0 - cos_sim, 0.0, 1.0)
 
-    # Accumulated cost matrix with standard DTW recurrence
-    D = np.full((T_a, T_b), np.inf, dtype=np.float64)
-    D[0, 0] = cost[0, 0]
-
-    for i in range(1, T_a):
-        D[i, 0] = D[i - 1, 0] + cost[i, 0]
-    for j in range(1, T_b):
-        D[0, j] = D[0, j - 1] + cost[0, j]
-
-    for i in range(1, T_a):
+    # Accumulated-cost DP.  Ghana compares thousands of segment pairs, so this
+    # loop's per-cell cost dominates the whole analysis.  Operating on plain
+    # Python float lists is several times faster than element-wise indexing of
+    # numpy scalars, while producing the identical recurrence:
+    #     D[i, j] = cost[i, j] + min(D[i-1, j], D[i, j-1], D[i-1, j-1])
+    cost_rows = cost.tolist()
+    D = [[0.0] * T_b for _ in range(T_a)]
+    for i in range(T_a):
+        Di = D[i]
+        ci = cost_rows[i]
+        if i == 0:
+            Di[0] = ci[0]
+            for j in range(1, T_b):
+                Di[j] = Di[j - 1] + ci[j]
+            continue
+        Dp = D[i - 1]
+        Di[0] = Dp[0] + ci[0]
         for j in range(1, T_b):
-            D[i, j] = cost[i, j] + min(D[i - 1, j],      # insertion
-                                        D[i, j - 1],      # deletion
-                                        D[i - 1, j - 1])  # match
+            m = Dp[j]                      # insertion (from above)
+            if Di[j - 1] < m:              # deletion (from left)
+                m = Di[j - 1]
+            if Dp[j - 1] < m:              # match (diagonal)
+                m = Dp[j - 1]
+            Di[j] = ci[j] + m
 
-    total_cost = D[T_a - 1, T_b - 1]
-
-    # Traceback to find path length for normalisation
+    total_cost = D[T_a - 1][T_b - 1]
     path_length = _traceback_length(D)
-
     norm_dist = total_cost / max(path_length, 1)
     return float(np.clip(norm_dist, 0.0, 1.0)), path_length
 
 
 def _traceback_length(D):
     """Count steps along the optimal warping path (greedy traceback)."""
-    i, j = D.shape[0] - 1, D.shape[1] - 1
+    i, j = len(D) - 1, len(D[0]) - 1
     length = 1
     while i > 0 or j > 0:
         if i == 0:
@@ -178,10 +202,13 @@ def _traceback_length(D):
         elif j == 0:
             i -= 1
         else:
-            step = np.argmin([D[i - 1, j - 1], D[i - 1, j], D[i, j - 1]])
-            if step == 0:
+            diag = D[i - 1][j - 1]
+            up = D[i - 1][j]
+            left = D[i][j - 1]
+            # Mirror np.argmin's first-minimum tie-breaking: diag, up, left.
+            if diag <= up and diag <= left:
                 i -= 1; j -= 1
-            elif step == 1:
+            elif up <= left:
                 i -= 1
             else:
                 j -= 1
