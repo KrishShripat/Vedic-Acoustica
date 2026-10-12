@@ -356,6 +356,9 @@ function App() {
           <ShrutiInstrument
             selectedSwara={selectedSwara}
             detectedSwaras={analysis?.raga_detection?.detected_swaras ?? []}
+            tonicHz={analysis?.tonic_hz}
+            meanPcp={analysis?.mean_pcp}
+            ragaBest={analysis?.raga_detection?.best_match}
             onSelect={setSelectedSwara}
           />
         </section>

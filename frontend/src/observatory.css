@@ -2255,3 +2255,145 @@
     min-width: 50px;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Śruti Yantra — interactive rotary dial
+   ───────────────────────────────────────────────────────────────────────── */
+
+.instrument-wheel {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.instrument-wheel:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 8px;
+  border-radius: 50%;
+}
+
+.wheel-rotor {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.instrument-wheel.is-dragging .wheel-rotor,
+.instrument-wheel.is-scanning .wheel-rotor {
+  transition: none;
+}
+
+.wheel-needle {
+  position: absolute;
+  top: 1.6%;
+  left: 50%;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 13px solid var(--gold);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+  transform: translateX(-50%);
+  transition: filter 0.2s ease, border-top-color 0.2s ease;
+}
+
+.wheel-needle[data-active='true'] {
+  border-top-color: #ffdca0;
+  filter: drop-shadow(0 0 8px rgba(224, 168, 96, 0.9));
+}
+
+.wheel-energy {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  animation: wheel-energy-in 0.6s ease-out both;
+}
+
+.wheel-energy line {
+  stroke-linecap: round;
+  transition: stroke-width 0.2s ease;
+}
+
+.wheel-energy polygon {
+  fill: rgba(224, 168, 96, 0.08);
+  stroke: rgba(224, 168, 96, 0.42);
+  stroke-width: 1;
+}
+
+@keyframes wheel-energy-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.shruti-mark.is-hovered {
+  z-index: 2;
+  border-color: var(--family-tone);
+  color: #fff1d0;
+  background: #3a2817;
+}
+
+.shruti-mark.is-scale {
+  border-color: rgba(127, 206, 143, 0.55);
+}
+
+.shruti-mark.is-playing {
+  z-index: 2;
+  border-color: var(--gold);
+  color: #fff6e2;
+  background: #5a3c22;
+  animation: shruti-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes shruti-pulse {
+  from { box-shadow: 0 0 4px rgba(224, 168, 96, 0.5); }
+  to   { box-shadow: 0 0 18px rgba(224, 168, 96, 0.95); }
+}
+
+.instrument-heart {
+  z-index: 4;
+}
+
+.heart-readout {
+  color: #d9b878;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.yantra-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.yantra-controls .engraved-button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.yantra-hint {
+  color: #8a7a5f;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel-rotor {
+    transition: none;
+  }
+
+  .shruti-mark.is-playing {
+    animation: none;
+  }
+}
