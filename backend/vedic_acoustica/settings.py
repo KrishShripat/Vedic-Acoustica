@@ -253,3 +253,9 @@ CELERY_TASK_ACKS_LATE = True
 # librosa analyses can peak at ~1.5 GB and CPython's arena allocator retains
 # freed memory; without this setting RSS grows monotonically.
 CELERY_WORKER_MAX_MEMORY_PER_CHILD = 1_500_000  # KB ≈ 1.5 GB
+# The documented "Development Mode" runs `manage.py runserver` on its own with
+# no Redis/Celery, which made the first upload/analysis hang forever waiting on
+# the broker.  When DEBUG is on and no broker was explicitly configured, execute
+# tasks inline (eagerly) so the bare runserver workflow works out of the box.
+# docker-compose and the HF Space set CELERY_BROKER_URL and keep async workers.
+CELERY_TASK_ALWAYS_EAGER = DEBUG and not os.environ.get('CELERY_BROKER_URL')

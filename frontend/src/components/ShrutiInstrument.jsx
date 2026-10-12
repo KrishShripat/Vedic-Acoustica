@@ -99,10 +99,13 @@ export default function ShrutiInstrument({
   }, [ragaBest])
 
   const ragaSequence = useMemo(() => {
-    const up = (ragaBest?.arohana ?? []).filter(b => Number.isInteger(b) && b >= 0 && b <= 22)
-    const down = [...(ragaBest?.avarohana ?? [])]
-      .reverse()
-      .filter(b => Number.isInteger(b) && b >= 0 && b <= 22)
+    const valid = b => Number.isInteger(b) && b >= 0 && b <= 22
+    const up = (ragaBest?.arohana ?? []).filter(valid)
+    // Avarohana is stored in descending order. Its first degree is the *upper*
+    // Sa notated as bin 0, so lift it to the octave (22) before playing the
+    // descent — otherwise the scale would climb twice instead of up-and-down.
+    let down = (ragaBest?.avarohana ?? []).filter(valid)
+    if (down.length && down[0] === 0) down = [SHRUTIS.length, ...down.slice(1)]
     return [...up, ...down]
   }, [ragaBest])
 
