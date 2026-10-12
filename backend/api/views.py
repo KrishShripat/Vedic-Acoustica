@@ -529,7 +529,7 @@ def recording_detail(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     # Per-user data isolation: non-staff users cannot access other users' private uploads
-    if not request.user.is_staff and recording.uploaded_by is not None and recording.uploaded_by != request.user:
+    if not request.user.is_staff and recording.uploaded_by != request.user:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     base = AudioRecordingSerializer(recording).data
@@ -568,7 +568,7 @@ def analyze_audio(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     # Per-user data isolation: non-staff users cannot trigger analysis on other users' private uploads
-    if not request.user.is_staff and recording.uploaded_by is not None and recording.uploaded_by != request.user:
+    if not request.user.is_staff and recording.uploaded_by != request.user:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     audio_path = recording.audio_file.path

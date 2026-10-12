@@ -12,7 +12,8 @@ import SoundExplorer from './components/SoundExplorer'
 import AuthScreen from './components/AuthScreen'
 import AdminOverview from './components/AdminOverview'
 import ProfileModal from './components/ProfileModal'
-import { getUser, getToken, clearAuth, authFetch, setAuth } from './utils/auth'
+import { getUser, getToken, clearAuth, authFetch, authFetchWithRetry, setAuth } from './utils/auth'
+import exportReport from './utils/exportReport'
 import './observatory.css'
 
 const API_BASE = '/api'
@@ -61,7 +62,9 @@ function App() {
         return
       }
       try {
-        const res = await authFetch(`${API_BASE}/auth/me/`)
+        // Retry transient network failures so a cold-starting backend never
+        // bounces a valid logged-in user back to the login screen.
+        const res = await authFetchWithRetry(`${API_BASE}/auth/me/`)
         if (!res.ok) {
           clearAuth()
           if (!cancelled) setUser(null)
@@ -126,7 +129,7 @@ function App() {
   const fetchRecordings = useCallback(async () => {
     if (!getToken()) return
     try {
-      const res = await authFetch(`${API_BASE}/recordings/`)
+      const res = await authFetchWithRetry(`${API_BASE}/recordings/`)
       if (!res.ok) throw new Error(`Backend returned ${res.status}`)
       const data = await res.json()
       setRecordings(data.results ?? data)
@@ -157,7 +160,7 @@ function App() {
     formData.append('title', file.name)
 
     try {
-      const res = await authFetch(`${API_BASE}/upload/`, {
+      const res = await authFetchWithRetry(`${API_BASE}/upload/`, {
         method: 'POST',
         body: formData,
       })
@@ -187,7 +190,7 @@ function App() {
   const handleAnalysisDone = useCallback(async () => {
     if (!selectedRecording) return
     try {
-      const res = await authFetch(`${API_BASE}/recordings/${selectedRecording.id}/`)
+      const res = await authFetchWithRetry(`${API_BASE}/recordings/${selectedRecording.id}/`)
       if (!res.ok) throw new Error(`Backend returned ${res.status}`)
       const recording = await res.json()
       const result = recording.analysis_result ?? null
@@ -212,7 +215,7 @@ function App() {
     setAnalyzing(true)
     setAnalyzeError(null)
     try {
-      const res = await authFetch(`${API_BASE}/analyze/${selectedRecording.id}/`, {
+      const res = await authFetchWithRetry(`${API_BASE}/analyze/${selectedRecording.id}/`, {
         method: 'POST',
       })
       const data = await res.json()
@@ -245,11 +248,13 @@ function App() {
     if (!analysis || !selectedRecording) return
     setDownloading(true)
     try {
-      const { default: exportReport } = await import('./utils/exportReport')
       await exportReport(selectedRecording, analysis)
     } catch (err) {
       console.error('Report export failed:', err)
-      alert(`Failed to generate PDF report: ${err.message}`)
+      const hint = /dynamically imported module/i.test(err.message)
+        ? '\nPlease refresh the page and try again.'
+        : ''
+      alert(`Failed to generate PDF report: ${err.message}${hint}`)
     } finally {
       setDownloading(false)
     }
