@@ -560,9 +560,12 @@ RAGA_DATABASE = [
     {
         'name': 'Saveri',
         'tradition': 'Carnatic',
-        'swaras': ['Sa', 'Re-k', 'Ma-s', 'Pa', 'Dha-k'],          # pentatonic — no Ga, no Ni
+        # Audava–sampurna janya of Mayamalavagowla (mela 15): the ascent skips
+        # Ga and Ni, but the descent is full and restores antara Ga (G3) and
+        # kakali Ni (N3) — these are what give Saveri its karuna-rasa identity.
+        'swaras': ['Sa', 'Re-k', 'Ga-s', 'Ma-s', 'Pa', 'Dha-k', 'Ni-s'],
         'arohana': ['Sa', 'Re-k', 'Ma-s', 'Pa', 'Dha-k'],
-        'avarohana': ['Sa', 'Dha-k', 'Pa', 'Ma-s', 'Re-k', 'Sa'],
+        'avarohana': ['Sa', 'Ni-s', 'Dha-k', 'Pa', 'Ma-s', 'Ga-s', 'Re-k', 'Sa'],
         'vadi': {'grade': 'Pa', 'name': 'Pa'},
         'samvadi': {'grade': 'Re-k', 'name': 'Re'},
         'time': 'Morning',
