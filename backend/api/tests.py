@@ -627,6 +627,25 @@ class PlaybackFileSubprocessSecurityTestCase(TestCase):
         # Must return safely without executing ffmpeg on external path
         _build_playback_file(mock_rec)
 
+    def test_build_playback_file_does_not_delete_mp3_source(self):
+        """An uploaded .mp3 is its own playback file: _build_playback_file must
+        never run ffmpeg in place and then delete the original upload."""
+        import tempfile
+        from django.core.files.base import ContentFile
+        from django.test import override_settings
+        from api.models import AudioRecording
+        from api.views import _build_playback_file
+
+        with tempfile.TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            rec = AudioRecording.objects.create(title='mp3 in place')
+            rec.audio_file.save('inplace.mp3', ContentFile(b'ID3\x04\x00\x00'), save=True)
+            src = rec.audio_file.path
+            self.assertTrue(os.path.exists(src))
+
+            _build_playback_file(rec)
+
+            self.assertTrue(os.path.exists(src), 'original mp3 upload was deleted')
+
 
 class GoogleLoginAPITestCase(TestCase):
     """Tests for POST /api/auth/google/ (Google Identity Services sign-in)."""

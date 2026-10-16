@@ -456,6 +456,12 @@ def _build_playback_file(recording):
     if not dst.startswith(media_root):
         return
 
+    # The source is already an MP3, so it is its own playback file. Never run
+    # ffmpeg in place: it refuses ("same as Input - exiting") and the error
+    # handler below would then delete dst — which is the original upload.
+    if dst == src:
+        return
+
     try:
         subprocess.run(
             [
@@ -472,7 +478,9 @@ def _build_playback_file(recording):
         )
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         try:
-            if os.path.exists(dst):
+            # Guard against ever removing the original upload if dst somehow
+            # resolves to src (belt-and-braces on top of the early return).
+            if os.path.exists(dst) and dst != src:
                 os.remove(dst)
         except OSError:
             pass
